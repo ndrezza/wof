@@ -357,32 +357,49 @@ $targetVersionFile = Join-Path $aiDir ".framework-version"
 Set-Content -Path $targetVersionFile -Value $frameworkVersion
 Write-Host "    Created: .ai/.framework-version ($frameworkVersion)" -ForegroundColor Gray
 
-# Step 8: Configure .gitignore with WOI section (file-level entries)
-Write-Step "Configuring .gitignore with WOI section..."
+# Step 8: Configure .gitignore with WOI sections (framework + userdata)
+Write-Step "Configuring .gitignore with WOI sections..."
 $gitignoreFile = Join-Path $TargetPath ".gitignore"
 
-# Build list of files to gitignore (individual files, not folders)
-$woiGitignoreFiles = @()
+# Define which files are "userdata" (preserved after WOF removal)
+# These contain user customizations, secrets, or project-specific content
+$userdataPatterns = @(
+    "config/credentials.local.ps1",   # API keys, connection strings - CRITICAL
+    "config/models.yaml",             # Customized model tiers
+    "config/providers.yaml",          # Customized provider settings
+    "config/ai-rules.md",             # Customized AI behavior rules
+    "memory/architecture.md",         # Project-specific architecture
+    "memory/conventions.md",          # Project-specific conventions
+    "memory/current-sprint.md"        # Active work tracking
+)
 
-# .ai/ files from manifest
+# Build framework files list (removed with WOF)
+$frameworkFiles = @()
+
+# .ai/ files from manifest, excluding userdata
 foreach ($file in $installedFiles) {
-    $woiGitignoreFiles += "/.ai/$file"
+    $isUserdata = $false
+    foreach ($pattern in $userdataPatterns) {
+        if ($file -eq $pattern) {
+            $isUserdata = $true
+            break
+        }
+    }
+    if (-not $isUserdata) {
+        $frameworkFiles += "/.ai/$file"
+    }
 }
 
-# .ai/ metadata files
-$woiGitignoreFiles += "/.ai/.framework-version"
-$woiGitignoreFiles += "/.ai/.installed-files.json"
+# .ai/ metadata files (framework)
+$frameworkFiles += "/.ai/.framework-version"
+$frameworkFiles += "/.ai/.installed-files.json"
 
-# Always gitignore sensitive files
-$woiGitignoreFiles += "/.ai/state/"
-$woiGitignoreFiles += "/.ai/logs/"
-
-# .claude/ files
+# .claude/ files (framework)
 $claudeDir = Join-Path $TargetPath ".claude"
 if (Test-Path $claudeDir) {
     $claudeSettings = Join-Path $claudeDir "settings.json"
     if (Test-Path $claudeSettings) {
-        $woiGitignoreFiles += "/.claude/settings.json"
+        $frameworkFiles += "/.claude/settings.json"
     }
     $skillsDir = Join-Path $claudeDir "skills"
     if (Test-Path $skillsDir) {
@@ -390,53 +407,119 @@ if (Test-Path $claudeDir) {
             $skillName = $_.Name
             $skillFile = Join-Path $_.FullName "SKILL.md"
             if (Test-Path $skillFile) {
-                $woiGitignoreFiles += "/.claude/skills/$skillName/SKILL.md"
+                $frameworkFiles += "/.claude/skills/$skillName/SKILL.md"
             }
         }
     }
 }
 
-# CLAUDE.md
-$woiGitignoreFiles += "/CLAUDE.md"
+# CLAUDE.md (framework - deleted on remove)
+$frameworkFiles += "/CLAUDE.md"
 
-# Sort the list
-$woiGitignoreFiles = $woiGitignoreFiles | Sort-Object
+# Sort framework files
+$frameworkFiles = $frameworkFiles | Sort-Object
 
-# Build WOI section content
-$woiSectionStart = "# <!-- WOI-SECTION-START - Managed by WOF, do not edit manually -->"
-$woiSectionEnd = "# <!-- WOI-SECTION-END -->"
-$woiSectionContent = @($woiSectionStart, "# Workload Orchestration Instance (WOI)")
-$woiSectionContent += $woiGitignoreFiles
-$woiSectionContent += $woiSectionEnd
+# Build userdata files list (preserved after WOF removal)
+$userdataFiles = @()
+foreach ($pattern in $userdataPatterns) {
+    $fullPath = Join-Path $aiDir $pattern
+    if (Test-Path $fullPath) {
+        $userdataFiles += "/.ai/$pattern"
+    }
+}
+
+# Always include state and logs in userdata (even if not yet created)
+$userdataFiles += "/.ai/state/"
+$userdataFiles += "/.ai/logs/"
+
+# Sort userdata files
+$userdataFiles = $userdataFiles | Sort-Object
+
+# Build FRAMEWORK section content
+$frameworkSectionStart = "# <!-- WOI-FRAMEWORK-START - Managed by WOF, removed with framework -->"
+$frameworkSectionEnd = "# <!-- WOI-FRAMEWORK-END -->"
+$frameworkSectionContent = @($frameworkSectionStart, "# WOF Framework Files (deleted when WOF is removed)")
+$frameworkSectionContent += $frameworkFiles
+$frameworkSectionContent += $frameworkSectionEnd
+
+# Build USERDATA section content
+$userdataSectionStart = "# <!-- WOI-USERDATA-START - Managed by WOF, preserved after removal -->"
+$userdataSectionEnd = "# <!-- WOI-USERDATA-END -->"
+$userdataSectionContent = @($userdataSectionStart, "# WOI User Data (kept after WOF removal - contains secrets/customizations)")
+$userdataSectionContent += $userdataFiles
+$userdataSectionContent += $userdataSectionEnd
+
+# Combine both sections
+$woiFullContent = $frameworkSectionContent + @("") + $userdataSectionContent
+
+# Helper function to update or add a section
+function Update-GitignoreSection {
+    param(
+        [string]$Content,
+        [string]$StartMarker,
+        [string]$EndMarker,
+        [string[]]$NewSection
+    )
+
+    $startPattern = [regex]::Escape($StartMarker) -replace "WOI-FRAMEWORK-START|WOI-USERDATA-START", "WOI-(FRAMEWORK|USERDATA)-START"
+    if ($Content -match $StartMarker.Substring(0, 20)) {
+        # Section exists, replace it
+        $pattern = "(?s)$([regex]::Escape($StartMarker)).*?$([regex]::Escape($EndMarker))"
+        $replacement = $NewSection -join "`n"
+        return $Content -replace $pattern, $replacement
+    }
+    return $null  # Section doesn't exist
+}
 
 # Update or create .gitignore
 if (Test-Path $gitignoreFile) {
     $gitignoreContent = Get-Content $gitignoreFile -Raw
+    $updated = $false
 
-    # Check if WOI section already exists
+    # Check for legacy single WOI section and remove it
     if ($gitignoreContent -match "# <!-- WOI-SECTION-START") {
-        # Replace existing WOI section
-        $pattern = "(?s)# <!-- WOI-SECTION-START.*?# <!-- WOI-SECTION-END -->"
-        $newWoiSection = $woiSectionContent -join "`n"
-        $gitignoreContent = $gitignoreContent -replace $pattern, $newWoiSection
+        $pattern = "(?s)\r?\n?# <!-- WOI-SECTION-START.*?# <!-- WOI-SECTION-END -->\r?\n?"
+        $gitignoreContent = $gitignoreContent -replace $pattern, "`n"
+        $gitignoreContent = $gitignoreContent -replace "(\r?\n){3,}", "`n`n"
+        Write-Host "    Removed legacy WOI section" -ForegroundColor Yellow
+    }
+
+    # Update or add FRAMEWORK section
+    if ($gitignoreContent -match "# <!-- WOI-FRAMEWORK-START") {
+        $pattern = "(?s)# <!-- WOI-FRAMEWORK-START.*?# <!-- WOI-FRAMEWORK-END -->"
+        $replacement = $frameworkSectionContent -join "`n"
+        $gitignoreContent = $gitignoreContent -replace $pattern, $replacement
+        Write-Host "    Updated WOI-FRAMEWORK section" -ForegroundColor Gray
+        $updated = $true
+    }
+
+    # Update or add USERDATA section
+    if ($gitignoreContent -match "# <!-- WOI-USERDATA-START") {
+        $pattern = "(?s)# <!-- WOI-USERDATA-START.*?# <!-- WOI-USERDATA-END -->"
+        $replacement = $userdataSectionContent -join "`n"
+        $gitignoreContent = $gitignoreContent -replace $pattern, $replacement
+        Write-Host "    Updated WOI-USERDATA section" -ForegroundColor Gray
+        $updated = $true
+    }
+
+    if ($updated) {
         Set-Content -Path $gitignoreFile -Value $gitignoreContent -NoNewline
-        Write-Host "    Updated WOI section in .gitignore" -ForegroundColor Gray
     } else {
-        # Append WOI section
+        # Append both sections
         if (-not $gitignoreContent.EndsWith("`n")) {
             Add-Content -Path $gitignoreFile -Value ""
         }
         Add-Content -Path $gitignoreFile -Value ""
-        Add-Content -Path $gitignoreFile -Value ($woiSectionContent -join "`n")
-        Write-Host "    Added WOI section to .gitignore" -ForegroundColor Gray
+        Add-Content -Path $gitignoreFile -Value ($woiFullContent -join "`n")
+        Write-Host "    Added WOI-FRAMEWORK and WOI-USERDATA sections" -ForegroundColor Gray
     }
 } else {
-    # Create new .gitignore with WOI section
-    Set-Content -Path $gitignoreFile -Value ($woiSectionContent -join "`n")
-    Write-Host "    Created .gitignore with WOI section" -ForegroundColor Gray
+    # Create new .gitignore with both sections
+    Set-Content -Path $gitignoreFile -Value ($woiFullContent -join "`n")
+    Write-Host "    Created .gitignore with WOI sections" -ForegroundColor Gray
 }
 
-Write-Host "    Gitignored $($woiGitignoreFiles.Count) WOI files" -ForegroundColor Gray
+Write-Host "    Framework: $($frameworkFiles.Count) files | Userdata: $($userdataFiles.Count) files" -ForegroundColor Gray
 
 # Step 9: Display next steps
 Write-Host ""

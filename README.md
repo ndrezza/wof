@@ -94,31 +94,40 @@ git clone https://github.com/ndrezza/wof.git
 
 ### Git Behavior
 
-WOI (Workload Orchestration Instance) files are gitignored at the **individual file level**. The setup script adds a managed WOI section to your `.gitignore`:
+WOI files are gitignored using **two managed sections** in `.gitignore`:
 
 ```gitignore
-# <!-- WOI-SECTION-START - Managed by WOF, do not edit manually -->
-# Workload Orchestration Instance (WOI)
+# <!-- WOI-FRAMEWORK-START - Managed by WOF, removed with framework -->
+# WOF Framework Files (deleted when WOF is removed)
+/.ai/scripts/approve-command.ps1
+/.ai/scripts/check-orchestration-health.ps1
+/.ai/agents/worker.md
+/.ai/.framework-version
+/.ai/.installed-files.json
+/.claude/settings.json
+/.claude/skills/finish-up/SKILL.md
+/CLAUDE.md
+# <!-- WOI-FRAMEWORK-END -->
+
+# <!-- WOI-USERDATA-START - Managed by WOF, preserved after removal -->
+# WOI User Data (kept after WOF removal - contains secrets/customizations)
 /.ai/config/credentials.local.ps1
 /.ai/config/models.yaml
 /.ai/config/providers.yaml
 /.ai/memory/architecture.md
-/.ai/scripts/approve-command.ps1
-# ... (all installed WOI files)
+/.ai/memory/conventions.md
 /.ai/state/
 /.ai/logs/
-/.claude/settings.json
-/.claude/skills/finish-up/SKILL.md
-/CLAUDE.md
-# <!-- WOI-SECTION-END -->
+# <!-- WOI-USERDATA-END -->
 ```
 
-**This approach allows:**
-- WOI framework files to remain local (not committed)
-- User-created files in `.ai/` to be tracked if desired
-- Clean separation between framework and custom content
+**Why two sections?**
+- **FRAMEWORK**: Removed when you uninstall WOF (scripts, agents, CLAUDE.md)
+- **USERDATA**: Preserved after uninstall (credentials, memory, customizations remain gitignored)
 
-**To share WOI with your team:** Remove the specific files you want to share from the WOI section in `.gitignore`, then commit them.
+This ensures `credentials.local.ps1` stays gitignored even after removing WOF.
+
+**To share files with your team:** Remove specific entries from either section, then commit those files.
 
 ### Setup Parameters
 

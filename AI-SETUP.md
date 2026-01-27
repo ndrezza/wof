@@ -7,7 +7,7 @@
 
 ```yaml
 name: Workload Orchestration Framework (WOF)
-version: 1.3.0
+version: 1.4.0
 repository: https://github.com/ndrezza/wof
 setup_script: setup.ps1
 config_location: .ai/config/credentials.local.ps1
@@ -279,28 +279,35 @@ if ($hasAzureAnthropic) {
 
 ## GIT_BEHAVIOR
 
-WOI (Workload Orchestration Instance) files are gitignored at the **individual file level**. The setup script adds a managed WOI section to your `.gitignore`:
+WOI files are gitignored using **two managed sections** in `.gitignore`:
 
 ```gitignore
-# <!-- WOI-SECTION-START - Managed by WOF, do not edit manually -->
-# Workload Orchestration Instance (WOI)
-/.ai/config/credentials.local.ps1
-/.ai/config/models.yaml
+# <!-- WOI-FRAMEWORK-START - Managed by WOF, removed with framework -->
+# WOF Framework Files (deleted when WOF is removed)
 /.ai/scripts/approve-command.ps1
-# ... (all installed WOI files listed individually)
-/.ai/state/
-/.ai/logs/
+/.ai/agents/worker.md
+/.ai/.framework-version
 /.claude/settings.json
 /CLAUDE.md
-# <!-- WOI-SECTION-END -->
+# <!-- WOI-FRAMEWORK-END -->
+
+# <!-- WOI-USERDATA-START - Managed by WOF, preserved after removal -->
+# WOI User Data (kept after WOF removal - contains secrets/customizations)
+/.ai/config/credentials.local.ps1
+/.ai/config/models.yaml
+/.ai/memory/architecture.md
+/.ai/state/
+/.ai/logs/
+# <!-- WOI-USERDATA-END -->
 ```
 
-**This approach allows:**
-- WOI framework files to remain local (not committed by default)
-- User-created files in `.ai/` to be tracked if desired
-- Clean separation between framework and custom content
+**Why two sections?**
+- **FRAMEWORK**: Removed when WOF is uninstalled (scripts, agents, CLAUDE.md)
+- **USERDATA**: Preserved after uninstall (credentials, memory stay gitignored)
 
-**To share WOI with team:** Remove specific files from the WOI section in `.gitignore`, then commit them
+This ensures `credentials.local.ps1` remains gitignored even after removing WOF.
+
+**To share files with team:** Remove specific entries from either section, then commit those files
 
 ## VERIFICATION_CHECKLIST
 

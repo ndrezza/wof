@@ -306,18 +306,31 @@ if ($UserFilesPreserved.Count -gt 0) {
     }
 }
 
-# Check .gitignore for WOI section
+# Check .gitignore for WOI sections
 $GitIgnorePath = Join-Path $ProjectRoot ".gitignore"
-$HasWoiSection = $false
+$HasWoiFrameworkSection = $false
+$HasLegacyWoiSection = $false
 
 if ((Test-Path $GitIgnorePath) -and -not $KeepGitIgnore) {
     $gitIgnoreContent = Get-Content $GitIgnorePath -Raw
-    if ($gitIgnoreContent -match "# <!-- WOI-SECTION-START") {
-        $HasWoiSection = $true
+
+    # Check for new dual-section format
+    if ($gitIgnoreContent -match "# <!-- WOI-FRAMEWORK-START") {
+        $HasWoiFrameworkSection = $true
         Write-Host ""
-        Write-Host "[*] .gitignore WOI section to remove:" -ForegroundColor Cyan
+        Write-Host "[*] .gitignore WOI-FRAMEWORK section to remove:" -ForegroundColor Cyan
+        Write-Host ""
+        Write-Host "    [GITIGNORE] WOI-FRAMEWORK section (framework files)" -ForegroundColor Yellow
+        Write-Host "    [PRESERVE]  WOI-USERDATA section (credentials, memory - kept)" -ForegroundColor Green
+    }
+    # Check for legacy single-section format
+    elseif ($gitIgnoreContent -match "# <!-- WOI-SECTION-START") {
+        $HasLegacyWoiSection = $true
+        Write-Host ""
+        Write-Host "[*] .gitignore WOI section to remove (legacy format):" -ForegroundColor Cyan
         Write-Host ""
         Write-Host "    [GITIGNORE] WOI section (managed by WOF)" -ForegroundColor Yellow
+        Write-Host "    [WARNING]   User data entries will also be removed (legacy format)" -ForegroundColor Yellow
     }
 }
 
@@ -441,16 +454,27 @@ else {
     Write-Host "       No empty directories to remove" -ForegroundColor Gray
 }
 
-# Clean up .gitignore (remove WOI section)
+# Clean up .gitignore (remove WOI-FRAMEWORK section, preserve WOI-USERDATA)
 Write-Host "[3/4] Cleaning .gitignore..." -ForegroundColor Cyan
 
-if ($HasWoiSection -and (Test-Path $GitIgnorePath)) {
+if (($HasWoiFrameworkSection -or $HasLegacyWoiSection) -and (Test-Path $GitIgnorePath)) {
     try {
         $gitIgnoreContent = Get-Content $GitIgnorePath -Raw
 
-        # Remove WOI section using marker-based regex
-        $pattern = "(?s)\r?\n?# <!-- WOI-SECTION-START.*?# <!-- WOI-SECTION-END -->\r?\n?"
-        $newContent = $gitIgnoreContent -replace $pattern, "`n"
+        if ($HasWoiFrameworkSection) {
+            # New format: Remove only FRAMEWORK section, keep USERDATA section
+            $pattern = "(?s)\r?\n?# <!-- WOI-FRAMEWORK-START.*?# <!-- WOI-FRAMEWORK-END -->\r?\n?"
+            $newContent = $gitIgnoreContent -replace $pattern, "`n"
+            Write-Host "       Removed WOI-FRAMEWORK section" -ForegroundColor Green
+            Write-Host "       Preserved WOI-USERDATA section (credentials stay gitignored)" -ForegroundColor Green
+        }
+        else {
+            # Legacy format: Remove entire WOI section (no userdata preservation)
+            $pattern = "(?s)\r?\n?# <!-- WOI-SECTION-START.*?# <!-- WOI-SECTION-END -->\r?\n?"
+            $newContent = $gitIgnoreContent -replace $pattern, "`n"
+            Write-Host "       Removed legacy WOI section from .gitignore" -ForegroundColor Green
+            Write-Host "       Warning: User data files may now be untracked (legacy format)" -ForegroundColor Yellow
+        }
 
         # Clean up multiple consecutive newlines
         $newContent = $newContent -replace "(\r?\n){3,}", "`n`n"
@@ -461,7 +485,6 @@ if ($HasWoiSection -and (Test-Path $GitIgnorePath)) {
         }
 
         Set-Content $GitIgnorePath -Value $newContent -NoNewline
-        Write-Host "       Removed WOI section from .gitignore" -ForegroundColor Green
     }
     catch {
         Write-Host "       Warning: Could not clean .gitignore - $_" -ForegroundColor Yellow
