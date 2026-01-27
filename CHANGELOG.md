@@ -5,6 +5,13 @@ All notable changes to the Workload Orchestration Framework (WOF) will be docume
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.3] - 2026-01-27
+
+### Fixed
+
+- **Preserve v2 Config on Remove** - `credentials.local.json`, `connections.json`, and `roles.json` now preserved when running remove-framework.ps1
+- **Skill Path Fix** - Changed backslash paths to forward slashes in `/wof` skill for cross-platform compatibility
+
 ## [2.2.2] - 2026-01-27
 
 ### Changed
