@@ -192,6 +192,44 @@ foreach ($pattern in $manifest.skip_if_customized.patterns) {
     }
 }
 
+# Process skills (slash commands)
+Write-Step "Processing skills (slash commands)..."
+$templatesDir = Join-Path $scriptRoot "templates"
+$skillsSource = Join-Path $templatesDir ".claude\skills"
+$skillsTarget = Join-Path $TargetPath ".claude\skills"
+
+if (Test-Path $skillsSource) {
+    Get-ChildItem $skillsSource -Directory | ForEach-Object {
+        $skillName = $_.Name
+        $skillFile = Join-Path $_.FullName "SKILL.md"
+        $destFile = Join-Path $skillsTarget "$skillName\SKILL.md"
+        $relativePath = ".claude/skills/$skillName/SKILL.md"
+
+        # Track for manifest
+        $newInstalledFiles += $relativePath
+
+        if (Test-Path $skillFile) {
+            if ((Test-Path $destFile) -and (Test-FileCustomized $destFile) -and -not $Force) {
+                Write-Info "Skipped (customized): $relativePath"
+                $skipped += $relativePath
+            } elseif ($DryRun) {
+                Write-Info "Would update: $relativePath"
+                $updated += $relativePath
+            } else {
+                $destDir = Split-Path $destFile -Parent
+                if (-not (Test-Path $destDir)) {
+                    New-Item -ItemType Directory -Path $destDir -Force | Out-Null
+                }
+                Copy-Item $skillFile $destFile -Force
+                Write-Info "Updated: $relativePath"
+                $updated += $relativePath
+            }
+        }
+    }
+} else {
+    Write-Info "No skills found in framework"
+}
+
 # List preserved files (never update)
 Write-Step "Preserved files (never updated)..."
 foreach ($pattern in $manifest.always_preserve.patterns) {

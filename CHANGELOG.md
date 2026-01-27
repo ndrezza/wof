@@ -5,6 +5,19 @@ All notable changes to the Workload Orchestration Framework (WOF) will be docume
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.4] - 2026-01-27
+
+### Added
+
+- **`/wof` Slash Command** - Single entry point for all WOF operations
+  - `/wof update` - Update framework to latest version
+  - `/wof update --dry-run` - Preview update changes
+  - `/wof status` - Check orchestration health
+  - `/wof route <task>` - Classify task routing (Worker-Lite vs Worker-Heavy)
+  - `/wof help` - Show available commands
+- Skills are installed to `.claude/skills/wof/SKILL.md`
+- Skills are synced with customization preservation (add `# CUSTOMIZED` to preserve)
+
 ## [1.2.3] - 2026-01-27
 
 ### Added
@@ -151,6 +164,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Template placeholders use `{{PLACEHOLDER}}` syntax
 - Files marked with `# CUSTOMIZED` are preserved during sync
 
+[1.2.4]: https://github.com/ndrezza/wof?version=GTv1.2.4
 [1.2.3]: https://github.com/ndrezza/wof?version=GTv1.2.3
 [1.2.2]: https://github.com/ndrezza/wof?version=GTv1.2.2
 [1.2.0]: https://github.com/ndrezza/wof?version=GTv1.2.0

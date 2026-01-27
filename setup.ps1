@@ -250,6 +250,30 @@ if (-not $SkipTemplates) {
         }
     }
 
+    # .claude/skills (slash commands)
+    $skillsSource = Join-Path $templatesDir ".claude\skills"
+    $skillsTarget = Join-Path $TargetPath ".claude\skills"
+    if (Test-Path $skillsSource) {
+        Get-ChildItem $skillsSource -Directory | ForEach-Object {
+            $skillName = $_.Name
+            $skillFile = Join-Path $_.FullName "SKILL.md"
+            $destDir = Join-Path $skillsTarget $skillName
+            $destFile = Join-Path $destDir "SKILL.md"
+
+            if (Test-Path $skillFile) {
+                if ((Test-Path $destFile) -and -not $Force) {
+                    Write-Warn "    Skipping (exists): .claude/skills/$skillName/SKILL.md"
+                } else {
+                    if (-not (Test-Path $destDir)) {
+                        New-Item -ItemType Directory -Path $destDir -Force | Out-Null
+                    }
+                    Copy-WithPlaceholders -SourceFile $skillFile -DestFile $destFile -Values $placeholders
+                    Write-Host "    Created: .claude/skills/$skillName/SKILL.md" -ForegroundColor Gray
+                }
+            }
+        }
+    }
+
     # Memory templates
     $memoryTemplates = @(
         "memory\architecture.md.template",
@@ -306,18 +330,18 @@ if ($Mode -eq "LocalOnly") {
     $gitignoreEntries = @(
         "",
         "# Workload Orchestration Framework (WOF) - Local Only Mode",
-        ".ai/",
-        ".claude/",
-        "CLAUDE.md"
+        "/.ai/",
+        "/.claude/",
+        "/CLAUDE.md"
     )
 } else {
     # Source Controlled: Only sensitive files gitignored
     $gitignoreEntries = @(
         "",
         "# Workload Orchestration Framework (WOF) - Source Controlled Mode",
-        ".ai/config/credentials.local.ps1",
-        ".ai/state/",
-        ".ai/logs/"
+        "/.ai/config/credentials.local.ps1",
+        "/.ai/state/",
+        "/.ai/logs/"
     )
 }
 
