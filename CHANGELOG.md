@@ -5,6 +5,21 @@ All notable changes to the Workload Orchestration Framework (WOF) will be docume
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.0] - 2026-01-27
+
+### Changed
+
+- **Refactored `/wof configure` skill** - Now uses AskUserQuestion for interactive configuration instead of PowerShell Read-Host prompts
+  - Step 1: Test current connections and show status
+  - Step 2: Ask user what to do (add AI, map roles, or done)
+  - Step 3: Gather input via AskUserQuestion and write config files directly
+  - Step 4: Run health check to verify
+  - This enables proper user interaction when running through Claude Code
+
+### Added
+
+- Skill now has access to Read, Write, Edit, and AskUserQuestion tools for configuration
+
 ## [2.2.4] - 2026-01-27
 
 ### Fixed
