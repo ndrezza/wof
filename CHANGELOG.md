@@ -5,6 +5,24 @@ All notable changes to the Workload Orchestration Framework (WOF) will be docume
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.0] - 2026-01-27
+
+### Added
+
+- **URL Pattern Auto-Detection** - Connection type is now auto-detected from endpoint URL
+  - `*.services.ai.azure.com/anthropic` → `azure_ai_foundry_anthropic`
+  - `*.openai.azure.com` or `*.cognitiveservices.azure.com` → `azure_openai`
+  - All other URLs → `openai_compatible`
+  - Config type takes precedence if specified, auto-detect used as fallback
+
+### Changed
+
+- **Configure Wizard Flow** - Now asks for endpoint URL first, then suggests detected type
+  - User can press Enter to accept suggestion or override with manual selection
+- **Azure AI Foundry Anthropic Testing** - Fixed health check and wizard tests
+  - Uses Bearer token authentication (not api-key header)
+  - Tests via POST to `/v1/messages` endpoint (not GET /models)
+
 ## [2.1.0] - 2026-01-27
 
 ### Removed
