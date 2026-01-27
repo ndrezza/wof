@@ -37,7 +37,7 @@
     .\update-framework.ps1 -Force -Branch develop
 
 .NOTES
-    Default Repository: https://github.com/ndrezza/wof
+    Default Repository: https://github.com/ndrezza/wof.git
     
     Sync behavior is controlled by sync-manifest.json in the source repository:
     - overwrite: Framework core files always updated (scripts, routing rules)
