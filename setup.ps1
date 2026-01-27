@@ -13,6 +13,12 @@
 .PARAMETER SolutionName
     The name of the solution (used in templates).
 
+.PARAMETER Mode
+    Installation mode:
+    - "SourceControlled" (default): Framework is committed to git, shared with team.
+      Only credentials and logs are gitignored.
+    - "LocalOnly": Entire framework is gitignored. Personal use only, invisible to team.
+
 .PARAMETER GitDefaultBranch
     The default git branch name (default: "main").
 
@@ -32,6 +38,9 @@
     .\setup.ps1 -TargetPath "C:\code\MyProject" -SolutionName "MyProject"
 
 .EXAMPLE
+    .\setup.ps1 -TargetPath "C:\code\MyProject" -SolutionName "MyProject" -Mode LocalOnly
+
+.EXAMPLE
     .\setup.ps1 -TargetPath "C:\code\MyProject" -SolutionName "MyProject" -GitDefaultBranch "master" -BuildCommand "npm run build"
 #>
 
@@ -41,6 +50,10 @@ param(
 
     [Parameter(Mandatory=$false)]
     [string]$SolutionName = "",
+
+    [Parameter(Mandatory=$false)]
+    [ValidateSet("SourceControlled", "LocalOnly")]
+    [string]$Mode = "SourceControlled",
 
     [Parameter(Mandatory=$false)]
     [string]$GitDefaultBranch = "main",
@@ -88,9 +101,15 @@ Write-Host "====================================================================
 Write-Host ""
 Write-Host "  Target:        $TargetPath"
 Write-Host "  Solution:      $SolutionName"
+Write-Host "  Mode:          $Mode" -ForegroundColor $(if ($Mode -eq "LocalOnly") { "Yellow" } else { "White" })
 Write-Host "  Git Branch:    $GitDefaultBranch"
 Write-Host "  Build Command: $BuildCommand"
 Write-Host ""
+
+if ($Mode -eq "LocalOnly") {
+    Write-Warn "LOCAL ONLY MODE: Framework will be gitignored and not shared with team"
+    Write-Host ""
+}
 
 # Placeholder values
 $placeholders = @{
@@ -277,23 +296,46 @@ if (-not $SkipTemplates) {
     }
 }
 
-# Step 6: Create .gitignore entries
-Write-Step "Checking .gitignore..."
+# Step 6: Create .gitignore entries based on mode
+Write-Step "Configuring .gitignore for $Mode mode..."
 $gitignoreFile = Join-Path $TargetPath ".gitignore"
-$gitignoreEntries = @(
-    ".ai/config/credentials.local.ps1",
-    ".ai/state/",
-    ".ai/logs/"
-)
+
+# Define entries based on mode
+if ($Mode -eq "LocalOnly") {
+    # Local Only: Entire framework is gitignored
+    $gitignoreEntries = @(
+        "",
+        "# Workload Orchestration Framework (Local Only Mode)",
+        ".ai/",
+        ".claude/",
+        "CLAUDE.md"
+    )
+} else {
+    # Source Controlled: Only sensitive files gitignored
+    $gitignoreEntries = @(
+        "",
+        "# Workload Orchestration Framework (Source Controlled Mode)",
+        ".ai/config/credentials.local.ps1",
+        ".ai/state/",
+        ".ai/logs/"
+    )
+}
 
 if (Test-Path $gitignoreFile) {
     $gitignoreContent = Get-Content $gitignoreFile -Raw
     $added = $false
 
+    # Ensure file ends with newline before adding entries
+    if ($gitignoreContent -and -not $gitignoreContent.EndsWith("`n")) {
+        Add-Content -Path $gitignoreFile -Value ""
+    }
+
     foreach ($entry in $gitignoreEntries) {
-        if ($gitignoreContent -notmatch [regex]::Escape($entry)) {
+        if ($entry -and ($gitignoreContent -notmatch [regex]::Escape($entry))) {
             Add-Content -Path $gitignoreFile -Value $entry
-            Write-Host "    Added to .gitignore: $entry" -ForegroundColor Gray
+            if ($entry -notmatch "^#") {
+                Write-Host "    Added to .gitignore: $entry" -ForegroundColor Gray
+            }
             $added = $true
         }
     }
@@ -307,6 +349,11 @@ if (Test-Path $gitignoreFile) {
     Write-Host "    Created .gitignore with AI entries" -ForegroundColor Gray
 }
 
+# Store mode in .ai directory for reference
+$modeFile = Join-Path $aiDir ".mode"
+Set-Content -Path $modeFile -Value $Mode
+Write-Host "    Saved mode to .ai/.mode: $Mode" -ForegroundColor Gray
+
 # Step 7: Display next steps
 Write-Host ""
 Write-Host "================================================================================" -ForegroundColor Green
@@ -314,7 +361,19 @@ Write-Host "                              SETUP COMPLETE                        
 Write-Host "================================================================================" -ForegroundColor Green
 Write-Host ""
 Write-Success "Framework installed to: $TargetPath"
+Write-Success "Mode: $Mode"
 Write-Host ""
+
+if ($Mode -eq "LocalOnly") {
+    Write-Host "LOCAL ONLY MODE:" -ForegroundColor Yellow
+    Write-Host "  - Framework files are gitignored (not visible to team)"
+    Write-Host "  - No commits needed - just start using Claude Code"
+    Write-Host "  - To switch to SourceControlled mode later:"
+    Write-Host "    1. Remove .ai/, .claude/, CLAUDE.md from .gitignore"
+    Write-Host "    2. Commit the framework files"
+    Write-Host ""
+}
+
 Write-Host "Next steps:" -ForegroundColor Yellow
 Write-Host ""
 Write-Host "  1. Configure credentials:" -ForegroundColor Cyan
@@ -339,4 +398,5 @@ return @{
     Success = $true
     TargetPath = $TargetPath
     SolutionName = $SolutionName
+    Mode = $Mode
 }

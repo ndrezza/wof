@@ -5,6 +5,35 @@ All notable changes to the Workload Orchestration Framework will be documented i
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2026-01-27
+
+### Added
+
+- **Installation Modes** - Two ways to install the framework:
+  - `SourceControlled` (default) - Framework committed to git, shared with team
+  - `LocalOnly` - Framework completely gitignored, personal use only
+
+- **Mode Parameter** in `setup.ps1`:
+  ```powershell
+  # Team collaboration (default)
+  .\setup.ps1 -TargetPath "C:\code\MyProject" -SolutionName "MyProject"
+
+  # Personal use, invisible to team
+  .\setup.ps1 -TargetPath "C:\code\MyProject" -SolutionName "MyProject" -Mode LocalOnly
+  ```
+
+- **Mode tracking** - `.ai/.mode` file records installation mode
+
+### Changed
+
+- Updated README with Quick Start showing both installation options
+- Improved `.gitignore` handling to ensure proper newlines
+
+### Fixed
+
+- Fixed sync-manifest.json patterns (removed duplicate `core/` prefix)
+- Fixed `.gitignore` concatenation when file lacks trailing newline
+
 ## [1.0.0] - 2026-01-27
 
 ### Added
@@ -60,4 +89,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Template placeholders use `{{PLACEHOLDER}}` syntax
 - Files marked with `# CUSTOMIZED` are preserved during sync
 
+[1.1.0]: https://github.com/ndrezza/wof?version=GTv1.1.0
 [1.0.0]: https://github.com/ndrezza/wof?version=GTv1.0.0
