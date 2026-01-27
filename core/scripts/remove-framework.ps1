@@ -214,7 +214,8 @@ else {
         $FilesToRemove += @{ Path = $WofSkillDir; Type = "Directory"; Description = ".claude/skills/wof/" }
     }
 
-    # 5. CLAUDE.md - Remove WOI section only (not the whole file)
+    # 5. CLAUDE.md - Remove WOI section only (NEVER delete the entire file)
+    #    If no WOI section markers exist, the file wasn't created by WOI, so leave it alone
     $ClaudeMd = Join-Path $ProjectRoot "CLAUDE.md"
     $WoiSectionFound = $false
     if (Test-Path $ClaudeMd) {
@@ -224,8 +225,8 @@ else {
             # Don't add to FilesToRemove - we'll handle this separately
             Write-Host "    [WOI]   CLAUDE.md WOI section will be removed (file preserved)" -ForegroundColor Yellow
         } else {
-            # Legacy: no WOI section markers, remove entire file
-            $FilesToRemove += @{ Path = $ClaudeMd; Type = "File"; Description = "CLAUDE.md (legacy, no WOI section)" }
+            # No WOI section markers = file wasn't created by WOI, leave it alone
+            Write-Host "    [SKIP]  CLAUDE.md has no WOI section markers (not WOI-managed)" -ForegroundColor Gray
         }
     }
 
@@ -499,7 +500,11 @@ Write-Host "[4/4] Verifying removal..." -ForegroundColor Cyan
 
 $remainingWof = @()
 if (Test-Path (Join-Path $AiDir ".framework-version")) { $remainingWof += ".ai/.framework-version" }
-if (Test-Path (Join-Path $ProjectRoot "CLAUDE.md")) { $remainingWof += "CLAUDE.md" }
+# Only warn about CLAUDE.md if it still contains WOI section markers (failed to remove them)
+$claudeMdPath = Join-Path $ProjectRoot "CLAUDE.md"
+if ((Test-Path $claudeMdPath) -and ((Get-Content $claudeMdPath -Raw) -match "<!-- WOI-SECTION-START")) {
+    $remainingWof += "CLAUDE.md (WOI section)"
+}
 if (Test-Path (Join-Path $ProjectRoot ".claude\skills\wof")) { $remainingWof += ".claude/skills/wof/" }
 
 if ($remainingWof.Count -eq 0) {
