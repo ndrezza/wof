@@ -20,14 +20,14 @@ health_check: .ai/scripts/check-orchestration-health.ps1
 
 ## QUICK_REFERENCE
 
-**One-liner for Claude Code (recommended):**
+**One-liner for Claude Code (use single quotes to prevent $ escaping):**
 ```
-powershell -NoProfile -ExecutionPolicy Bypass -Command "Remove-Item -Recurse -Force 'C:/Temp/wof-install' -ErrorAction SilentlyContinue; git clone https://github.com/ndrezza/wof.git 'C:/Temp/wof-install'; Set-Location 'C:/Temp/wof-install'; ./setup.ps1 -TargetPath '{TARGET}' -Force -Cleanup"
+powershell -NoProfile -ExecutionPolicy Bypass -Command '$p = Join-Path $env:TEMP "wof-install"; Remove-Item -Recurse -Force $p -ErrorAction SilentlyContinue; git clone https://github.com/ndrezza/wof.git $p; Set-Location $p; ./setup.ps1 -TargetPath "{TARGET}" -Force -Cleanup'
 ```
 
 **Manual steps:**
 ```
-Clone:    git clone https://github.com/ndrezza/wof.git C:/Temp/wof-install
+Clone:    git clone https://github.com/ndrezza/wof.git $env:TEMP/wof-install
 Setup:    ./setup.ps1 -TargetPath "{TARGET}" -Cleanup
 Config:   .ai/config/credentials.local.json
 Verify:   ./.ai/scripts/check-orchestration-health.ps1
@@ -48,25 +48,25 @@ Before installation, verify:
 
 ### Step 1: CLONE_AND_SETUP
 
-**IMPORTANT for Claude Code:** Run this as a single PowerShell command to avoid variable escaping issues:
+**IMPORTANT for Claude Code:** Use single quotes around the PowerShell command to prevent `$` escaping:
 
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -Command "Remove-Item -Recurse -Force 'C:/Temp/wof-install' -ErrorAction SilentlyContinue; git clone https://github.com/ndrezza/wof.git 'C:/Temp/wof-install'; Set-Location 'C:/Temp/wof-install'; ./setup.ps1 -TargetPath '{TARGET}' -Force -Cleanup"
+```bash
+powershell -NoProfile -ExecutionPolicy Bypass -Command '$p = Join-Path $env:TEMP "wof-install"; Remove-Item -Recurse -Force $p -ErrorAction SilentlyContinue; git clone https://github.com/ndrezza/wof.git $p; Set-Location $p; ./setup.ps1 -TargetPath "{TARGET}" -Force -Cleanup'
 ```
 
 Replace `{TARGET}` with the actual target path (e.g., `C:/code/MyProject`).
 
 **What this does:**
 1. Removes any previous temp clone
-2. Clones WOF to `C:/Temp/wof-install`
+2. Clones WOF to `$env:TEMP\wof-install`
 3. Runs setup with `-Force` (overwrites existing) and `-Cleanup` (removes temp clone after)
 
 ### Step 2: DETECT_EXISTING (Optional)
 
 If you want to check first before overwriting:
 
-```powershell
-powershell -Command "Test-Path '{TARGET}/.ai'"
+```bash
+powershell -Command 'Test-Path "{TARGET}/.ai"'
 ```
 
 If true, ask user: "WOF is already installed. Update it? (Credentials and memory are preserved)"
