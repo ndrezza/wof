@@ -5,6 +5,31 @@ All notable changes to the Workload Orchestration Framework will be documented i
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026-01-27
+
+### Added
+
+- **update-framework.ps1** - New self-update script for target projects
+  - Distributed to projects via `core/scripts/` during setup
+  - Enables any project to pull framework updates with a single command
+  - Supports `-DryRun` to preview changes before applying
+  - Supports `-Tag` to update to a specific version
+  - Supports `-RepoUrl` to use forks or mirrors
+  - Respects customization markers (`# CUSTOMIZED`)
+
+### Usage
+
+```powershell
+# From any project with the framework installed:
+.\.ai\scripts\update-framework.ps1
+
+# Preview changes first:
+.\.ai\scripts\update-framework.ps1 -DryRun
+
+# Update to specific version:
+.\.ai\scripts\update-framework.ps1 -Tag v1.2.0
+```
+
 ## [1.1.1] - 2026-01-27
 
 ### Added
@@ -95,6 +120,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Template placeholders use `{{PLACEHOLDER}}` syntax
 - Files marked with `# CUSTOMIZED` are preserved during sync
 
+[1.2.0]: https://github.com/ndrezza/wof?version=GTv1.2.0
 [1.1.1]: https://github.com/ndrezza/wof?version=GTv1.1.1
 [1.1.0]: https://github.com/ndrezza/wof?version=GTv1.1.0
 [1.0.0]: https://github.com/ndrezza/wof?version=GTv1.0.0
