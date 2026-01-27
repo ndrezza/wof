@@ -302,8 +302,7 @@ Copy-Item "extensions\azure-devops\ado-utils.ps1.template" ".ai\scripts\ado-util
 
 - PowerShell 5.1+
 - Claude Code CLI
-- AI service access for Worker-Heavy, Validator, and Critic roles
-- (Optional) Additional AI service for Worker-Lite
+- At least one AI service endpoint (AI1 required, others optional)
 
 ## Environment Variables (v2 Format)
 
@@ -311,16 +310,17 @@ Credentials are stored in `.ai/config/credentials.local.json` with generic names
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `AI1_ENDPOINT` | Yes | Primary AI endpoint (Worker-Heavy, Validator) |
+| `AI1_ENDPOINT` | Yes | Primary AI endpoint (typically Worker) |
 | `AI1_API_KEY` | Yes | Primary AI API key |
-| `AI2_ENDPOINT` | Optional | Secondary AI endpoint |
+| `AI2_ENDPOINT` | Optional | Secondary AI endpoint (e.g., Validator) |
 | `AI2_API_KEY` | Optional | Secondary AI API key |
-| `AI3_ENDPOINT` | Optional | Tertiary AI endpoint (Critic) |
-| `AI3_API_KEY` | Optional | Tertiary AI API key |
-| `AI4_ENDPOINT` | Optional | Worker-Lite endpoint |
+| `AI3_ENDPOINT` | Optional | Third AI endpoint (e.g., Critic) |
+| `AI3_API_KEY` | Optional | Third AI API key |
+| `AI4_ENDPOINT` | Optional | Fourth AI endpoint (e.g., alternate Worker) |
+| `AI4_API_KEY` | Optional | Fourth AI API key |
 
 > **Note:** The generic naming (AI1-AI10) allows flexible role assignment.
-> Connection types are specified in `connections.json`.
+> Use `roles.json` to map connections to roles. Connection types are specified in `connections.json`.
 
 ## License
 
