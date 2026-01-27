@@ -5,6 +5,15 @@ All notable changes to the Workload Orchestration Framework (WOF) will be docume
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.5] - 2026-01-27
+
+### Fixed
+
+- **Credential Preservation** - `setup.ps1 -Force` no longer overwrites user data files
+  - Protected files: `credentials.local.json`, `credentials.local.ps1`, `connections.json`, `roles.json`
+  - These files are now preserved even when `-Force` flag is used
+  - Shows "Preserved: config/... (user data)" message in green
+
 ## [2.3.4] - 2026-01-27
 
 ### Changed

@@ -346,13 +346,28 @@ if (-not $SkipTemplates) {
         Write-Host "    Using legacy config format (YAML/PS1)" -ForegroundColor Yellow
     }
 
+    # Files that should NEVER be overwritten (contain user secrets/customizations)
+    $neverOverwrite = @(
+        "config/credentials.local.json",
+        "config/credentials.local.ps1",
+        "config/connections.json",
+        "config/roles.json"
+    )
+
     foreach ($template in $configTemplates) {
         $source = Join-Path $templatesDir $template
         $destName = $template -replace '\\', '\' -replace '\.template$', ''
         $dest = Join-Path $aiDir $destName
+        $destRelative = $destName -replace '\\', '/'
 
         if (Test-Path $source) {
-            if ((Test-Path $dest) -and -not $Force) {
+            $fileExists = Test-Path $dest
+            $isProtected = $neverOverwrite -contains $destRelative
+
+            if ($fileExists -and $isProtected) {
+                # NEVER overwrite protected files, even with -Force
+                Write-Host "    Preserved: $destName (user data)" -ForegroundColor Green
+            } elseif ($fileExists -and -not $Force) {
                 Write-Warn "    Skipping (exists): $destName"
             } else {
                 Copy-WithPlaceholders -SourceFile $source -DestFile $dest -Values $placeholders
