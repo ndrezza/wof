@@ -47,9 +47,8 @@ This project has the Workload Orchestration Framework installed as a local insta
             ▼                         ▼                    ▼
 ┌──────────────────┐  ┌───────────────────────────────────────────┐
 │ VALIDATOR        │  │           DUAL-WORKER SYSTEM              │
-│ (Azure Sonnet)   │  │  ┌─────────────────┬─────────────────┐    │
-│                  │  │  │ WORKER-HEAVY    │ WORKER-LITE     │    │
-│ Decision valid.  │  │  │ (Azure Opus)    │ (Local DeepSeek)│    │
+│                  │  │  ┌─────────────────┬─────────────────┐    │
+│ Decision valid.  │  │  │ WORKER-HEAVY    │ WORKER-LITE     │    │
 │ >0.7 confidence  │  │  │                 │                 │    │
 │                  │  │  │ T2+ Complex:    │ T1 Lightweight: │    │
 │                  │  │  │ • Code gen      │ • File search   │    │

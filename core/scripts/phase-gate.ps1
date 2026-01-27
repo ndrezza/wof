@@ -236,7 +236,7 @@ function Invoke-PhaseValidator {
 
     switch ($ValidatorType) {
         'autonomy' {
-            # Call Azure Sonnet validator
+            # Call Validator
             $validatorScript = Join-Path $PSScriptRoot "validate-autonomy.ps1"
             if (Test-Path $validatorScript) {
                 try {

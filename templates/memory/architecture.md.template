@@ -43,7 +43,6 @@
             ▼         ▼                   ▼          ▼
 ┌──────────────────┐  ┌─────────────┐  ┌─────────────┐  ┌──────────────────┐
 │ VALIDATOR        │  │ WORKER-HEAVY│  │ WORKER-LITE │  │ CRITIC           │
-│ (Azure Sonnet)   │  │ (Azure Opus)│  │ (Local DS)  │  │ (Codex Mini)     │
 │                  │  │             │  │             │  │                  │
 │ Decision valid.  │  │ T2+ Tasks:  │  │ T1 Tasks:   │  │ Skeptical        │
 │ >0.7 confidence  │  │ • Code gen  │  │ • Search    │  │ quality gate     │
@@ -57,13 +56,13 @@
 
 ### Component Details
 
-| Component | Backend | Model | Role |
-|-----------|---------|-------|------|
-| **Primary** | Anthropic Direct | `claude-opus-4-5-20251101` | Orchestrator (NO coding) |
-| **Worker-Heavy** | Azure AI Foundry | `claude-opus-4-5-20251101` | Complex tasks (T2+): code gen, tests, files |
-| **Worker-Lite** | Local | `deepseek-coder-v2-lite-instruct` | Simple tasks (T1): search, format, navigate |
-| **Validator** | Azure AI Foundry | `claude-sonnet-4-5` | Decision validation (>0.7 confidence) |
-| **Critic** | Azure OpenAI | `gpt-5.1-codex-mini` | Quality gate (≥80% viability) |
+| Component | Role | Config |
+|-----------|------|--------|
+| **Primary** | Orchestrator (NO coding) | Native Claude Code |
+| **Worker-Heavy** | Complex tasks (T2+): code gen, tests, files | See `roles.json` |
+| **Worker-Lite** | Simple tasks (T1): search, format, navigate | See `roles.json` |
+| **Validator** | Decision validation (>0.7 confidence) | See `roles.json` |
+| **Critic** | Quality gate (≥80% viability) | See `roles.json` |
 
 ### Worker Routing
 
@@ -98,8 +97,8 @@ Endpoints are configured in `.ai/config/credentials.local.json` with generic con
 1. **Primary** receives user request
 2. **Primary** classifies task complexity (T1 vs T2+)
 3. **Primary** routes to appropriate **Worker**:
-   - T1 simple tasks → **Worker-Lite** (local DeepSeek)
-   - T2+ complex tasks → **Worker-Heavy** (Azure Opus)
+   - T1 simple tasks → **Worker-Lite**
+   - T2+ complex tasks → **Worker-Heavy**
 4. **Worker** executes the task
 5. **Critic** validates Worker output (≥80% viability required)
 6. **Primary** consults **Validator** for key decisions (>0.7 confidence)
@@ -117,13 +116,10 @@ Endpoints are configured in `.ai/config/credentials.local.json` with generic con
 
 ## Environment Notes
 
-- **Region**: {{AZURE_REGION}}
 - **MCP Servers**:
-  - `secondary-claude` - Worker-Heavy (Azure Opus)
-  - `tertiary-claude-lite` - Worker-Lite (Local DeepSeek)
-- **Local Model Server**: See credentials.local.ps1 (LM Studio / Ollama)
-- **API Versions**:
-  - Anthropic: `2023-06-01`
-  - Azure OpenAI: `2025-01-01-preview`
-  - Codex: `2025-04-01-preview`
-  - Local DeepSeek: OpenAI-compatible API
+  - `secondary-claude` - Worker-Heavy
+  - `tertiary-claude-lite` - Worker-Lite (optional)
+- **Configuration**:
+  - Credentials: `.ai/config/credentials.local.json`
+  - Connections: `.ai/config/connections.json`
+  - Role mappings: `.ai/config/roles.json`

@@ -6,10 +6,10 @@
 
 This document defines when tasks should be routed to Worker-Lite (local, fast, free) versus Worker-Heavy (Azure, powerful, cost).
 
-| Worker | Model | Cost | Latency | Context |
-|--------|-------|------|---------|---------|
-| **Worker-Lite** | Local Model | $0 | 0.5-2s | 32K |
-| **Worker-Heavy** | Azure Opus 4.5 | ~$0.015/1K | 2-8s | 200K |
+| Worker | Typical Use | Characteristics |
+|--------|-------------|-----------------|
+| **Worker-Lite** | Simple tasks | Fast, lower cost, smaller context |
+| **Worker-Heavy** | Complex tasks | Powerful, larger context, higher capability |
 
 ---
 
@@ -100,7 +100,7 @@ This document defines when tasks should be routed to Worker-Lite (local, fast, f
                               v                    v
                     +-----------------+  +-----------------+
                     |  Worker-Heavy   |  |  Worker-Lite    |
-                    |  (Azure Opus)   |  |  (Local)        |
+                    |  (T2+ tasks)    |  |  (T1 tasks)     |
                     +-----------------+  +--------+--------+
                                                   |
                                         +---------v---------+

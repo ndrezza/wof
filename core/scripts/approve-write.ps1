@@ -2,10 +2,10 @@
 #
 # Auto-approves writes based on:
 # 1. .ai/comms/ and .ai/logs/ directories (always)
-# 2. Source files when Validator (Azure Sonnet) approves with high confidence
+# 2. Source files when Validator (Validator) approves with high confidence
 #
 # This enables autonomous implementation loops where the Worker can
-# write code validated by Sonnet without user intervention.
+# write code validated by Validator without user intervention.
 
 param()
 
@@ -88,7 +88,7 @@ if ($filePath -match '[/\\]temp[/\\]|[/\\]scratchpad[/\\]|[/\\]Temp[/\\]') {
     exit 0
 }
 
-# For source files, consult the Validator (Azure Sonnet)
+# For source files, consult the Validator (Validator)
 function Invoke-WriteValidator {
     param(
         [string]$FilePath,

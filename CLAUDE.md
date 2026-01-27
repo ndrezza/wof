@@ -56,7 +56,7 @@ Your role is to:
 2. Plan work breakdown
 3. **Classify** task complexity (T1 lightweight vs T2+ complex)
 4. **Route** to appropriate Worker (Lite for T1, Heavy for T2+)
-5. Consult Validator (Azure Sonnet) for decisions (>0.7 confidence)
+5. Consult Validator for decisions (>0.7 confidence)
 6. Pass Worker output through Critic quality gate (≥80%)
 7. Synthesize results and respond to user
 
@@ -119,9 +119,8 @@ When user says "Finish up" or "Finish up #XXXX":
             ▼                         ▼                    ▼
 ┌──────────────────┐  ┌───────────────────────────────────────────┐
 │ VALIDATOR        │  │           DUAL-WORKER SYSTEM              │
-│ (Azure Sonnet)   │  │  ┌─────────────────┬─────────────────┐    │
-│                  │  │  │ WORKER-HEAVY    │ WORKER-LITE     │    │
-│ Decision valid.  │  │  │ (Azure Opus)    │ (Local DeepSeek)│    │
+│                  │  │  ┌─────────────────┬─────────────────┐    │
+│ Decision valid.  │  │  │ WORKER-HEAVY    │ WORKER-LITE     │    │
 │ >0.7 confidence  │  │  │                 │                 │    │
 │                  │  │  │ T2+ Complex:    │ T1 Lightweight: │    │
 │                  │  │  │ • Code gen      │ • File search   │    │
@@ -179,7 +178,7 @@ Primary classifies tasks and routes to the appropriate worker:
 
 **For ANY code/file operation:**
 1. Use `mcp__secondary-claude__*` tools to delegate to Worker
-2. Worker executes via Azure Opus 4.5
+2. Worker executes via configured AI connection
 3. Pass output through Critic for quality gate
 4. Synthesize and present to user
 

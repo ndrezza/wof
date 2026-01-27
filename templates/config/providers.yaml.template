@@ -28,12 +28,12 @@ providers:
     role: primary_orchestrator
     restrictions:
       - "PRIMARY DOES NOT CODE"
-      - "All coding delegated to Worker (Azure Opus)"
+      - "All coding delegated to Worker"
       - "All file operations delegated to Worker"
 
-  # WORKER - Azure AI Foundry (Opus)
+  # WORKER - Configurable AI connection
   azure_worker:
-    name: "Worker (Azure Opus)"
+    name: "Worker"
     description: "ALL code generation, file operations, execution"
     type: azure_ai_foundry_anthropic
     status: active
@@ -52,9 +52,9 @@ providers:
       opus: "claude-opus-4-5-20251101"
     role: worker
 
-  # VALIDATOR - Azure AI Foundry (Sonnet)
+  # VALIDATOR - Configurable AI connection
   azure_validator:
-    name: "Validator (Azure Sonnet)"
+    name: "Validator"
     description: "Decision validation with >0.7 confidence threshold"
     type: azure_ai_foundry_anthropic
     status: active
@@ -72,9 +72,9 @@ providers:
     role: validator
     threshold: 0.7
 
-  # CRITIC - Azure Codex Mini
+  # CRITIC - Configurable AI connection
   azure_critic:
-    name: "Critic (Azure Codex Mini)"
+    name: "Critic"
     description: "Skeptical quality gate - ≥80% viability required"
     type: azure_openai
     status: active
@@ -92,10 +92,10 @@ providers:
     role: critic
     threshold: 0.8
 
-  # WORKER-LITE - Local DeepSeek (Lightweight Tasks)
-  local_deepseek_worker:
-    name: "Worker-Lite (Local DeepSeek)"
-    description: "Lightweight worker for simple tasks - runs locally"
+  # WORKER-LITE - Configurable AI connection (Lightweight Tasks)
+  local_worker:
+    name: "Worker-Lite"
+    description: "Lightweight worker for simple tasks"
     type: openai_compatible
     status: active
     configuration:
@@ -121,7 +121,7 @@ orchestration:
   roles:
     orchestrator: anthropic_direct
     worker_heavy: azure_worker
-    worker_lite: local_deepseek_worker
+    worker_lite: local_worker
     validator: azure_validator
     critic: azure_critic
 
@@ -160,7 +160,7 @@ orchestration:
       tier: t3_advanced
 
     lightweight_tasks:
-      target: local_deepseek_worker
+      target: local_worker
       tier: t1_lightweight
 
 # Task delegation configuration
@@ -174,7 +174,7 @@ task_delegation:
 
   WorkerLite:
     description: "Simple tasks: search, format, navigate (T1)"
-    provider: local_deepseek_worker
+    provider: local_worker
     mcp_server: tertiary-claude-lite
     tier: t1_lightweight
     model: deepseek-coder-v2-lite-instruct

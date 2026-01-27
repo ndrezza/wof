@@ -210,7 +210,7 @@ your-project/
 | Script | Purpose |
 |--------|---------|
 | `get-worker-routing.ps1` | Classify tasks and route to Worker-Lite or Worker-Heavy |
-| `validate-autonomy.ps1` | Validate decisions with Azure Sonnet (>0.7 confidence) |
+| `validate-autonomy.ps1` | Validate decisions (>0.7 confidence threshold) |
 | `bias-control.ps1` | Skeptical Q&A quality gate (≥80% viability) |
 | `phase-gate.ps1` | 9-phase workflow enforcement |
 | `check-orchestration-health.ps1` | AI component status dashboard |

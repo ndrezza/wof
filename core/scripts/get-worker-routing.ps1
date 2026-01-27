@@ -4,9 +4,9 @@
 
 .DESCRIPTION
     Analyzes task descriptions and context to route to the appropriate worker:
-    - Worker-Lite (Local DeepSeek): T1 lightweight tasks
-    - Worker-Heavy (Azure Opus): T2+ complex tasks
-    
+    - Worker-Lite: T1 lightweight tasks (simple, fast)
+    - Worker-Heavy: T2+ complex tasks (code gen, testing, refactoring)
+
     Based on routing-rules.md specifications.
 
 .PARAMETER Task

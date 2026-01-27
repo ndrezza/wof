@@ -10,7 +10,7 @@
 #
 # Risk levels:
 #   LOW -> Auto-allow
-#   MEDIUM -> Consult Azure Sonnet validator
+#   MEDIUM -> Consult Validator validator
 #   HIGH -> Let user decide (normal flow)
 
 param()
@@ -103,7 +103,7 @@ function Get-RiskLevel {
     return "medium"
 }
 
-# Consult Azure Sonnet validator
+# Consult Validator validator
 function Invoke-Validator {
     param([string]$Command)
 
