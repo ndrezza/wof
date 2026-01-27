@@ -376,12 +376,15 @@ After successful installation, inform the user:
 ```
 WOF has been installed successfully!
 
+** RESTART CLAUDE CODE to load the new /wof skills and commands **
+
 Next steps:
-1. Open Claude Code in your project: cd "{TARGET}" && claude
-2. The AI orchestrator is now active - it will route tasks to appropriate workers
-3. Use "Finish up #XXXX" to complete work items with proper workflow
+1. Restart Claude Code (exit and re-open, or start a new session)
+2. Open Claude Code in your project: cd "{TARGET}" && claude
+3. The AI orchestrator is now active - it will route tasks to appropriate workers
+4. Use "Finish up #XXXX" to complete work items with proper workflow
 
 Optional:
-- Configure Worker-Lite (AI4) using local models, vLLMs, network deployments, or cloud providers
-- Run .\.ai\scripts\check-orchestration-health.ps1 to see component status
+- Run /wof configure to set up AI connections interactively
+- Run /wof status to see component status
 ```

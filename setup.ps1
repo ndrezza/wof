@@ -594,6 +594,8 @@ Write-Host "====================================================================
 Write-Host ""
 Write-Success "Framework installed to: $TargetPath"
 Write-Host ""
+Write-Host "  ** RESTART CLAUDE CODE to load new skills and commands (/wof) **" -ForegroundColor Yellow
+Write-Host ""
 
 Write-Host "Next steps:" -ForegroundColor Yellow
 Write-Host ""
