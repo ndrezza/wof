@@ -36,20 +36,20 @@ Based on the arguments, execute the appropriate action:
 ### If arguments contain "update"
 Run the update-framework script:
 ```powershell
-.\.ai\scripts\update-framework.ps1
+./.ai/scripts/update-framework.ps1
 ```
 If arguments also contain "--dry-run" or "-DryRun", add the -DryRun flag.
 
 ### If arguments contain "status"
 Run the orchestration health check:
 ```powershell
-.\.ai\scripts\check-orchestration-health.ps1
+./.ai/scripts/check-orchestration-health.ps1
 ```
 
 ### If arguments contain "configure"
 Run the configuration wizard:
 ```powershell
-.\.ai\scripts\configure-wizard.ps1
+./.ai/scripts/configure-wizard.ps1
 ```
 If arguments also contain "--test-only" or "-TestOnly", add the -TestOnly flag.
 If arguments also contain "--quick" or "-Quick", add the -Quick flag.
@@ -57,13 +57,13 @@ If arguments also contain "--quick" or "-Quick", add the -Quick flag.
 ### If arguments contain "route"
 Extract the task description (everything after "route") and run:
 ```powershell
-.\.ai\scripts\get-worker-routing.ps1 -TaskDescription "<task description>"
+./.ai/scripts/get-worker-routing.ps1 -TaskDescription "<task description>"
 ```
 
 ### If arguments contain "remove"
 Run the remove-framework script:
 ```powershell
-.\.ai\scripts\remove-framework.ps1
+./.ai/scripts/remove-framework.ps1
 ```
 If arguments also contain "--dry-run" or "-DryRun", add the -DryRun flag.
 If arguments also contain "--force" or "-Force", add the -Force flag.
