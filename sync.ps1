@@ -341,15 +341,10 @@ $woiSectionTemplate = Join-Path $scriptRoot "templates\WOI-SECTION.md"
 if (Test-Path $claudeMdPath) {
     $claudeMdContent = Get-Content $claudeMdPath -Raw
 
-    # Read installation mode
-    $modeFile = Join-Path $aiDir ".mode"
-    $installMode = if (Test-Path $modeFile) { (Get-Content $modeFile).Trim() } else { "Unknown" }
-
     # Load WOI section template and replace placeholders
     if (Test-Path $woiSectionTemplate) {
         $woiSection = Get-Content $woiSectionTemplate -Raw
         $woiSection = $woiSection -replace '\{\{WOI_VERSION\}\}', $newVersion
-        $woiSection = $woiSection -replace '\{\{WOI_MODE\}\}', $installMode
 
         $startMarker = "<!-- WOI-SECTION-START"
         $endMarker = "<!-- WOI-SECTION-END -->"
@@ -388,6 +383,152 @@ if (Test-Path $claudeMdPath) {
 } else {
     Write-Info "CLAUDE.md not found, skipping WOI section injection"
 }
+
+# Sync WOI section in .gitignore
+Write-Step "Syncing WOI section in .gitignore..."
+$gitignoreFile = Join-Path $TargetPath ".gitignore"
+
+# Build list of files to gitignore (individual files, not folders)
+$woiGitignoreFiles = @()
+
+# .ai/ files from manifest
+foreach ($file in $newInstalledFiles) {
+    # Files in manifest are relative to .ai/, convert to gitignore format
+    if ($file -notmatch "^\.claude/") {
+        $woiGitignoreFiles += "/.ai/$file"
+    }
+}
+
+# .ai/ metadata files
+$woiGitignoreFiles += "/.ai/.framework-version"
+$woiGitignoreFiles += "/.ai/.installed-files.json"
+
+# Always gitignore sensitive files and directories
+$woiGitignoreFiles += "/.ai/state/"
+$woiGitignoreFiles += "/.ai/logs/"
+
+# .claude/ files
+$claudeDir = Join-Path $TargetPath ".claude"
+if (Test-Path $claudeDir) {
+    $claudeSettings = Join-Path $claudeDir "settings.json"
+    if (Test-Path $claudeSettings) {
+        $woiGitignoreFiles += "/.claude/settings.json"
+    }
+    $wofSkillsDir = Join-Path $claudeDir "skills"
+    if (Test-Path $wofSkillsDir) {
+        Get-ChildItem $wofSkillsDir -Directory | ForEach-Object {
+            $skillName = $_.Name
+            $skillFile = Join-Path $_.FullName "SKILL.md"
+            if (Test-Path $skillFile) {
+                $woiGitignoreFiles += "/.claude/skills/$skillName/SKILL.md"
+            }
+        }
+    }
+}
+
+# CLAUDE.md
+$woiGitignoreFiles += "/CLAUDE.md"
+
+# Sort the list
+$woiGitignoreFiles = $woiGitignoreFiles | Sort-Object | Select-Object -Unique
+
+# Build WOI section content
+$woiSectionStart = "# <!-- WOI-SECTION-START - Managed by WOF, do not edit manually -->"
+$woiSectionEnd = "# <!-- WOI-SECTION-END -->"
+$woiSectionContent = @($woiSectionStart, "# Workload Orchestration Instance (WOI)")
+$woiSectionContent += $woiGitignoreFiles
+$woiSectionContent += $woiSectionEnd
+
+# Check for legacy folder-based entries and migrate
+$migratedLegacy = $false
+if (Test-Path $gitignoreFile) {
+    $gitignoreContent = Get-Content $gitignoreFile -Raw
+
+    # Detect legacy folder-based entries
+    $legacyPatterns = @("/.ai/`$", "/.claude/`$", "^/.ai/`$", "^/.claude/`$")
+    $hasLegacyAi = $gitignoreContent -match "(?m)^/?\.ai/?`$"
+    $hasLegacyClaude = $gitignoreContent -match "(?m)^/?\.claude/?`$"
+
+    if ($hasLegacyAi -or $hasLegacyClaude) {
+        Write-Warn "Detected legacy folder-based gitignore entries, migrating to file-level..."
+        $migratedLegacy = $true
+
+        if (-not $DryRun) {
+            # Remove legacy entries
+            $lines = Get-Content $gitignoreFile
+            $newLines = @()
+            foreach ($line in $lines) {
+                $trimmed = $line.Trim()
+                # Skip legacy WOF entries
+                if ($trimmed -match "^/?\.ai/?`$" -or
+                    $trimmed -match "^/?\.claude/?`$" -or
+                    $trimmed -match "^/?CLAUDE\.md`$" -or
+                    $trimmed -match "# Workload Orchestration Framework.*Mode") {
+                    continue
+                }
+                $newLines += $line
+            }
+
+            # Clean up multiple consecutive blank lines
+            $cleanedLines = @()
+            $lastWasBlank = $false
+            foreach ($line in $newLines) {
+                $isBlank = [string]::IsNullOrWhiteSpace($line)
+                if (-not ($isBlank -and $lastWasBlank)) {
+                    $cleanedLines += $line
+                }
+                $lastWasBlank = $isBlank
+            }
+
+            $gitignoreContent = $cleanedLines -join "`n"
+            Write-Info "Removed legacy folder-based entries"
+        } else {
+            Write-Info "Would remove legacy folder-based entries"
+        }
+    }
+
+    # Check if WOI section already exists
+    if ($gitignoreContent -match "# <!-- WOI-SECTION-START") {
+        # Replace existing WOI section
+        $pattern = "(?s)# <!-- WOI-SECTION-START.*?# <!-- WOI-SECTION-END -->"
+        $newWoiSection = $woiSectionContent -join "`n"
+        if ($DryRun) {
+            Write-Info "Would update WOI section in .gitignore"
+        } else {
+            $gitignoreContent = $gitignoreContent -replace $pattern, $newWoiSection
+            Set-Content -Path $gitignoreFile -Value $gitignoreContent -NoNewline
+            Write-Info "Updated WOI section in .gitignore"
+        }
+    } else {
+        # Append WOI section
+        if ($DryRun) {
+            Write-Info "Would add WOI section to .gitignore"
+        } else {
+            if (-not $gitignoreContent.EndsWith("`n")) {
+                $gitignoreContent += "`n"
+            }
+            $gitignoreContent += "`n" + ($woiSectionContent -join "`n")
+            Set-Content -Path $gitignoreFile -Value $gitignoreContent -NoNewline
+            Write-Info "Added WOI section to .gitignore"
+        }
+    }
+} else {
+    # Create new .gitignore with WOI section
+    if ($DryRun) {
+        Write-Info "Would create .gitignore with WOI section"
+    } else {
+        Set-Content -Path $gitignoreFile -Value ($woiSectionContent -join "`n")
+        Write-Info "Created .gitignore with WOI section"
+    }
+}
+
+if ($migratedLegacy -and -not $DryRun) {
+    Write-Host ""
+    Write-Warn "MIGRATION: Converted from folder-based to file-level gitignore"
+    Write-Host "    User-created files in .ai/ are now trackable in git" -ForegroundColor Gray
+}
+
+Write-Info "Gitignore covers $($woiGitignoreFiles.Count) WOI files"
 
 # Summary
 Write-Host ""

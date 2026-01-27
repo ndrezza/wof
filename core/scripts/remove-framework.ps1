@@ -78,7 +78,7 @@ $AiDir = Split-Path $ScriptDir -Parent
 $ProjectRoot = Split-Path $AiDir -Parent
 
 # Validate we're in the right location
-if (-not (Test-Path (Join-Path $AiDir ".mode")) -and -not (Test-Path (Join-Path $AiDir "config"))) {
+if (-not (Test-Path (Join-Path $AiDir ".framework-version")) -and -not (Test-Path (Join-Path $AiDir "config"))) {
     Write-Host "[-] ERROR: This script must be run from within a project's .ai/scripts directory" -ForegroundColor Red
     Write-Host "    Expected path: <project>/.ai/scripts/remove-framework.ps1" -ForegroundColor Gray
     exit 1
@@ -87,10 +87,6 @@ if (-not (Test-Path (Join-Path $AiDir ".mode")) -and -not (Test-Path (Join-Path 
 # Read current version
 $VersionFile = Join-Path $AiDir ".framework-version"
 $CurrentVersion = if (Test-Path $VersionFile) { (Get-Content $VersionFile).Trim() } else { "unknown" }
-
-# Read installation mode
-$ModeFile = Join-Path $AiDir ".mode"
-$InstallMode = if (Test-Path $ModeFile) { (Get-Content $ModeFile).Trim() } else { "unknown" }
 
 # Read installation manifest
 $ManifestFile = Join-Path $AiDir ".installed-files.json"
@@ -120,7 +116,6 @@ Write-Host "====================================================================
 Write-Host ""
 Write-Host "  Project:         $ProjectRoot" -ForegroundColor Gray
 Write-Host "  Version:         $CurrentVersion" -ForegroundColor Gray
-Write-Host "  Install Mode:    $InstallMode" -ForegroundColor Gray
 Write-Host "  Removal Mode:    $(if ($RemoveAll) { 'FULL (all files)' } else { 'MANIFEST (WOF files only)' })" -ForegroundColor $(if ($RemoveAll) { "Yellow" } else { "Gray" })
 
 if ($DryRun) {
@@ -199,7 +194,7 @@ else {
     }
 
     # 2. WOF metadata files in .ai/
-    $metadataFiles = @(".framework-version", ".mode", ".installed-files.json")
+    $metadataFiles = @(".framework-version", ".installed-files.json")
     foreach ($metaFile in $metadataFiles) {
         $fullPath = Join-Path $AiDir $metaFile
         if (Test-Path $fullPath) {
@@ -311,33 +306,18 @@ if ($UserFilesPreserved.Count -gt 0) {
     }
 }
 
-# Check .gitignore for WOF entries
+# Check .gitignore for WOI section
 $GitIgnorePath = Join-Path $ProjectRoot ".gitignore"
-$WofGitIgnorePatterns = @(
-    "/.ai/",
-    "/.claude/",
-    "/CLAUDE.md",
-    ".ai/config/credentials.local.ps1",
-    ".ai/state/",
-    ".ai/logs/"
-)
+$HasWoiSection = $false
 
-$GitIgnoreEntriesToRemove = @()
 if ((Test-Path $GitIgnorePath) -and -not $KeepGitIgnore) {
     $gitIgnoreContent = Get-Content $GitIgnorePath -Raw
-    foreach ($pattern in $WofGitIgnorePatterns) {
-        if ($gitIgnoreContent -match [regex]::Escape($pattern)) {
-            $GitIgnoreEntriesToRemove += $pattern
-        }
-    }
-
-    if ($GitIgnoreEntriesToRemove.Count -gt 0) {
+    if ($gitIgnoreContent -match "# <!-- WOI-SECTION-START") {
+        $HasWoiSection = $true
         Write-Host ""
-        Write-Host "[*] .gitignore entries to clean up:" -ForegroundColor Cyan
+        Write-Host "[*] .gitignore WOI section to remove:" -ForegroundColor Cyan
         Write-Host ""
-        foreach ($entry in $GitIgnoreEntriesToRemove) {
-            Write-Host "    [GITIGNORE] $entry" -ForegroundColor Yellow
-        }
+        Write-Host "    [GITIGNORE] WOI section (managed by WOF)" -ForegroundColor Yellow
     }
 }
 
@@ -461,47 +441,27 @@ else {
     Write-Host "       No empty directories to remove" -ForegroundColor Gray
 }
 
-# Clean up .gitignore
+# Clean up .gitignore (remove WOI section)
 Write-Host "[3/4] Cleaning .gitignore..." -ForegroundColor Cyan
 
-if ($GitIgnoreEntriesToRemove.Count -gt 0 -and (Test-Path $GitIgnorePath)) {
+if ($HasWoiSection -and (Test-Path $GitIgnorePath)) {
     try {
-        $gitIgnoreLines = Get-Content $GitIgnorePath
-        $newGitIgnoreLines = @()
-        $removedEntries = 0
+        $gitIgnoreContent = Get-Content $GitIgnorePath -Raw
 
-        foreach ($line in $gitIgnoreLines) {
-            $shouldRemove = $false
-            foreach ($pattern in $WofGitIgnorePatterns) {
-                if ($line.Trim() -eq $pattern -or $line.Trim() -eq $pattern.TrimStart('/')) {
-                    $shouldRemove = $true
-                    $removedEntries++
-                    break
-                }
-            }
-            if (-not $shouldRemove) {
-                $newGitIgnoreLines += $line
-            }
+        # Remove WOI section using marker-based regex
+        $pattern = "(?s)\r?\n?# <!-- WOI-SECTION-START.*?# <!-- WOI-SECTION-END -->\r?\n?"
+        $newContent = $gitIgnoreContent -replace $pattern, "`n"
+
+        # Clean up multiple consecutive newlines
+        $newContent = $newContent -replace "(\r?\n){3,}", "`n`n"
+        $newContent = $newContent.Trim()
+
+        if ($newContent) {
+            $newContent += "`n"
         }
 
-        # Remove consecutive blank lines
-        $cleanedLines = @()
-        $lastWasBlank = $false
-        foreach ($line in $newGitIgnoreLines) {
-            $isBlank = [string]::IsNullOrWhiteSpace($line)
-            if (-not ($isBlank -and $lastWasBlank)) {
-                $cleanedLines += $line
-            }
-            $lastWasBlank = $isBlank
-        }
-
-        # Trim trailing blank lines
-        while ($cleanedLines.Count -gt 0 -and [string]::IsNullOrWhiteSpace($cleanedLines[-1])) {
-            $cleanedLines = $cleanedLines[0..($cleanedLines.Count - 2)]
-        }
-
-        Set-Content $GitIgnorePath -Value $cleanedLines
-        Write-Host "       Removed $removedEntries WOF entries" -ForegroundColor Green
+        Set-Content $GitIgnorePath -Value $newContent -NoNewline
+        Write-Host "       Removed WOI section from .gitignore" -ForegroundColor Green
     }
     catch {
         Write-Host "       Warning: Could not clean .gitignore - $_" -ForegroundColor Yellow

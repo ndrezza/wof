@@ -1,7 +1,7 @@
 <!-- WOI-SECTION-START - Do not edit this section manually, managed by WOF -->
 ## Workload Orchestration Instance (WOI)
 
-> **WOI v{{WOI_VERSION}}** installed in {{WOI_MODE}} mode
+> **WOI v{{WOI_VERSION}}** installed
 
 This project has the Workload Orchestration Framework installed as a local instance (WOI).
 

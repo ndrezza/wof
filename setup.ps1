@@ -7,17 +7,14 @@
     processes templates with user-provided values, and configures the
     necessary hooks and MCP servers.
 
+    WOI (Workload Orchestration Instance) files are always gitignored at the
+    individual file level, allowing user-created files in .ai/ to be tracked.
+
 .PARAMETER TargetPath
     The root path of the target project where the framework will be installed.
 
 .PARAMETER SolutionName
     The name of the solution (used in templates).
-
-.PARAMETER Mode
-    Installation mode:
-    - "SourceControlled" (default): Framework is committed to git, shared with team.
-      Only credentials and logs are gitignored.
-    - "LocalOnly": Entire framework is gitignored. Personal use only, invisible to team.
 
 .PARAMETER GitDefaultBranch
     The default git branch name (default: "main").
@@ -38,9 +35,6 @@
     .\setup.ps1 -TargetPath "C:\code\MyProject" -SolutionName "MyProject"
 
 .EXAMPLE
-    .\setup.ps1 -TargetPath "C:\code\MyProject" -SolutionName "MyProject" -Mode LocalOnly
-
-.EXAMPLE
     .\setup.ps1 -TargetPath "C:\code\MyProject" -SolutionName "MyProject" -GitDefaultBranch "master" -BuildCommand "npm run build"
 #>
 
@@ -50,10 +44,6 @@ param(
 
     [Parameter(Mandatory=$false)]
     [string]$SolutionName = "",
-
-    [Parameter(Mandatory=$false)]
-    [ValidateSet("SourceControlled", "LocalOnly")]
-    [string]$Mode = "SourceControlled",
 
     [Parameter(Mandatory=$false)]
     [string]$GitDefaultBranch = "main",
@@ -101,15 +91,9 @@ Write-Host "====================================================================
 Write-Host ""
 Write-Host "  Target:        $TargetPath"
 Write-Host "  Solution:      $SolutionName"
-Write-Host "  Mode:          $Mode" -ForegroundColor $(if ($Mode -eq "LocalOnly") { "Yellow" } else { "White" })
 Write-Host "  Git Branch:    $GitDefaultBranch"
 Write-Host "  Build Command: $BuildCommand"
 Write-Host ""
-
-if ($Mode -eq "LocalOnly") {
-    Write-Warn "LOCAL ONLY MODE: Framework will be gitignored and not shared with team"
-    Write-Host ""
-}
 
 # Placeholder values
 $placeholders = @{
@@ -320,63 +304,9 @@ if (-not $SkipTemplates) {
     }
 }
 
-# Step 6: Create .gitignore entries based on mode
-Write-Step "Configuring .gitignore for $Mode mode..."
-$gitignoreFile = Join-Path $TargetPath ".gitignore"
-
-# Define entries based on mode
-if ($Mode -eq "LocalOnly") {
-    # Local Only: Entire framework is gitignored
-    $gitignoreEntries = @(
-        "",
-        "# Workload Orchestration Framework (WOF) - Local Only Mode",
-        "/.ai/",
-        "/.claude/",
-        "/CLAUDE.md"
-    )
-} else {
-    # Source Controlled: Only sensitive files gitignored
-    $gitignoreEntries = @(
-        "",
-        "# Workload Orchestration Framework (WOF) - Source Controlled Mode",
-        "/.ai/config/credentials.local.ps1",
-        "/.ai/state/",
-        "/.ai/logs/"
-    )
-}
-
-if (Test-Path $gitignoreFile) {
-    $gitignoreContent = Get-Content $gitignoreFile -Raw
-    $added = $false
-
-    # Ensure file ends with newline before adding entries
-    if ($gitignoreContent -and -not $gitignoreContent.EndsWith("`n")) {
-        Add-Content -Path $gitignoreFile -Value ""
-    }
-
-    foreach ($entry in $gitignoreEntries) {
-        if ($entry -and ($gitignoreContent -notmatch [regex]::Escape($entry))) {
-            Add-Content -Path $gitignoreFile -Value $entry
-            if ($entry -notmatch "^#") {
-                Write-Host "    Added to .gitignore: $entry" -ForegroundColor Gray
-            }
-            $added = $true
-        }
-    }
-
-    if (-not $added) {
-        Write-Host "    .gitignore already configured" -ForegroundColor Gray
-    }
-} else {
-    $gitignoreContent = $gitignoreEntries -join "`n"
-    Set-Content -Path $gitignoreFile -Value $gitignoreContent
-    Write-Host "    Created .gitignore with AI entries" -ForegroundColor Gray
-}
-
-# Store mode in .ai directory for reference
-$modeFile = Join-Path $aiDir ".mode"
-Set-Content -Path $modeFile -Value $Mode
-Write-Host "    Saved mode to .ai/.mode: $Mode" -ForegroundColor Gray
+# Step 6: Build list of WOI files to gitignore (will be finalized after manifest)
+# We'll collect all installed files and add them to .gitignore with WOI section markers
+$woiGitignoreFiles = @()
 
 # Step 7: Generate installed files manifest
 Write-Step "Generating installed files manifest..."
@@ -413,7 +343,6 @@ $frameworkVersion = if (Test-Path $versionFile) { (Get-Content $versionFile).Tri
 $manifest = @{
     version = $frameworkVersion
     installedAt = (Get-Date -Format "yyyy-MM-ddTHH:mm:ssZ")
-    mode = $Mode
     files = $installedFiles | Sort-Object
 }
 
@@ -428,25 +357,95 @@ $targetVersionFile = Join-Path $aiDir ".framework-version"
 Set-Content -Path $targetVersionFile -Value $frameworkVersion
 Write-Host "    Created: .ai/.framework-version ($frameworkVersion)" -ForegroundColor Gray
 
-# Step 8: Display next steps
+# Step 8: Configure .gitignore with WOI section (file-level entries)
+Write-Step "Configuring .gitignore with WOI section..."
+$gitignoreFile = Join-Path $TargetPath ".gitignore"
+
+# Build list of files to gitignore (individual files, not folders)
+$woiGitignoreFiles = @()
+
+# .ai/ files from manifest
+foreach ($file in $installedFiles) {
+    $woiGitignoreFiles += "/.ai/$file"
+}
+
+# .ai/ metadata files
+$woiGitignoreFiles += "/.ai/.framework-version"
+$woiGitignoreFiles += "/.ai/.installed-files.json"
+
+# Always gitignore sensitive files
+$woiGitignoreFiles += "/.ai/state/"
+$woiGitignoreFiles += "/.ai/logs/"
+
+# .claude/ files
+$claudeDir = Join-Path $TargetPath ".claude"
+if (Test-Path $claudeDir) {
+    $claudeSettings = Join-Path $claudeDir "settings.json"
+    if (Test-Path $claudeSettings) {
+        $woiGitignoreFiles += "/.claude/settings.json"
+    }
+    $skillsDir = Join-Path $claudeDir "skills"
+    if (Test-Path $skillsDir) {
+        Get-ChildItem $skillsDir -Directory | ForEach-Object {
+            $skillName = $_.Name
+            $skillFile = Join-Path $_.FullName "SKILL.md"
+            if (Test-Path $skillFile) {
+                $woiGitignoreFiles += "/.claude/skills/$skillName/SKILL.md"
+            }
+        }
+    }
+}
+
+# CLAUDE.md
+$woiGitignoreFiles += "/CLAUDE.md"
+
+# Sort the list
+$woiGitignoreFiles = $woiGitignoreFiles | Sort-Object
+
+# Build WOI section content
+$woiSectionStart = "# <!-- WOI-SECTION-START - Managed by WOF, do not edit manually -->"
+$woiSectionEnd = "# <!-- WOI-SECTION-END -->"
+$woiSectionContent = @($woiSectionStart, "# Workload Orchestration Instance (WOI)")
+$woiSectionContent += $woiGitignoreFiles
+$woiSectionContent += $woiSectionEnd
+
+# Update or create .gitignore
+if (Test-Path $gitignoreFile) {
+    $gitignoreContent = Get-Content $gitignoreFile -Raw
+
+    # Check if WOI section already exists
+    if ($gitignoreContent -match "# <!-- WOI-SECTION-START") {
+        # Replace existing WOI section
+        $pattern = "(?s)# <!-- WOI-SECTION-START.*?# <!-- WOI-SECTION-END -->"
+        $newWoiSection = $woiSectionContent -join "`n"
+        $gitignoreContent = $gitignoreContent -replace $pattern, $newWoiSection
+        Set-Content -Path $gitignoreFile -Value $gitignoreContent -NoNewline
+        Write-Host "    Updated WOI section in .gitignore" -ForegroundColor Gray
+    } else {
+        # Append WOI section
+        if (-not $gitignoreContent.EndsWith("`n")) {
+            Add-Content -Path $gitignoreFile -Value ""
+        }
+        Add-Content -Path $gitignoreFile -Value ""
+        Add-Content -Path $gitignoreFile -Value ($woiSectionContent -join "`n")
+        Write-Host "    Added WOI section to .gitignore" -ForegroundColor Gray
+    }
+} else {
+    # Create new .gitignore with WOI section
+    Set-Content -Path $gitignoreFile -Value ($woiSectionContent -join "`n")
+    Write-Host "    Created .gitignore with WOI section" -ForegroundColor Gray
+}
+
+Write-Host "    Gitignored $($woiGitignoreFiles.Count) WOI files" -ForegroundColor Gray
+
+# Step 9: Display next steps
 Write-Host ""
 Write-Host "================================================================================" -ForegroundColor Green
 Write-Host "                              SETUP COMPLETE                                   " -ForegroundColor Green
 Write-Host "================================================================================" -ForegroundColor Green
 Write-Host ""
 Write-Success "Framework installed to: $TargetPath"
-Write-Success "Mode: $Mode"
 Write-Host ""
-
-if ($Mode -eq "LocalOnly") {
-    Write-Host "LOCAL ONLY MODE:" -ForegroundColor Yellow
-    Write-Host "  - Framework files are gitignored (not visible to team)"
-    Write-Host "  - No commits needed - just start using Claude Code"
-    Write-Host "  - To switch to SourceControlled mode later:"
-    Write-Host "    1. Remove .ai/, .claude/, CLAUDE.md from .gitignore"
-    Write-Host "    2. Commit the framework files"
-    Write-Host ""
-}
 
 Write-Host "Next steps:" -ForegroundColor Yellow
 Write-Host ""
@@ -472,5 +471,4 @@ return @{
     Success = $true
     TargetPath = $TargetPath
     SolutionName = $SolutionName
-    Mode = $Mode
 }

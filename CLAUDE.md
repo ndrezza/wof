@@ -23,21 +23,23 @@
 | **WOF** | Workload Orchestration **Framework** | The source repository, codebase, and product |
 | **WOI** | Workload Orchestration **Instance** | A local installation of WOF in a target project |
 
+WOI files are always gitignored at the individual file level (not folder-level), allowing user-created files in `.ai/` to be tracked if desired.
+
 ### This Repo: Inception Mode
 
 This repo is unique - it's **both WOF and a WOI**:
 
 1. **WOF** - The framework source code lives here (`core/`, `templates/`, `setup.ps1`, etc.)
-2. **WOI** - A LocalOnly instance is installed here (`.ai/`, `.claude/`) for self-orchestration
+2. **WOI** - An instance is installed here (`.ai/`, `.claude/`) for self-orchestration
 
-**Why inception?** This allows using AI orchestration to develop WOF itself. The WOI is in LocalOnly mode so instance files don't pollute the framework source.
+**Why inception?** This allows using AI orchestration to develop WOF itself. WOI files are gitignored so instance files don't pollute the framework source.
 
 | Path | Is WOF? | Is WOI? | Git Status |
 |------|---------|---------|------------|
 | `core/`, `templates/`, `setup.ps1`, `sync.ps1` | Yes | No | Tracked |
 | `CLAUDE.md`, `README.md`, `VERSION` | Yes | No | Tracked |
-| `.ai/` (scripts, config, memory) | No | Yes | Gitignored |
-| `.claude/` (settings, skills) | No | Yes | Gitignored |
+| `.ai/` (scripts, config, memory) | No | Yes | Gitignored (file-level) |
+| `.claude/` (settings, skills) | No | Yes | Gitignored (file-level) |
 
 **When editing this repo:**
 - Changes to `core/`, `templates/`, scripts → You're improving **WOF**
