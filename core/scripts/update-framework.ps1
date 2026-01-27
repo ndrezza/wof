@@ -133,6 +133,56 @@ if ($CurrentVersion -eq $RemoteVersion -and -not $Force) {
     exit 0
 }
 
+# Check for breaking change (major version bump)
+function Get-MajorVersion {
+    param([string]$Version)
+    if ($Version -eq "unknown" -or [string]::IsNullOrWhiteSpace($Version)) {
+        return -1
+    }
+    # Handle versions with 'v' prefix
+    $cleanVersion = $Version.TrimStart('v', 'V')
+    $parts = $cleanVersion.Split('.')
+    if ($parts.Length -ge 1) {
+        $major = 0
+        if ([int]::TryParse($parts[0], [ref]$major)) {
+            return $major
+        }
+    }
+    return -1
+}
+
+$CurrentMajor = Get-MajorVersion -Version $CurrentVersion
+$RemoteMajor = Get-MajorVersion -Version $RemoteVersion
+
+if ($CurrentMajor -ge 0 -and $RemoteMajor -ge 0 -and $RemoteMajor -gt $CurrentMajor) {
+    Write-Host ""
+    Write-Host "================================================================================" -ForegroundColor Red
+    Write-Host "                         BREAKING CHANGE DETECTED                              " -ForegroundColor Red
+    Write-Host "================================================================================" -ForegroundColor Red
+    Write-Host ""
+    Write-Host "  The remote version ($RemoteVersion) has a MAJOR version bump from your" -ForegroundColor Yellow
+    Write-Host "  current version ($CurrentVersion). This indicates breaking changes that" -ForegroundColor Yellow
+    Write-Host "  cannot be safely applied via update." -ForegroundColor Yellow
+    Write-Host ""
+    Write-Host "  To upgrade to v$RemoteMajor.x.x:" -ForegroundColor Cyan
+    Write-Host ""
+    Write-Host "  1. Remove the current WOF installation:" -ForegroundColor White
+    Write-Host "       /wof remove" -ForegroundColor Gray
+    Write-Host "       - or -" -ForegroundColor DarkGray
+    Write-Host "       .\.ai\scripts\remove-framework.ps1" -ForegroundColor Gray
+    Write-Host ""
+    Write-Host "  2. Restart your Claude Code / AI session" -ForegroundColor White
+    Write-Host "       (This ensures a clean slate without cached WOI context)" -ForegroundColor DarkGray
+    Write-Host ""
+    Write-Host "  3. Run fresh setup from the new version:" -ForegroundColor White
+    Write-Host "       irm https://raw.githubusercontent.com/ndrezza/wof/main/setup.ps1 | iex" -ForegroundColor Gray
+    Write-Host ""
+    Write-Host "================================================================================" -ForegroundColor Red
+    Write-Host ""
+    Remove-Item $TempDir -Recurse -Force -ErrorAction SilentlyContinue
+    exit 2
+}
+
 # Step 3: Verify sync.ps1 exists
 Write-Host "[3/4] Verifying sync script..." -ForegroundColor Cyan
 $SyncScript = Join-Path $TempDir "sync.ps1"
