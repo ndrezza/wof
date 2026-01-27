@@ -77,12 +77,42 @@ Write-Host ""
 
 $coreDir = Join-Path $scriptRoot "core"
 $aiDir = Join-Path $TargetPath ".ai"
+$configDir = Join-Path $aiDir "config"
 
 $updated = @()
 $skipped = @()
 $preserved = @()
 $deprecated = @()
 $newInstalledFiles = @()
+
+# Check for v1 -> v2 config migration
+$oldProvidersYaml = Join-Path $configDir "providers.yaml"
+$oldCredentialsPs1 = Join-Path $configDir "credentials.local.ps1"
+$newConnectionsJson = Join-Path $configDir "connections.json"
+$newRolesJson = Join-Path $configDir "roles.json"
+
+$hasOldConfig = (Test-Path $oldProvidersYaml) -or (Test-Path $oldCredentialsPs1)
+$hasNewConfig = (Test-Path $newConnectionsJson) -and (Test-Path $newRolesJson)
+
+if ($hasOldConfig -and -not $hasNewConfig) {
+    Write-Step "Detected v1 configuration format - running migration..."
+    $migrateScript = Join-Path $scriptRoot "core\scripts\migrate-config.ps1"
+    if (Test-Path $migrateScript) {
+        if ($DryRun) {
+            Write-Info "Would run: migrate-config.ps1 -TargetPath '$TargetPath' -DryRun"
+            & $migrateScript -TargetPath $TargetPath -DryRun
+        } else {
+            $migrationResult = & $migrateScript -TargetPath $TargetPath
+            if ($migrationResult.Migrated) {
+                Write-Success "Configuration migrated from v1 to v2 format"
+                Write-Info "Connections: $($migrationResult.ConnectionsCount), Roles: $($migrationResult.RolesCount)"
+            }
+        }
+    } else {
+        Write-Warn "migrate-config.ps1 not found, skipping configuration migration"
+    }
+    Write-Host ""
+}
 
 # Load previous installed files manifest
 $installedManifestFile = Join-Path $aiDir ".installed-files.json"
@@ -406,6 +436,17 @@ $woiGitignoreFiles += "/.ai/.installed-files.json"
 # Always gitignore sensitive files and directories
 $woiGitignoreFiles += "/.ai/state/"
 $woiGitignoreFiles += "/.ai/logs/"
+
+# Add v2 config files if they exist (credentials contain secrets)
+if (Test-Path (Join-Path $configDir "credentials.local.json")) {
+    $woiGitignoreFiles += "/.ai/config/credentials.local.json"
+}
+if (Test-Path (Join-Path $configDir "connections.json")) {
+    $woiGitignoreFiles += "/.ai/config/connections.json"
+}
+if (Test-Path (Join-Path $configDir "roles.json")) {
+    $woiGitignoreFiles += "/.ai/config/roles.json"
+}
 
 # .claude/ files
 $claudeDir = Join-Path $TargetPath ".claude"

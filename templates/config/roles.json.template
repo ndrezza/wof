@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "version": "2.0.0",
+  "description": "Role-to-connection mapping. Defines which AI connection each role uses.",
+  "roles": {
+    "primary": {
+      "description": "Orchestrator - understands requirements, delegates work",
+      "connection": "native",
+      "model": "claude-opus-4-5-20251101",
+      "restrictions": ["PRIMARY DOES NOT CODE", "All coding delegated to Worker"]
+    },
+    "worker-heavy": {
+      "description": "Complex code generation, testing, refactoring (T2+ tasks)",
+      "connection": "ai1",
+      "model": "claude-opus-4-5-20251101",
+      "mcp_server": "secondary-claude",
+      "fallback": null
+    },
+    "worker-lite": {
+      "description": "Lightweight tasks - search, format, navigate (T1 tasks)",
+      "connection": "local1",
+      "model": "deepseek-coder-v2-lite-instruct",
+      "mcp_server": "tertiary-claude-lite",
+      "fallback": "worker-heavy"
+    },
+    "validator": {
+      "description": "Decision validation with confidence scoring",
+      "connection": "ai1",
+      "model": "claude-sonnet-4-5",
+      "threshold": 0.7
+    },
+    "friend": {
+      "description": "Rules guardian - enforces CLAUDE.md compliance",
+      "connection": "ai2",
+      "model": "gpt-4o"
+    },
+    "critic": {
+      "description": "Quality gate - skeptical review of outputs",
+      "connection": "ai3",
+      "model": "gpt-5.1-codex-mini",
+      "threshold": 0.8
+    }
+  }
+}

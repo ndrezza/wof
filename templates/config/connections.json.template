@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "version": "2.0.0",
+  "description": "Role-agnostic AI connection definitions. See roles.json for role-to-connection mapping.",
+  "connections": {
+    "ai1": {
+      "alias": "Azure Anthropic",
+      "description": "Azure AI Foundry with Anthropic models (Opus, Sonnet)",
+      "type": "azure_ai_foundry_anthropic",
+      "endpoint": "${AI1_ENDPOINT}",
+      "api_key": "${AI1_API_KEY}",
+      "api_version": "2023-06-01",
+      "models": ["claude-opus-4-5-20251101", "claude-sonnet-4-5"],
+      "context_window": 200000
+    },
+    "ai2": {
+      "alias": "Azure OpenAI",
+      "description": "Azure OpenAI Service (GPT-4o, etc.)",
+      "type": "azure_openai",
+      "endpoint": "${AI2_ENDPOINT}",
+      "api_key": "${AI2_API_KEY}",
+      "api_version": "2025-01-01-preview",
+      "models": ["gpt-4o"],
+      "context_window": 128000
+    },
+    "ai3": {
+      "alias": "Azure Codex",
+      "description": "Azure OpenAI Service with Codex models",
+      "type": "azure_openai",
+      "endpoint": "${AI3_ENDPOINT}",
+      "api_key": "${AI3_API_KEY}",
+      "api_version": "2025-04-01-preview",
+      "models": ["gpt-5.1-codex-mini"],
+      "context_window": 32000
+    },
+    "local1": {
+      "alias": "Local DeepSeek",
+      "description": "Local model server (LM Studio, Ollama, etc.)",
+      "type": "openai_compatible",
+      "endpoint": "${LOCAL1_ENDPOINT}",
+      "api_key": "",
+      "models": ["deepseek-coder-v2-lite-instruct"],
+      "context_window": 32000
+    },
+    "native": {
+      "alias": "Claude Code Native",
+      "description": "Native Claude Code connection (no external API)",
+      "type": "claude_code_native",
+      "models": ["claude-opus-4-5-20251101"]
+    }
+  }
+}

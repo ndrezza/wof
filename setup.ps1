@@ -64,7 +64,11 @@ param(
     [switch]$SkipTemplates,
 
     [Parameter(Mandatory=$false)]
-    [switch]$Force
+    [switch]$Force,
+
+    [Parameter(Mandatory=$false)]
+    [ValidateSet("v2", "legacy")]
+    [string]$ConfigFormat = "v2"
 )
 
 $ErrorActionPreference = "Stop"
@@ -103,6 +107,7 @@ if ($AdoOrganization -and $AdoProject) {
     Write-Host "  ADO Org:       $AdoOrganization"
     Write-Host "  ADO Project:   $AdoProject"
 }
+Write-Host "  Config Format: $ConfigFormat"
 Write-Host ""
 
 # Placeholder values
@@ -308,13 +313,27 @@ if (-not $SkipTemplates) {
         }
     }
 
-    # Config templates
-    $configTemplates = @(
-        "config\providers.yaml.template",
-        "config\models.yaml.template",
-        "config\credentials.local.ps1.template",
-        "config\ai-rules.md.template"
-    )
+    # Config templates - depends on ConfigFormat
+    if ($ConfigFormat -eq "v2") {
+        # v2 format: JSON-based configuration
+        $configTemplates = @(
+            "config\connections.json.template",
+            "config\roles.json.template",
+            "config\credentials.local.json.template",
+            "config\models.yaml.template",
+            "config\ai-rules.md.template"
+        )
+        Write-Host "    Using v2 config format (JSON-based)" -ForegroundColor Cyan
+    } else {
+        # Legacy format: YAML/PS1 configuration
+        $configTemplates = @(
+            "config\providers.yaml.template",
+            "config\models.yaml.template",
+            "config\credentials.local.ps1.template",
+            "config\ai-rules.md.template"
+        )
+        Write-Host "    Using legacy config format (YAML/PS1)" -ForegroundColor Yellow
+    }
 
     foreach ($template in $configTemplates) {
         $source = Join-Path $templatesDir $template
@@ -392,10 +411,17 @@ $gitignoreFile = Join-Path $TargetPath ".gitignore"
 # Define which files are "userdata" (preserved after WOF removal)
 # These contain user customizations, secrets, or project-specific content
 $userdataPatterns = @(
-    "config/credentials.local.ps1",   # API keys, connection strings - CRITICAL
+    # v2 config format (JSON)
+    "config/credentials.local.json",  # API keys, connection strings - CRITICAL (v2)
+    "config/connections.json",        # Customized AI connections (v2)
+    "config/roles.json",              # Customized role mappings (v2)
+    # Legacy config format (YAML/PS1)
+    "config/credentials.local.ps1",   # API keys, connection strings - CRITICAL (legacy)
+    "config/providers.yaml",          # Customized provider settings (legacy)
+    # Shared config
     "config/models.yaml",             # Customized model tiers
-    "config/providers.yaml",          # Customized provider settings
     "config/ai-rules.md",             # Customized AI behavior rules
+    # Memory
     "memory/architecture.md",         # Project-specific architecture
     "memory/conventions.md",          # Project-specific conventions
     "memory/current-sprint.md"        # Active work tracking
@@ -561,8 +587,13 @@ Write-Host ""
 Write-Host "Next steps:" -ForegroundColor Yellow
 Write-Host ""
 Write-Host "  1. Configure credentials:" -ForegroundColor Cyan
-Write-Host "     Edit: .ai/config/credentials.local.ps1"
-Write-Host "     Add your Azure AI Foundry and OpenAI API keys"
+if ($ConfigFormat -eq "v2") {
+    Write-Host "     Edit: .ai/config/credentials.local.json"
+    Write-Host "     Fill in AI1_ENDPOINT, AI1_API_KEY, AI2_*, AI3_*, LOCAL1_*"
+} else {
+    Write-Host "     Edit: .ai/config/credentials.local.ps1"
+    Write-Host "     Add your Azure AI Foundry and OpenAI API keys"
+}
 Write-Host ""
 Write-Host "  2. Set up MCP server:" -ForegroundColor Cyan
 Write-Host "     claude mcp add --scope local secondary-claude -- claude mcp serve"

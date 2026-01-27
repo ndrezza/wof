@@ -43,8 +43,9 @@ Your role is to:
 | Routing Script | `.ai/scripts/get-worker-routing.ps1` |
 | Agent Definitions | `.ai/agents/` |
 | Workflows | `.ai/workflows/` |
+| **AI Connections** | `.ai/config/connections.json` |
+| **Role Mappings** | `.ai/config/roles.json` |
 | Model Tiers | `.ai/config/models.yaml` |
-| Providers | `.ai/config/providers.yaml` |
 
 ## Mandatory Pre-Work Checklist
 
@@ -75,12 +76,12 @@ When user says "Finish up" or "Finish up {{WORK_ITEM_PREFIX}}XXXX":
 
 ```
 ┌─────────────────────────────────────────────────┬─────────────┐
-│  PRIMARY (Opus 4.5) - ORCHESTRATOR              │   FRIEND    │
-│  Anthropic Direct API                           │   (GPT-4o)  │
-│                                                 │             │
-│  • Understand requirements                      │  Rules      │
-│  • Break down work                              │  Guardian   │
-│  • Classify task complexity (T1/T2+)            │► CLAUDE.md  │
+│  PRIMARY - ORCHESTRATOR                         │   FRIEND    │
+│  Native Claude Code                             │             │
+│                                                 │  Rules      │
+│  • Understand requirements                      │  Guardian   │
+│  • Break down work                              │► CLAUDE.md  │
+│  • Classify task complexity (T1/T2+)            │             │
 │  • Route to appropriate Worker                  │             │
 │  • Consult Friend for rules compliance          │             │
 │  • Consult Validator for decisions              │             │
@@ -92,9 +93,8 @@ When user says "Finish up" or "Finish up {{WORK_ITEM_PREFIX}}XXXX":
             ▼                         ▼                    ▼
 ┌──────────────────┐  ┌───────────────────────────────────────────┐
 │ VALIDATOR        │  │           DUAL-WORKER SYSTEM              │
-│ (Azure Sonnet)   │  │  ┌─────────────────┬─────────────────┐    │
-│                  │  │  │ WORKER-HEAVY    │ WORKER-LITE     │    │
-│ Decision valid.  │  │  │ (Azure Opus)    │ (Local DeepSeek)│    │
+│                  │  │  ┌─────────────────┬─────────────────┐    │
+│ Decision valid.  │  │  │ WORKER-HEAVY    │ WORKER-LITE     │    │
 │ >0.7 confidence  │  │  │                 │                 │    │
 │                  │  │  │ T2+ Complex:    │ T1 Lightweight: │    │
 │                  │  │  │ • Code gen      │ • File search   │    │
@@ -107,7 +107,6 @@ When user says "Finish up" or "Finish up {{WORK_ITEM_PREFIX}}XXXX":
                                           ▼
                               ┌──────────────────┐
                               │ CRITIC           │
-                              │ (Codex Mini)     │
                               │                  │
                               │ Skeptical        │
                               │ quality gate     │
@@ -115,14 +114,17 @@ When user says "Finish up" or "Finish up {{WORK_ITEM_PREFIX}}XXXX":
                               └──────────────────┘
 ```
 
-| Component | Backend | Role |
-|-----------|---------|------|
-| **Primary** | Anthropic Direct (Opus 4.5) | Orchestrator (NO coding) |
-| **Friend** | Azure GPT-4o | Rules/CLAUDE.md guardian |
-| **Validator** | Azure Sonnet 4.5 | Decision validation (>0.7) |
-| **Worker-Heavy** | Azure Opus 4.5 | T2+ complex tasks (code gen, testing, refactoring) |
-| **Worker-Lite** | Local DeepSeek v2 Lite | T1 lightweight tasks (search, format, navigate) |
-| **Critic** | Azure Codex Mini | Quality gate (≥80%) |
+| Role | Description | Config |
+|------|-------------|--------|
+| **Primary** | Orchestrator (NO coding) | See `roles.json` |
+| **Worker-Heavy** | T2+ complex tasks (code gen, testing, refactoring) | See `roles.json` |
+| **Worker-Lite** | T1 lightweight tasks (search, format, navigate) | See `roles.json` |
+| **Validator** | Decision validation (>0.7 threshold) | See `roles.json` |
+| **Friend** | Rules/CLAUDE.md guardian | See `roles.json` |
+| **Critic** | Quality gate (≥80% threshold) | See `roles.json` |
+
+> **Configuration:** Role-to-connection mappings are defined in `.ai/config/roles.json`.
+> AI connections are defined in `.ai/config/connections.json`.
 
 ## Task Routing
 
@@ -203,16 +205,17 @@ All AI context is centralized in `.ai/`:
 ```
 .ai/
 ├── memory/
-│   ├── architecture.md      # Stable system knowledge
-│   ├── conventions.md       # Coding standards
-│   └── current-sprint.md    # Active work (UPDATE FREQUENTLY)
+│   ├── architecture.md        # Stable system knowledge
+│   ├── conventions.md         # Coding standards
+│   └── current-sprint.md      # Active work (UPDATE FREQUENTLY)
 ├── config/
-│   ├── models.yaml          # Tiered model definitions
-│   ├── providers.yaml       # Provider configuration
-│   └── credentials.local.ps1 # Local credentials (gitignored)
-├── agents/                  # Agent personas
-├── workflows/               # Process definitions
-└── scripts/                 # Automation scripts
+│   ├── connections.json       # AI connection definitions (v2)
+│   ├── roles.json             # Role-to-connection mappings (v2)
+│   ├── credentials.local.json # Local credentials (gitignored, v2)
+│   └── models.yaml            # Tiered model definitions
+├── agents/                    # Agent personas
+├── workflows/                 # Process definitions
+└── scripts/                   # Automation scripts
 ```
 
 ### Update Triggers

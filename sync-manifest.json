@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "description": "Defines sync behavior for Workload Orchestration Framework (WOF) updates",
-  "version": "1.2.7",
-  
+  "version": "2.0.0",
+
   "overwrite": {
     "description": "Files that are always overwritten on sync (framework core)",
     "patterns": [
@@ -20,17 +20,18 @@
       ".claude/skills/*/SKILL.md"
     ]
   },
-  
+
   "always_preserve": {
     "description": "Files that are never touched by sync",
     "patterns": [
       ".ai/memory/current-sprint.md",
       ".ai/config/credentials.local.ps1",
+      ".ai/config/credentials.local.json",
       ".ai/memory/local-dev-setup.md",
       ".ai/.deprecated/*"
     ]
   },
-  
+
   "template_only": {
     "description": "Files created from templates only during setup, not updated on sync",
     "patterns": [
@@ -40,7 +41,18 @@
       ".ai/memory/conventions.md",
       ".ai/config/providers.yaml",
       ".ai/config/models.yaml",
-      ".ai/config/ai-rules.md"
+      ".ai/config/ai-rules.md",
+      ".ai/config/connections.json",
+      ".ai/config/roles.json"
+    ]
+  },
+
+  "deprecated": {
+    "description": "Files from v1 format that are auto-migrated to v2 and backed up",
+    "note": "These files are still supported but will be migrated on sync",
+    "patterns": [
+      ".ai/config/providers.yaml",
+      ".ai/config/credentials.local.ps1"
     ]
   }
 }
