@@ -140,11 +140,20 @@ function Test-Endpoint {
 
     try {
         # Build test URL based on type
+        # Note: azure_ai_foundry_anthropic doesn't have a /models endpoint, so we test with a minimal messages call
         $testUrl = switch ($Type) {
-            "azure_ai_foundry_anthropic" { "$Url/models?api-version=2023-06-01" }
+            "azure_ai_foundry_anthropic" { "$Url/v1/messages" }
             "azure_openai" { "$Url/openai/models?api-version=2025-01-01-preview" }
             "openai_compatible" { "$Url/v1/models" }
             default { "$Url/v1/models" }
+        }
+
+        # For Anthropic, we need to POST a minimal message to test
+        if ($Type -eq "azure_ai_foundry_anthropic") {
+            $Method = "POST"
+            $Body = '{"model":"claude-opus-4-5-20251101","max_tokens":1,"messages":[{"role":"user","content":"ping"}]}'
+            $Headers["anthropic-version"] = "2023-06-01"
+            $Headers["Content-Type"] = "application/json"
         }
 
         $params = @{
@@ -216,9 +225,11 @@ foreach ($roleName in $roleNames) {
         $connType = if ($aiConnections.ContainsKey($conn)) { $aiConnections[$conn].Type } else { "openai_compatible" }
 
         $headers = @{}
-        if ($connType -eq "azure_ai_foundry_anthropic" -or $connType -eq "azure_openai") {
+        if ($connType -eq "azure_openai") {
+            # Azure OpenAI uses api-key header
             $headers["api-key"] = $cred.ApiKey
         } elseif ($cred.ApiKey) {
+            # Azure AI Foundry Anthropic and OpenAI-compatible use Bearer token
             $headers["Authorization"] = "Bearer $($cred.ApiKey)"
         }
 
