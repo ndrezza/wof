@@ -1,7 +1,12 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "version": "2.0.0",
-  "description": "Role-agnostic AI connection definitions. See roles.json for role-to-connection mapping.",
+  "description": "Role-agnostic AI connection definitions (AI1-AI10). See roles.json for role-to-connection mapping.",
+  "_instructions": [
+    "All 10 AI slots (ai1-ai10) can be configured with any connection type.",
+    "Use the configuration wizard: .ai/scripts/configure-wizard.ps1",
+    "Or edit this file manually and credentials.local.json for API keys."
+  ],
   "connections": {
     "ai1": {
       "alias": "Azure Anthropic",
@@ -50,18 +55,68 @@
       },
       "default_model": "gpt-5.1-codex-mini"
     },
-    "local1": {
-      "alias": "Local DeepSeek",
-      "description": "Local model server (LM Studio, Ollama, etc.)",
+    "ai4": {
+      "alias": "",
+      "description": "Available AI slot",
       "type": "openai_compatible",
-      "endpoint": "${LOCAL1_ENDPOINT}",
-      "api_key": "",
-      "models": {
-        "deepseek-coder-v2-lite-instruct": {
-          "context_window": 32000
-        }
-      },
-      "default_model": "deepseek-coder-v2-lite-instruct"
+      "endpoint": "${AI4_ENDPOINT}",
+      "api_key": "${AI4_API_KEY}",
+      "models": {},
+      "default_model": ""
+    },
+    "ai5": {
+      "alias": "",
+      "description": "Available AI slot",
+      "type": "openai_compatible",
+      "endpoint": "${AI5_ENDPOINT}",
+      "api_key": "${AI5_API_KEY}",
+      "models": {},
+      "default_model": ""
+    },
+    "ai6": {
+      "alias": "",
+      "description": "Available AI slot",
+      "type": "openai_compatible",
+      "endpoint": "${AI6_ENDPOINT}",
+      "api_key": "${AI6_API_KEY}",
+      "models": {},
+      "default_model": ""
+    },
+    "ai7": {
+      "alias": "",
+      "description": "Available AI slot",
+      "type": "openai_compatible",
+      "endpoint": "${AI7_ENDPOINT}",
+      "api_key": "${AI7_API_KEY}",
+      "models": {},
+      "default_model": ""
+    },
+    "ai8": {
+      "alias": "",
+      "description": "Available AI slot",
+      "type": "openai_compatible",
+      "endpoint": "${AI8_ENDPOINT}",
+      "api_key": "${AI8_API_KEY}",
+      "models": {},
+      "default_model": ""
+    },
+    "ai9": {
+      "alias": "",
+      "description": "Available AI slot",
+      "type": "openai_compatible",
+      "endpoint": "${AI9_ENDPOINT}",
+      "api_key": "${AI9_API_KEY}",
+      "models": {},
+      "default_model": ""
+    },
+    "ai10": {
+      "alias": "",
+      "description": "Available AI slot",
+      "type": "openai_compatible",
+      "endpoint": "${AI10_ENDPOINT}",
+      "api_key": "${AI10_API_KEY}",
+      "models": {},
+      "default_model": ""
     },
     "native": {
       "alias": "Claude Code Native",

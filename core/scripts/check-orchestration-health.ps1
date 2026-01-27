@@ -21,24 +21,41 @@ param(
 
 $ErrorActionPreference = "SilentlyContinue"
 
-# Load credentials - try v2 JSON first, then fall back to v1 PS1
+# Load credentials and connections
 $configDir = Join-Path $PSScriptRoot "..\config"
 $credentialsJsonPath = Join-Path $configDir "credentials.local.json"
+$connectionsJsonPath = Join-Path $configDir "connections.json"
+$rolesJsonPath = Join-Path $configDir "roles.json"
 $credentialsPs1Path = Join-Path $configDir "credentials.local.ps1"
 
+# Initialize credential storage
+$aiCredentials = @{}
+$aiConnections = @{}
+$roleConfig = @{}
+
+# Load v2 JSON credentials
 if (Test-Path $credentialsJsonPath) {
-    # v2 format: JSON credentials
     try {
         $creds = Get-Content $credentialsJsonPath -Raw | ConvertFrom-Json
         if ($creds.credentials) {
-            # Map v2 generic names to environment variables
-            if ($creds.credentials.AI1_ENDPOINT) { $env:AI1_ENDPOINT = $creds.credentials.AI1_ENDPOINT }
-            if ($creds.credentials.AI1_API_KEY) { $env:AI1_API_KEY = $creds.credentials.AI1_API_KEY }
-            if ($creds.credentials.AI2_ENDPOINT) { $env:AI2_ENDPOINT = $creds.credentials.AI2_ENDPOINT }
-            if ($creds.credentials.AI2_API_KEY) { $env:AI2_API_KEY = $creds.credentials.AI2_API_KEY }
-            if ($creds.credentials.AI3_ENDPOINT) { $env:AI3_ENDPOINT = $creds.credentials.AI3_ENDPOINT }
-            if ($creds.credentials.AI3_API_KEY) { $env:AI3_API_KEY = $creds.credentials.AI3_API_KEY }
-            if ($creds.credentials.LOCAL1_ENDPOINT) { $env:LOCAL1_ENDPOINT = $creds.credentials.LOCAL1_ENDPOINT }
+            # Dynamically load AI1-AI10 credentials
+            1..10 | ForEach-Object {
+                $id = "AI$_"
+                $endpointKey = "${id}_ENDPOINT"
+                $apiKeyKey = "${id}_API_KEY"
+
+                if ($creds.credentials.$endpointKey) {
+                    $aiCredentials[$id] = @{
+                        Endpoint = $creds.credentials.$endpointKey
+                        ApiKey = $creds.credentials.$apiKeyKey
+                    }
+                    # Also set environment variables for backward compatibility
+                    Set-Variable -Name "env:${endpointKey}" -Value $creds.credentials.$endpointKey -Scope Script
+                    if ($creds.credentials.$apiKeyKey) {
+                        Set-Variable -Name "env:${apiKeyKey}" -Value $creds.credentials.$apiKeyKey -Scope Script
+                    }
+                }
+            }
         }
     } catch {
         Write-Host "Warning: Could not parse credentials.local.json" -ForegroundColor Yellow
@@ -48,28 +65,72 @@ if (Test-Path $credentialsJsonPath) {
     . $credentialsPs1Path
 }
 
-# Normalize environment variables - support both v1 and v2 naming
-# v2 names take precedence if both exist
-$localEndpointVar = if ($env:LOCAL1_ENDPOINT) { $env:LOCAL1_ENDPOINT } elseif ($env:LOCAL_WORKER_ENDPOINT) { $env:LOCAL_WORKER_ENDPOINT } else { "http://127.0.0.1:1234" }
-$friendEndpoint = if ($env:AI2_ENDPOINT) { $env:AI2_ENDPOINT } else { $env:AZURE_OPENAI_ENDPOINT }
-$friendApiKey = if ($env:AI2_API_KEY) { $env:AI2_API_KEY } else { $env:AZURE_OPENAI_API_KEY }
-$criticEndpoint = if ($env:AI3_ENDPOINT) { $env:AI3_ENDPOINT } else { $env:AZURE_CODEX_ENDPOINT }
-$criticApiKey = if ($env:AI3_API_KEY) { $env:AI3_API_KEY } else { $env:AZURE_CODEX_API_KEY }
+# Load connections configuration
+if (Test-Path $connectionsJsonPath) {
+    try {
+        $connJson = Get-Content $connectionsJsonPath -Raw | ConvertFrom-Json
+        if ($connJson.connections) {
+            $connJson.connections.PSObject.Properties | ForEach-Object {
+                $aiConnections[$_.Name] = @{
+                    Alias = $_.Value.alias
+                    Type = $_.Value.type
+                    Description = $_.Value.description
+                }
+            }
+        }
+    } catch {
+        Write-Host "Warning: Could not parse connections.json" -ForegroundColor Yellow
+    }
+}
 
-# Health check results (role-agnostic names - see roles.json for backend config)
+# Load roles configuration
+if (Test-Path $rolesJsonPath) {
+    try {
+        $rolesJson = Get-Content $rolesJsonPath -Raw | ConvertFrom-Json
+        if ($rolesJson.roles) {
+            $rolesJson.roles.PSObject.Properties | ForEach-Object {
+                $roleConfig[$_.Name] = @{
+                    Connection = $_.Value.connection
+                    Model = $_.Value.model
+                }
+            }
+        }
+    } catch {
+        Write-Host "Warning: Could not parse roles.json" -ForegroundColor Yellow
+    }
+}
+
+# Health check results - dynamically built from roles
 $healthStatus = @{
-    Primary = @{ Name = "Primary"; Status = "ONLINE"; Latency = 0 }
-    WorkerHeavy = @{ Name = "Worker-Heavy (AI1)"; Status = "UNKNOWN"; Latency = 0 }
-    WorkerLite = @{ Name = "Worker-Lite (LOCAL1)"; Status = "UNKNOWN"; Latency = 0 }
-    Validator = @{ Name = "Validator (AI1)"; Status = "UNKNOWN"; Latency = 0 }
-    Friend = @{ Name = "Friend (AI2)"; Status = "UNKNOWN"; Latency = 0 }
-    Critic = @{ Name = "Critic (AI3)"; Status = "UNKNOWN"; Latency = 0 }
+    Primary = @{ Name = "Primary"; Status = "ONLINE"; Latency = 0; Connection = "native" }
+}
+
+# Add role-based health status entries
+$roleNames = @("worker-heavy", "worker-lite", "validator", "friend", "critic")
+foreach ($roleName in $roleNames) {
+    $conn = if ($roleConfig.ContainsKey($roleName)) { $roleConfig[$roleName].Connection } else { "" }
+    $displayName = switch ($roleName) {
+        "worker-heavy" { "Worker-Heavy" }
+        "worker-lite" { "Worker-Lite" }
+        "validator" { "Validator" }
+        "friend" { "Friend" }
+        "critic" { "Critic" }
+    }
+
+    $connDisplay = if ($conn) { $conn.ToUpper() } else { "N/C" }
+    $healthStatus[$roleName] = @{
+        Name = "$displayName ($connDisplay)"
+        Status = "UNKNOWN"
+        Latency = 0
+        Connection = $conn
+    }
 }
 
 function Test-Endpoint {
     param(
         [string]$Name,
         [string]$Url,
+        [string]$Type,
         [string]$Method = "GET",
         [hashtable]$Headers = @{},
         [string]$Body = $null,
@@ -79,8 +140,16 @@ function Test-Endpoint {
     $stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
 
     try {
+        # Build test URL based on type
+        $testUrl = switch ($Type) {
+            "azure_ai_foundry_anthropic" { "$Url/models?api-version=2023-06-01" }
+            "azure_openai" { "$Url/openai/models?api-version=2025-01-01-preview" }
+            "openai_compatible" { "$Url/v1/models" }
+            default { "$Url/v1/models" }
+        }
+
         $params = @{
-            Uri = $Url
+            Uri = $testUrl
             Method = $Method
             Headers = $Headers
             TimeoutSec = $TimeoutSec
@@ -103,6 +172,17 @@ function Test-Endpoint {
     }
     catch {
         $stopwatch.Stop()
+
+        # Check for auth errors
+        $statusCode = $_.Exception.Response.StatusCode.value__
+        if ($statusCode -eq 401 -or $statusCode -eq 403) {
+            return @{
+                Status = "AUTH_ERR"
+                Latency = $stopwatch.ElapsedMilliseconds
+                Error = "Authentication failed"
+            }
+        }
+
         return @{
             Status = "OFFLINE"
             Latency = $stopwatch.ElapsedMilliseconds
@@ -114,62 +194,50 @@ function Test-Endpoint {
 Write-Host "`n[Orchestration Health Check]" -ForegroundColor Cyan
 Write-Host "Testing AI components..." -ForegroundColor Gray
 
-# Test Worker-Lite (Local)
-Write-Host "  Checking Worker-Lite (Local)..." -ForegroundColor Gray -NoNewline
-$localResult = Test-Endpoint -Name "WorkerLite" -Url "$localEndpointVar/v1/models" -TimeoutSec 5
-$healthStatus.WorkerLite.Status = $localResult.Status
-$healthStatus.WorkerLite.Latency = $localResult.Latency
-if ($localResult.Status -eq "ONLINE") {
-    Write-Host " ONLINE (${($localResult.Latency)}ms)" -ForegroundColor Green
-} else {
-    Write-Host " OFFLINE" -ForegroundColor Red
-}
+# Test each role's connection
+foreach ($roleName in $roleNames) {
+    $roleStatus = $healthStatus[$roleName]
+    $conn = $roleStatus.Connection
 
-# Test Worker-Heavy (Azure Opus) - via MCP availability check
-Write-Host "  Checking Worker-Heavy (Azure Opus)..." -ForegroundColor Gray -NoNewline
-# We assume MCP secondary-claude is available if we're running
-$healthStatus.WorkerHeavy.Status = "ONLINE"
-$healthStatus.WorkerHeavy.Latency = 0
-Write-Host " ONLINE (MCP)" -ForegroundColor Green
+    Write-Host "  Checking $($roleStatus.Name)..." -ForegroundColor Gray -NoNewline
 
-# Test Validator (Azure Sonnet) - same endpoint as Worker-Heavy
-Write-Host "  Checking Validator (Azure Sonnet)..." -ForegroundColor Gray -NoNewline
-$healthStatus.Validator.Status = "ONLINE"
-$healthStatus.Validator.Latency = 0
-Write-Host " ONLINE (MCP)" -ForegroundColor Green
+    if (-not $conn -or $conn -eq "native") {
+        $healthStatus[$roleName].Status = "ONLINE"
+        $healthStatus[$roleName].Latency = 0
+        Write-Host " ONLINE (native)" -ForegroundColor Green
+        continue
+    }
 
-# Test Friend (AI2)
-Write-Host "  Checking Friend (AI2)..." -ForegroundColor Gray -NoNewline
-if ($friendEndpoint) {
-    $friendResult = Test-Endpoint -Name "Friend" -Url "$friendEndpoint/openai/models?api-version=2025-01-01-preview" -Headers @{ "api-key" = $friendApiKey } -TimeoutSec 10
-    $healthStatus.Friend.Status = $friendResult.Status
-    $healthStatus.Friend.Latency = $friendResult.Latency
-} else {
-    $healthStatus.Friend.Status = "NO_CREDS"
-}
-if ($healthStatus.Friend.Status -eq "ONLINE") {
-    Write-Host " ONLINE (${($healthStatus.Friend.Latency)}ms)" -ForegroundColor Green
-} elseif ($healthStatus.Friend.Status -eq "NO_CREDS") {
-    Write-Host " NO CREDENTIALS" -ForegroundColor Yellow
-} else {
-    Write-Host " OFFLINE" -ForegroundColor Red
-}
+    # Get AI number from connection (ai1 -> AI1, ai2 -> AI2, etc.)
+    $aiNum = $conn -replace 'ai', ''
+    $aiId = "AI$aiNum"
 
-# Test Critic (AI3)
-Write-Host "  Checking Critic (AI3)..." -ForegroundColor Gray -NoNewline
-if ($criticEndpoint) {
-    $criticResult = Test-Endpoint -Name "Critic" -Url "$criticEndpoint" -Headers @{ "api-key" = $criticApiKey } -TimeoutSec 10
-    $healthStatus.Critic.Status = $criticResult.Status
-    $healthStatus.Critic.Latency = $criticResult.Latency
-} else {
-    $healthStatus.Critic.Status = "NO_CREDS"
-}
-if ($healthStatus.Critic.Status -eq "ONLINE") {
-    Write-Host " ONLINE (${($healthStatus.Critic.Latency)}ms)" -ForegroundColor Green
-} elseif ($healthStatus.Critic.Status -eq "NO_CREDS") {
-    Write-Host " NO CREDENTIALS" -ForegroundColor Yellow
-} else {
-    Write-Host " OFFLINE" -ForegroundColor Red
+    if ($aiCredentials.ContainsKey($aiId)) {
+        $cred = $aiCredentials[$aiId]
+        $connType = if ($aiConnections.ContainsKey($conn)) { $aiConnections[$conn].Type } else { "openai_compatible" }
+
+        $headers = @{}
+        if ($connType -eq "azure_ai_foundry_anthropic" -or $connType -eq "azure_openai") {
+            $headers["api-key"] = $cred.ApiKey
+        } elseif ($cred.ApiKey) {
+            $headers["Authorization"] = "Bearer $($cred.ApiKey)"
+        }
+
+        $result = Test-Endpoint -Name $roleName -Url $cred.Endpoint -Type $connType -Headers $headers -TimeoutSec 10
+        $healthStatus[$roleName].Status = $result.Status
+        $healthStatus[$roleName].Latency = $result.Latency
+
+        if ($result.Status -eq "ONLINE") {
+            Write-Host " ONLINE ($($result.Latency)ms)" -ForegroundColor Green
+        } elseif ($result.Status -eq "AUTH_ERR") {
+            Write-Host " AUTH ERROR" -ForegroundColor Yellow
+        } else {
+            Write-Host " OFFLINE" -ForegroundColor Red
+        }
+    } else {
+        $healthStatus[$roleName].Status = "NO_CREDS"
+        Write-Host " NO CREDENTIALS" -ForegroundColor Yellow
+    }
 }
 
 # Generate status indicators
@@ -179,6 +247,7 @@ function Get-StatusIndicator {
         "ONLINE" { return "[ON ]" }
         "OFFLINE" { return "[OFF]" }
         "NO_CREDS" { return "[N/C]" }
+        "AUTH_ERR" { return "[AUT]" }
         default { return "[???]" }
     }
 }
@@ -189,16 +258,24 @@ function Get-StatusColor {
         "ONLINE" { return "Green" }
         "OFFLINE" { return "Red" }
         "NO_CREDS" { return "Yellow" }
+        "AUTH_ERR" { return "Yellow" }
         default { return "Gray" }
     }
 }
 
 $primaryInd = Get-StatusIndicator $healthStatus.Primary.Status
-$workerHeavyInd = Get-StatusIndicator $healthStatus.WorkerHeavy.Status
-$workerLiteInd = Get-StatusIndicator $healthStatus.WorkerLite.Status
-$validatorInd = Get-StatusIndicator $healthStatus.Validator.Status
-$friendInd = Get-StatusIndicator $healthStatus.Friend.Status
-$criticInd = Get-StatusIndicator $healthStatus.Critic.Status
+$workerHeavyInd = Get-StatusIndicator $healthStatus["worker-heavy"].Status
+$workerLiteInd = Get-StatusIndicator $healthStatus["worker-lite"].Status
+$validatorInd = Get-StatusIndicator $healthStatus["validator"].Status
+$friendInd = Get-StatusIndicator $healthStatus["friend"].Status
+$criticInd = Get-StatusIndicator $healthStatus["critic"].Status
+
+# Get connection IDs for display
+$workerHeavyConn = if ($roleConfig.ContainsKey("worker-heavy")) { $roleConfig["worker-heavy"].Connection.ToUpper() } else { "N/C" }
+$workerLiteConn = if ($roleConfig.ContainsKey("worker-lite")) { $roleConfig["worker-lite"].Connection.ToUpper() } else { "N/C" }
+$validatorConn = if ($roleConfig.ContainsKey("validator")) { $roleConfig["validator"].Connection.ToUpper() } else { "N/C" }
+$friendConn = if ($roleConfig.ContainsKey("friend")) { $roleConfig["friend"].Connection.ToUpper() } else { "N/C" }
+$criticConn = if ($roleConfig.ContainsKey("critic")) { $roleConfig["critic"].Connection.ToUpper() } else { "N/C" }
 
 # Render the architecture diagram
 Write-Host "`n" -NoNewline
@@ -216,7 +293,7 @@ $diagram = @"
           v
 +---------------------------------------------------------+---------------+
 |  $primaryInd PRIMARY - ORCHESTRATOR                     | $friendInd FRIEND   |
-|        Native Claude Code                               |     (AI2)       |
+|        Native Claude Code                               |   ($friendConn)     |
 |                                                         |                 |
 |  Responsibilities:                                      |  Rules          |
 |  * Understand requirements                              |  Guardian       |
@@ -232,8 +309,8 @@ $diagram = @"
             v             v             v             v
 +------------------+  +-------------+  +-------------+  +------------------+
 | $validatorInd VALIDATOR  |  |$workerHeavyInd WORKER- |  |$workerLiteInd WORKER- |  | $criticInd CRITIC      |
-|     (AI1)        |  |    HEAVY    |  |    LITE     |  |     (AI3)        |
-|                  |  |    (AI1)    |  |  (LOCAL1)   |  |                  |
+|   ($validatorConn)       |  |    HEAVY    |  |    LITE     |  |   ($criticConn)       |
+|                  |  |  ($workerHeavyConn)    |  |  ($workerLiteConn)    |  |                  |
 | Decision valid.  |  |             |  |             |  | Skeptical        |
 | >0.7 confidence  |  | T2+ Tasks:  |  | T1 Tasks:   |  | quality gate     |
 |                  |  | * Code gen  |  | * Search    |  | >=80% viability  |
@@ -254,7 +331,9 @@ Write-Host " Online  " -NoNewline
 Write-Host "[OFF]" -ForegroundColor Red -NoNewline
 Write-Host " Offline  " -NoNewline
 Write-Host "[N/C]" -ForegroundColor Yellow -NoNewline
-Write-Host " No Credentials"
+Write-Host " No Credentials  " -NoNewline
+Write-Host "[AUT]" -ForegroundColor Yellow -NoNewline
+Write-Host " Auth Error"
 Write-Host "--------------------------------------------------------------------------------" -ForegroundColor Gray
 
 # Summary
@@ -264,7 +343,7 @@ $totalCount = $healthStatus.Count
 Write-Host "`n  Status: $onlineCount/$totalCount components online" -ForegroundColor $(if ($onlineCount -eq $totalCount) { "Green" } elseif ($onlineCount -ge 3) { "Yellow" } else { "Red" })
 
 # Worker routing recommendation
-if ($healthStatus.WorkerLite.Status -eq "ONLINE") {
+if ($healthStatus["worker-lite"].Status -eq "ONLINE") {
     Write-Host "  Routing: T1 tasks -> Worker-Lite, T2+ tasks -> Worker-Heavy" -ForegroundColor Green
 } else {
     Write-Host "  Routing: All tasks -> Worker-Heavy (Worker-Lite unavailable)" -ForegroundColor Yellow

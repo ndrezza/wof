@@ -19,6 +19,8 @@ Parse the arguments to determine which WOF command to run.
 | `update` | Update WOF to latest version from repository |
 | `update --dry-run` | Preview update changes without applying |
 | `status` | Check orchestration health and component status |
+| `configure` | Interactive AI configuration wizard |
+| `configure --test-only` | Only test existing connections |
 | `route <task>` | Classify a task and show routing decision (Worker-Lite vs Worker-Heavy) |
 | `remove` | Remove WOF scripts (preserves config & memory files) |
 | `remove --dry-run` | Preview what would be removed without making changes |
@@ -43,6 +45,14 @@ Run the orchestration health check:
 ```powershell
 .\.ai\scripts\check-orchestration-health.ps1
 ```
+
+### If arguments contain "configure"
+Run the configuration wizard:
+```powershell
+.\.ai\scripts\configure-wizard.ps1
+```
+If arguments also contain "--test-only" or "-TestOnly", add the -TestOnly flag.
+If arguments also contain "--quick" or "-Quick", add the -Quick flag.
 
 ### If arguments contain "route"
 Extract the task description (everything after "route") and run:

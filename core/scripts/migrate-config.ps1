@@ -121,11 +121,11 @@ if (Test-Path $oldProvidersYaml) {
                     "ai2"
                 }
             }
-            "openai_compatible" { "local1" }
+            "openai_compatible" { "ai4" }
             default { "ai$connectionIndex" }
         }
 
-        if ($connectionId -notmatch "^(native|ai[123]|local1)$") {
+        if ($connectionId -notmatch "^(native|ai[1-9]|ai10)$") {
             $connectionIndex++
         }
 
@@ -167,7 +167,7 @@ if (Test-Path $oldProvidersYaml) {
                     "ai1" { "AI1_ENDPOINT" }
                     "ai2" { "AI2_ENDPOINT" }
                     "ai3" { "AI3_ENDPOINT" }
-                    "local1" { "LOCAL1_ENDPOINT" }
+                    "ai4" { "AI4_ENDPOINT" }
                     default { $oldEnvVar }
                 }
                 $conn.endpoint = "`${$newEnvVar}"
@@ -303,7 +303,7 @@ if (Test-Path $oldCredentialsPs1) {
             "AZURE_OPENAI_API_KEY" { "AI2_API_KEY" }
             "AZURE_CODEX_ENDPOINT" { "AI3_ENDPOINT" }
             "AZURE_CODEX_API_KEY" { "AI3_API_KEY" }
-            "LOCAL_WORKER_ENDPOINT" { "LOCAL1_ENDPOINT" }
+            "LOCAL_WORKER_ENDPOINT" { "AI4_ENDPOINT" }
             default { $varName }
         }
 

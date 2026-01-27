@@ -589,7 +589,7 @@ Write-Host ""
 Write-Host "  1. Configure credentials:" -ForegroundColor Cyan
 if ($ConfigFormat -eq "v2") {
     Write-Host "     Edit: .ai/config/credentials.local.json"
-    Write-Host "     Fill in AI1_ENDPOINT, AI1_API_KEY, AI2_*, AI3_*, LOCAL1_*"
+    Write-Host "     Fill in AI1_ENDPOINT, AI1_API_KEY, AI2_*, AI3_*, AI4_* (for Worker-Lite)"
 } else {
     Write-Host "     Edit: .ai/config/credentials.local.ps1"
     Write-Host "     Add your Azure AI Foundry and OpenAI API keys"
@@ -604,6 +604,9 @@ Write-Host ""
 Write-Host "  4. Verify setup:" -ForegroundColor Cyan
 Write-Host "     .\.ai\scripts\check-orchestration-health.ps1"
 Write-Host ""
+Write-Host "  Or run the interactive configuration wizard:" -ForegroundColor Cyan
+Write-Host "     .\.ai\scripts\configure-wizard.ps1"
+Write-Host ""
 if ($AdoOrganization -and $AdoProject) {
     Write-Host "  5. Azure DevOps integration:" -ForegroundColor Cyan
     Write-Host "     ADO utilities installed to .ai/scripts/ado-utils.ps1"
@@ -614,6 +617,18 @@ if ($AdoOrganization -and $AdoProject) {
     Write-Host "  5. (Optional) Add Azure DevOps integration:" -ForegroundColor Cyan
     Write-Host "     Re-run setup with -AdoOrganization and -AdoProject parameters"
     Write-Host ""
+}
+
+# Optional: Run configuration wizard
+Write-Host "Would you like to configure AI connections now? [y/N]: " -NoNewline
+$configureChoice = Read-Host
+if ($configureChoice.ToLower() -eq "y") {
+    $wizardScript = Join-Path $aiDir "scripts\configure-wizard.ps1"
+    if (Test-Path $wizardScript) {
+        & $wizardScript
+    } else {
+        Write-Warn "Configuration wizard not found at: $wizardScript"
+    }
 }
 
 return @{

@@ -115,7 +115,7 @@ Remove-Item -Recurse -Force "$env:TEMP\wof-install"
 
 For each credential, interview the user. Only write values that are provided (skip placeholders for empty ones).
 
-**Note:** WOF v2.0 uses generic connection IDs (AI1, AI2, AI3, LOCAL1) instead of provider-specific names.
+**Note:** WOF v2.0 uses generic connection IDs (AI1-AI10) instead of provider-specific names.
 This allows role reassignment without changing credentials.
 
 ### Required Credentials
@@ -212,10 +212,10 @@ enables: "Critic role"
 depends_on: AI3_ENDPOINT
 ```
 
-#### LOCAL1_ENDPOINT (Local model server)
+#### AI4_ENDPOINT (Local model server / Worker-Lite)
 ```yaml
-id: LOCAL1_ENDPOINT
-prompt: "What is your local model endpoint? (Press Enter for default: http://localhost:1234)"
+id: AI4_ENDPOINT
+prompt: "What is your AI4/Worker-Lite endpoint? (Press Enter for default: http://localhost:1234)"
 required: false
 format: "http://localhost:{port}"
 default: "http://localhost:1234"
@@ -223,10 +223,11 @@ help: |
   For local models via LM Studio, Ollama, or similar:
   - LM Studio default: http://localhost:1234
   - Ollama default: http://localhost:11434
+  Or use a cloud provider for Worker-Lite tasks.
 sensitive: false
 enables: "Worker-Lite role (lightweight tasks)"
 skip_message: "Worker-Lite disabled. All tasks will route to Worker-Heavy."
-maps_to: "local1 connection in connections.json"
+maps_to: "ai4 connection in connections.json"
 ```
 
 ## CREDENTIAL_FILE_FORMAT
@@ -245,7 +246,7 @@ After collecting credentials, generate `.ai/config/credentials.local.json`:
     "AI2_API_KEY": "{AI2_API_KEY}",
     "AI3_ENDPOINT": "{AI3_ENDPOINT}",
     "AI3_API_KEY": "{AI3_API_KEY}",
-    "LOCAL1_ENDPOINT": "{LOCAL1_ENDPOINT}"
+    "AI4_ENDPOINT": "{AI4_ENDPOINT}"
   }
 }
 ```
@@ -385,7 +386,7 @@ Fix: Install Claude Code CLI or add to PATH
 | AI1 (Primary) | "NOT SET" | Add AI1_ENDPOINT and AI1_API_KEY in credentials.local.json |
 | AI2 (Secondary) | "NOT SET" | Optional - add AI2_* if you want Friend role |
 | AI3 (Tertiary) | "NOT SET" | Optional - add AI3_* if you want Critic role |
-| LOCAL1 | "NOT SET" | Optional - add LOCAL1_ENDPOINT or start LM Studio on port 1234 |
+| AI4 (Worker-Lite) | "NOT SET" | Optional - add AI4_ENDPOINT or start LM Studio on port 1234 |
 
 ## POST_INSTALLATION
 

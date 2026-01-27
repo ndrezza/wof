@@ -150,69 +150,97 @@ Write-Host ""
 # ============================================================================
 Write-Host "Credentials Configuration:" -ForegroundColor Cyan
 
-# Load credentials if they exist
-$credPath = Join-Path $aiDir "config\credentials.local.ps1"
-if (Test-Path $credPath) {
-    . $credPath
+# Load credentials - try v2 JSON first, then fall back to v1 PS1
+$credJsonPath = Join-Path $aiDir "config\credentials.local.json"
+$credPs1Path = Join-Path $aiDir "config\credentials.local.ps1"
+
+if (Test-Path $credJsonPath) {
+    # v2 format: JSON credentials
+    try {
+        $creds = Get-Content $credJsonPath -Raw | ConvertFrom-Json
+        if ($creds.credentials) {
+            # Map v2 generic names to environment variables
+            if ($creds.credentials.AI1_ENDPOINT) { $env:AI1_ENDPOINT = $creds.credentials.AI1_ENDPOINT }
+            if ($creds.credentials.AI1_API_KEY) { $env:AI1_API_KEY = $creds.credentials.AI1_API_KEY }
+            if ($creds.credentials.AI2_ENDPOINT) { $env:AI2_ENDPOINT = $creds.credentials.AI2_ENDPOINT }
+            if ($creds.credentials.AI2_API_KEY) { $env:AI2_API_KEY = $creds.credentials.AI2_API_KEY }
+            if ($creds.credentials.AI3_ENDPOINT) { $env:AI3_ENDPOINT = $creds.credentials.AI3_ENDPOINT }
+            if ($creds.credentials.AI3_API_KEY) { $env:AI3_API_KEY = $creds.credentials.AI3_API_KEY }
+            if ($creds.credentials.AI4_ENDPOINT) { $env:AI4_ENDPOINT = $creds.credentials.AI4_ENDPOINT }
+        }
+    } catch {
+        Write-Host "Warning: Could not parse credentials.local.json" -ForegroundColor Yellow
+    }
+} elseif (Test-Path $credPs1Path) {
+    # v1 format: PowerShell credentials (legacy)
+    . $credPs1Path
+    # Map legacy names to v2 generic names if not already set
+    if ($env:AZURE_ANTHROPIC_ENDPOINT -and -not $env:AI1_ENDPOINT) { $env:AI1_ENDPOINT = $env:AZURE_ANTHROPIC_ENDPOINT }
+    if ($env:AZURE_ANTHROPIC_API_KEY -and -not $env:AI1_API_KEY) { $env:AI1_API_KEY = $env:AZURE_ANTHROPIC_API_KEY }
+    if ($env:AZURE_OPENAI_ENDPOINT -and -not $env:AI2_ENDPOINT) { $env:AI2_ENDPOINT = $env:AZURE_OPENAI_ENDPOINT }
+    if ($env:AZURE_OPENAI_API_KEY -and -not $env:AI2_API_KEY) { $env:AI2_API_KEY = $env:AZURE_OPENAI_API_KEY }
+    if ($env:AZURE_CODEX_ENDPOINT -and -not $env:AI3_ENDPOINT) { $env:AI3_ENDPOINT = $env:AZURE_CODEX_ENDPOINT }
+    if ($env:AZURE_CODEX_API_KEY -and -not $env:AI3_API_KEY) { $env:AI3_API_KEY = $env:AZURE_CODEX_API_KEY }
+    if ($env:LOCAL_WORKER_ENDPOINT -and -not $env:AI4_ENDPOINT) { $env:AI4_ENDPOINT = $env:LOCAL_WORKER_ENDPOINT }
 }
 
-# Azure Anthropic (Worker-Heavy)
-Write-Check "AZURE_ANTHROPIC_ENDPOINT configured"
-if ($env:AZURE_ANTHROPIC_ENDPOINT) {
+# AI1 (Worker-Heavy, Validator)
+Write-Check "AI1_ENDPOINT configured (Worker-Heavy)"
+if ($env:AI1_ENDPOINT) {
     Write-Pass
-    Write-Host "AZURE_ANTHROPIC_ENDPOINT configured"
-    Add-Result "AZURE_ANTHROPIC_ENDPOINT" "pass"
+    Write-Host "AI1_ENDPOINT configured"
+    Add-Result "AI1_ENDPOINT" "pass"
 } else {
     Write-Fail
-    Write-Host "AZURE_ANTHROPIC_ENDPOINT not set"
-    Add-Result "AZURE_ANTHROPIC_ENDPOINT" "fail" "Required for Worker-Heavy"
+    Write-Host "AI1_ENDPOINT not set"
+    Add-Result "AI1_ENDPOINT" "fail" "Required for Worker-Heavy"
 }
 
-Write-Check "AZURE_ANTHROPIC_API_KEY configured"
-if ($env:AZURE_ANTHROPIC_API_KEY) {
+Write-Check "AI1_API_KEY configured"
+if ($env:AI1_API_KEY) {
     Write-Pass
-    Write-Host "AZURE_ANTHROPIC_API_KEY configured"
-    Add-Result "AZURE_ANTHROPIC_API_KEY" "pass"
+    Write-Host "AI1_API_KEY configured"
+    Add-Result "AI1_API_KEY" "pass"
 } else {
     Write-Fail
-    Write-Host "AZURE_ANTHROPIC_API_KEY not set"
-    Add-Result "AZURE_ANTHROPIC_API_KEY" "fail" "Required for Worker-Heavy"
+    Write-Host "AI1_API_KEY not set"
+    Add-Result "AI1_API_KEY" "fail" "Required for Worker-Heavy"
 }
 
-# Azure OpenAI (Friend)
-Write-Check "AZURE_OPENAI_ENDPOINT configured"
-if ($env:AZURE_OPENAI_ENDPOINT) {
+# AI2 (Friend)
+Write-Check "AI2_ENDPOINT configured (Friend)"
+if ($env:AI2_ENDPOINT) {
     Write-Pass
-    Write-Host "AZURE_OPENAI_ENDPOINT configured"
-    Add-Result "AZURE_OPENAI_ENDPOINT" "pass"
+    Write-Host "AI2_ENDPOINT configured"
+    Add-Result "AI2_ENDPOINT" "pass"
 } else {
     Write-Warn
-    Write-Host "AZURE_OPENAI_ENDPOINT not set"
-    Add-Result "AZURE_OPENAI_ENDPOINT" "warn" "Optional (Friend AI)"
+    Write-Host "AI2_ENDPOINT not set"
+    Add-Result "AI2_ENDPOINT" "warn" "Optional (Friend AI)"
 }
 
-# Azure Codex (Critic)
-Write-Check "AZURE_CODEX_ENDPOINT configured"
-if ($env:AZURE_CODEX_ENDPOINT) {
+# AI3 (Critic)
+Write-Check "AI3_ENDPOINT configured (Critic)"
+if ($env:AI3_ENDPOINT) {
     Write-Pass
-    Write-Host "AZURE_CODEX_ENDPOINT configured"
-    Add-Result "AZURE_CODEX_ENDPOINT" "pass"
+    Write-Host "AI3_ENDPOINT configured"
+    Add-Result "AI3_ENDPOINT" "pass"
 } else {
     Write-Warn
-    Write-Host "AZURE_CODEX_ENDPOINT not set"
-    Add-Result "AZURE_CODEX_ENDPOINT" "warn" "Optional (Critic AI)"
+    Write-Host "AI3_ENDPOINT not set"
+    Add-Result "AI3_ENDPOINT" "warn" "Optional (Critic AI)"
 }
 
-# Local Worker
-Write-Check "LOCAL_WORKER_ENDPOINT configured"
-if ($env:LOCAL_WORKER_ENDPOINT) {
+# AI4 (Worker-Lite)
+Write-Check "AI4_ENDPOINT configured (Worker-Lite)"
+if ($env:AI4_ENDPOINT) {
     Write-Pass
-    Write-Host "LOCAL_WORKER_ENDPOINT configured"
-    Add-Result "LOCAL_WORKER_ENDPOINT" "pass"
+    Write-Host "AI4_ENDPOINT configured"
+    Add-Result "AI4_ENDPOINT" "pass"
 } else {
     Write-Warn
-    Write-Host "LOCAL_WORKER_ENDPOINT not set (will use default 127.0.0.1:1234)"
-    Add-Result "LOCAL_WORKER_ENDPOINT" "warn" "Optional (Worker-Lite)"
+    Write-Host "AI4_ENDPOINT not set (will use default 127.0.0.1:1234)"
+    Add-Result "AI4_ENDPOINT" "warn" "Optional (Worker-Lite)"
 }
 
 Write-Host ""
@@ -222,20 +250,20 @@ Write-Host ""
 # ============================================================================
 Write-Host "AI Endpoint Connectivity:" -ForegroundColor Cyan
 
-# Worker-Lite (Local)
-Write-Check "Worker-Lite (Local) reachable"
-$localEndpoint = if ($env:LOCAL_WORKER_ENDPOINT) { $env:LOCAL_WORKER_ENDPOINT } else { "http://127.0.0.1:1234" }
+# Worker-Lite (AI4)
+Write-Check "Worker-Lite (AI4) reachable"
+$localEndpoint = if ($env:AI4_ENDPOINT) { $env:AI4_ENDPOINT } else { "http://127.0.0.1:1234" }
 try {
     $response = Invoke-WebRequest -Uri "$localEndpoint/v1/models" -TimeoutSec 5 -ErrorAction Stop
     if ($response.StatusCode -eq 200) {
         Write-Pass
-        Write-Host "Worker-Lite (Local) reachable"
+        Write-Host "Worker-Lite (AI4) reachable"
         Add-Result "Worker-Lite" "pass"
     }
 } catch {
     Write-Warn
-    Write-Host "Worker-Lite (Local) not reachable - tasks will route to Worker-Heavy"
-    Add-Result "Worker-Lite" "warn" "Start local model server for T1 tasks"
+    Write-Host "Worker-Lite (AI4) not reachable - tasks will route to Worker-Heavy"
+    Add-Result "Worker-Lite" "warn" "Configure AI4 or start local model server for T1 tasks"
 }
 
 Write-Host ""

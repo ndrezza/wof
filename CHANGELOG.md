@@ -5,6 +5,41 @@ All notable changes to the Workload Orchestration Framework (WOF) will be docume
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] - 2026-01-27
+
+### Added
+
+- **Configuration Wizard** - Interactive AI connection setup via `/wof configure`
+  - Add/manage up to 10 AI connections (AI1-AI10)
+  - Real-time connection testing with latency reporting
+  - Role mapping wizard (worker-heavy, worker-lite, validator, friend, critic)
+  - Support for 3 connection types: `azure_ai_foundry_anthropic`, `azure_openai`, `openai_compatible`
+  - `--test-only` flag to only test existing connections
+  - `--quick` flag to skip confirmations
+
+### Changed
+
+- **Unified Connection Slots** - All AI connections now use AI1-AI10 naming
+  - Removed `LOCAL1`/`local1` special category
+  - Any slot can be any connection type (cloud or local)
+  - Worker-Lite now defaults to AI4 instead of LOCAL1
+- **Dynamic Health Checks** - `check-orchestration-health.ps1` now reads from config files
+  - Loads connections from `connections.json` and `roles.json` dynamically
+  - Shows actual connection IDs in status diagram
+  - Added `[AUT]` status indicator for authentication errors
+- **Updated Templates**
+  - `connections.json.template` - AI1-AI10 structure with empty slots for AI4-AI10
+  - `credentials.local.json.template` - AI1-AI10 credential placeholders
+  - `roles.json.template` - worker-lite defaults to ai4
+  - `architecture.md.template` - Updated endpoint references to use generic IDs
+
+### Migration
+
+When upgrading from v1.x:
+- `LOCAL1_ENDPOINT` → `AI4_ENDPOINT` (if using local models)
+- Run `/wof configure` to reconfigure connections
+- Or manually update `credentials.local.json` and `roles.json`
+
 ## [1.5.1] - 2026-01-27
 
 ### Added
@@ -206,6 +241,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Template placeholders use `{{PLACEHOLDER}}` syntax
 - Files marked with `# CUSTOMIZED` are preserved during sync
 
+[2.0.0]: https://github.com/ndrezza/wof?version=GTv2.0.0
+[1.5.1]: https://github.com/ndrezza/wof?version=GTv1.5.1
 [1.2.7]: https://github.com/ndrezza/wof?version=GTv1.2.7
 [1.2.6]: https://github.com/ndrezza/wof?version=GTv1.2.6
 [1.2.5]: https://github.com/ndrezza/wof?version=GTv1.2.5

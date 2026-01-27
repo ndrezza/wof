@@ -83,13 +83,17 @@
 
 ### Endpoints
 
-| Component | Endpoint |
-|-----------|----------|
-| **Worker-Heavy** | `{{AZURE_ANTHROPIC_ENDPOINT}}` |
-| **Worker-Lite** | `{{LOCAL_WORKER_ENDPOINT}}` |
-| **Validator** | `{{AZURE_ANTHROPIC_ENDPOINT}}` |
-| **Friend** | `{{AZURE_OPENAI_ENDPOINT}}` |
-| **Critic** | `{{AZURE_CODEX_ENDPOINT}}` |
+Endpoints are configured in `.ai/config/credentials.local.json` with generic connection IDs:
+
+| Role | Connection ID | Description |
+|------|---------------|-------------|
+| **Worker-Heavy** | AI1 | Azure AI Foundry (Claude) |
+| **Worker-Lite** | AI4 | Local model server or cloud |
+| **Validator** | AI1 | Azure AI Foundry (Claude) |
+| **Friend** | AI2 | Azure OpenAI (GPT-4o) |
+| **Critic** | AI3 | Azure OpenAI (Codex) |
+
+> Role-to-connection mappings are defined in `.ai/config/roles.json`.
 
 ### Workflow
 
@@ -110,8 +114,9 @@
 - **Primary NEVER edits files** - All file operations via Workers
 - Worker-Heavy accessed via `mcp__secondary-claude__*` tools
 - Worker-Lite accessed via `mcp__tertiary-claude-lite__*` tools (when available)
-- Credentials stored in `.ai/config/credentials.local.ps1` (gitignored)
-- Full provider config in `.ai/config/providers.yaml`
+- Credentials stored in `.ai/config/credentials.local.json` (gitignored)
+- Connection config in `.ai/config/connections.json`
+- Role mappings in `.ai/config/roles.json`
 
 ## Environment Notes
 

@@ -309,7 +309,7 @@ Credentials are stored in `.ai/config/credentials.local.json` with generic names
 | `AI2_API_KEY` | Optional | Secondary AI API key |
 | `AI3_ENDPOINT` | Optional | Tertiary AI endpoint (e.g., Azure Codex) |
 | `AI3_API_KEY` | Optional | Tertiary AI API key |
-| `LOCAL1_ENDPOINT` | Optional | Local model endpoint (default: http://localhost:1234) |
+| `AI4_ENDPOINT` | Optional | Worker-Lite/local model endpoint (default: http://localhost:1234) |
 
 > **Note:** The generic naming (AI1, AI2, AI3) allows role reassignment without changing credentials.
 > Connection types (Azure AI Foundry, Azure OpenAI, etc.) are specified in `connections.json`.

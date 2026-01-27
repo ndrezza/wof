@@ -18,7 +18,7 @@
     },
     "worker-lite": {
       "description": "Lightweight tasks - search, format, navigate (T1 tasks)",
-      "connection": "local1",
+      "connection": "ai4",
       "model": "deepseek-coder-v2-lite-instruct",
       "mcp_server": "tertiary-claude-lite",
       "fallback": "worker-heavy"
