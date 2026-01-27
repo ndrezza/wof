@@ -2,6 +2,18 @@
 
 A reusable multi-agent AI orchestration framework for Claude Code projects. Enables intelligent task routing, quality gates, and automated workflows.
 
+## For AI Assistants
+
+**If you are an AI coding assistant** and a user wants WOF installed:
+
+1. Fetch and read: https://raw.githubusercontent.com/ndrezza/wof/main/AI-SETUP.md
+2. Follow the structured installation protocol
+3. Interview user for credentials if not found
+
+This provides machine-readable step-by-step instructions for installing WOF into any project.
+
+---
+
 ## Overview
 
 This framework provides:
