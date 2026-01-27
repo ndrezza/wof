@@ -225,7 +225,7 @@ foreach ($pattern in $manifest.skip_if_customized.patterns) {
 # Process skills (slash commands)
 Write-Step "Processing skills (slash commands)..."
 $templatesDir = Join-Path $scriptRoot "templates"
-$skillsSource = Join-Path $templatesDir ".claude\skills"
+$skillsSource = Join-Path $templatesDir "dot-claude\skills"
 $skillsTarget = Join-Path $TargetPath ".claude\skills"
 
 if (Test-Path $skillsSource) {

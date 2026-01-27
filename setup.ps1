@@ -255,8 +255,8 @@ if (-not $SkipTemplates) {
         }
     }
 
-    # .claude/settings.json
-    $settingsTemplate = Join-Path $templatesDir ".claude\settings.json.template"
+    # .claude/settings.json (source from dot-claude to avoid Claude Code detecting templates)
+    $settingsTemplate = Join-Path $templatesDir "dot-claude\settings.json.template"
     $settingsTarget = Join-Path $TargetPath ".claude\settings.json"
     if (Test-Path $settingsTemplate) {
         if ((Test-Path $settingsTarget) -and -not $Force) {
@@ -267,8 +267,8 @@ if (-not $SkipTemplates) {
         }
     }
 
-    # .claude/skills (slash commands)
-    $skillsSource = Join-Path $templatesDir ".claude\skills"
+    # .claude/skills (slash commands) - source from dot-claude to avoid Claude Code detecting templates
+    $skillsSource = Join-Path $templatesDir "dot-claude\skills"
     $skillsTarget = Join-Path $TargetPath ".claude\skills"
     if (Test-Path $skillsSource) {
         Get-ChildItem $skillsSource -Directory | ForEach-Object {
