@@ -5,16 +5,20 @@
 .DESCRIPTION
     This script removes WOF from a project using the installation manifest to
     precisely identify and remove only WOF-installed files. User-created files
-    are preserved.
+    and configuration files are preserved by default.
 
     Components removed:
-    - Files listed in .ai/.installed-files.json (manifest-tracked)
+    - Framework scripts (.ai/scripts/*.ps1)
     - WOF metadata files (.framework-version, .mode, .installed-files.json)
     - .claude/settings.json and .claude/skills/wof/ (WOF IDE integration)
     - CLAUDE.md in the project root
     - WOF-related entries from .gitignore (optional)
 
-    User-created files in .ai/ are NOT removed and will be reported.
+    Components PRESERVED by default:
+    - config/credentials.local.ps1 (API keys, connection strings)
+    - config/providers.yaml, models.yaml, ai-rules.md (customized settings)
+    - memory/current-sprint.md, architecture.md, conventions.md (project context)
+    - User-created files not in the manifest
 
 .PARAMETER DryRun
     Shows what would be removed without making changes.
@@ -25,25 +29,36 @@
 .PARAMETER KeepGitIgnore
     Preserves .gitignore entries (doesn't clean up WOF patterns).
 
+.PARAMETER IncludeConfig
+    Also removes config and memory files that are normally preserved.
+    Use this to completely clean up, but note that credentials will be lost.
+
 .PARAMETER RemoveAll
-    Removes entire .ai/ and .claude/ directories including user files.
-    Use with caution - this ignores the manifest.
+    Removes entire .ai/ and .claude/ directories including ALL files.
+    Use with extreme caution - this ignores the manifest completely.
 
 .EXAMPLE
     .\remove-framework.ps1
-    # Removes only WOF-installed files, preserves user files
+    # Removes WOF scripts, preserves config and memory files
 
 .EXAMPLE
     .\remove-framework.ps1 -DryRun
     # Preview what would be removed
 
 .EXAMPLE
+    .\remove-framework.ps1 -IncludeConfig
+    # Also remove config files (credentials, providers, etc.)
+
+.EXAMPLE
     .\remove-framework.ps1 -RemoveAll -Force
-    # Remove everything including user files, no confirmation
+    # Nuclear option: remove everything, no confirmation
 
 .NOTES
     The manifest file (.ai/.installed-files.json) tracks all WOF-installed files.
-    This ensures user customizations and additional scripts are preserved.
+    Config and memory files are preserved by default because they contain:
+    - API keys and connection strings (credentials.local.ps1)
+    - Project-specific customizations (architecture.md, conventions.md)
+    - Active work tracking (current-sprint.md)
 #>
 
 [CmdletBinding()]
@@ -51,6 +66,7 @@ param(
     [switch]$DryRun,
     [switch]$Force,
     [switch]$KeepGitIgnore,
+    [switch]$IncludeConfig,
     [switch]$RemoveAll
 )
 
@@ -142,11 +158,43 @@ else {
     Write-Host "[*] Mode: MANIFEST-BASED REMOVAL (preserves user files)" -ForegroundColor Cyan
     Write-Host ""
 
-    # 1. Files from manifest (relative to .ai/)
+    # Files to preserve by default (contain user data, secrets, or customizations)
+    # These match the always_preserve and template_only patterns in sync-manifest.json
+    # Can be overridden with -IncludeConfig flag
+    $PreservePatterns = @(
+        "config/credentials.local.ps1",   # API keys, connection strings - NEVER delete
+        "memory/current-sprint.md",       # Active work tracking
+        "memory/local-dev-setup.md",      # Local environment notes
+        "memory/architecture.md",         # Project-specific architecture
+        "memory/conventions.md",          # Project-specific conventions
+        "config/providers.yaml",          # Customized provider settings
+        "config/models.yaml",             # Customized model tiers
+        "config/ai-rules.md"              # Customized AI behavior rules
+    )
+
+    if ($IncludeConfig) {
+        Write-Host "[!] -IncludeConfig specified: Config and memory files will also be removed" -ForegroundColor Yellow
+        Write-Host ""
+        $PreservePatterns = @()  # Clear preservation list
+    }
+
+    # 1. Files from manifest (relative to .ai/), excluding preserved files
     foreach ($relPath in $ManifestFiles) {
-        $fullPath = Join-Path $AiDir $relPath
-        if (Test-Path $fullPath) {
-            $FilesToRemove += @{ Path = $fullPath; Type = "File"; Description = ".ai/$relPath" }
+        # Check if this file should be preserved
+        $shouldPreserve = $false
+        foreach ($pattern in $PreservePatterns) {
+            if ($relPath -eq $pattern -or $relPath -eq $pattern.Replace('/', '\')) {
+                $shouldPreserve = $true
+                $UserFilesPreserved += $relPath
+                break
+            }
+        }
+
+        if (-not $shouldPreserve) {
+            $fullPath = Join-Path $AiDir $relPath
+            if (Test-Path $fullPath) {
+                $FilesToRemove += @{ Path = $fullPath; Type = "File"; Description = ".ai/$relPath" }
+            }
         }
     }
 
