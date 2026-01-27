@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "description": "Defines sync behavior for Workload Orchestration Framework (WOF) updates",
-  "version": "1.2.2",
+  "version": "1.2.3",
   
   "overwrite": {
     "description": "Files that are always overwritten on sync (framework core)",
@@ -25,7 +25,8 @@
     "patterns": [
       ".ai/memory/current-sprint.md",
       ".ai/config/credentials.local.ps1",
-      ".ai/memory/local-dev-setup.md"
+      ".ai/memory/local-dev-setup.md",
+      ".ai/.deprecated/*"
     ]
   },
   
@@ -37,7 +38,8 @@
       ".ai/memory/architecture.md",
       ".ai/memory/conventions.md",
       ".ai/config/providers.yaml",
-      ".ai/config/models.yaml"
+      ".ai/config/models.yaml",
+      ".ai/config/ai-rules.md"
     ]
   }
 }

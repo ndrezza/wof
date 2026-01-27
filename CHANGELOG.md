@@ -5,6 +5,27 @@ All notable changes to the Workload Orchestration Framework (WOF) will be docume
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.3] - 2026-01-27
+
+### Added
+
+- **Installed Files Manifest** - Track installed files to detect orphans during sync
+  - New `.ai/.installed-files.json` tracks all framework files installed
+  - `sync.ps1` now detects files removed from the framework
+  - Orphaned files are moved to `.ai/.deprecated/` (not deleted)
+  - Customized orphaned files are preserved with a warning
+  - Enables safe framework updates even when files are renamed or removed
+
+### Usage
+
+```powershell
+# Sync will automatically detect and handle orphaned files
+.\sync.ps1 -TargetPath "C:\code\MyProject"
+
+# Preview orphan handling without making changes
+.\sync.ps1 -TargetPath "C:\code\MyProject" -DryRun
+```
+
 ## [1.2.2] - 2026-01-27
 
 ### Changed
@@ -130,6 +151,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Template placeholders use `{{PLACEHOLDER}}` syntax
 - Files marked with `# CUSTOMIZED` are preserved during sync
 
+[1.2.3]: https://github.com/ndrezza/wof?version=GTv1.2.3
 [1.2.2]: https://github.com/ndrezza/wof?version=GTv1.2.2
 [1.2.0]: https://github.com/ndrezza/wof?version=GTv1.2.0
 [1.1.1]: https://github.com/ndrezza/wof?version=GTv1.1.1

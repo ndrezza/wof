@@ -354,7 +354,57 @@ $modeFile = Join-Path $aiDir ".mode"
 Set-Content -Path $modeFile -Value $Mode
 Write-Host "    Saved mode to .ai/.mode: $Mode" -ForegroundColor Gray
 
-# Step 7: Display next steps
+# Step 7: Generate installed files manifest
+Write-Step "Generating installed files manifest..."
+$installedFiles = @()
+
+# Collect all installed files relative to .ai/
+if (Test-Path $scriptsTarget) {
+    Get-ChildItem $scriptsTarget -Filter "*.ps1" | ForEach-Object {
+        $installedFiles += "scripts/$($_.Name)"
+    }
+}
+if (Test-Path $configTarget) {
+    Get-ChildItem $configTarget -File | ForEach-Object {
+        $installedFiles += "config/$($_.Name)"
+    }
+}
+if (Test-Path $agentsTarget) {
+    Get-ChildItem $agentsTarget -Filter "*.md" | ForEach-Object {
+        $installedFiles += "agents/$($_.Name)"
+    }
+}
+$memoryTarget = Join-Path $aiDir "memory"
+if (Test-Path $memoryTarget) {
+    Get-ChildItem $memoryTarget -Filter "*.md" | ForEach-Object {
+        $installedFiles += "memory/$($_.Name)"
+    }
+}
+
+# Read version from source
+$versionFile = Join-Path $scriptRoot "VERSION"
+$frameworkVersion = if (Test-Path $versionFile) { (Get-Content $versionFile).Trim() } else { "unknown" }
+
+# Create manifest object
+$manifest = @{
+    version = $frameworkVersion
+    installedAt = (Get-Date -Format "yyyy-MM-ddTHH:mm:ssZ")
+    mode = $Mode
+    files = $installedFiles | Sort-Object
+}
+
+# Write manifest as JSON (PS 5.1 compatible)
+$manifestPath = Join-Path $aiDir ".installed-files.json"
+$manifestJson = $manifest | ConvertTo-Json -Depth 10
+Set-Content -Path $manifestPath -Value $manifestJson -Encoding UTF8
+Write-Host "    Created: .ai/.installed-files.json ($($installedFiles.Count) files tracked)" -ForegroundColor Gray
+
+# Also write version file
+$targetVersionFile = Join-Path $aiDir ".framework-version"
+Set-Content -Path $targetVersionFile -Value $frameworkVersion
+Write-Host "    Created: .ai/.framework-version ($frameworkVersion)" -ForegroundColor Gray
+
+# Step 8: Display next steps
 Write-Host ""
 Write-Host "================================================================================" -ForegroundColor Green
 Write-Host "                              SETUP COMPLETE                                   " -ForegroundColor Green

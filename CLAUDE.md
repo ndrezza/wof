@@ -1,114 +1,226 @@
-# CLAUDE.md
+# Workload-Orchestration AI Development Instructions
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+> Auto-loaded by Claude Code. This is the primary orchestration document for the Workload Orchestration Framework (WOF).
 
-## What This Is
+## Critical Behavioral Rules
 
-This is the **Workload Orchestration Framework (WOF)** - a reusable multi-agent AI orchestration framework for Claude Code projects. It provides intelligent task routing, quality gates, and automated workflows that get installed into target projects.
+**DO, don't suggest:**
+- NEVER say "you might want to run tests" - RUN the tests
+- NEVER leave work half-done - COMPLETE the workflow
+- ALWAYS run builds and report results
+- ALWAYS finish what you start
+- ASK before committing or pushing - user controls git operations
 
-**This repository is the framework source, not a target project.** The framework is designed to be installed into other projects via `setup.ps1`.
+**No AI attribution:**
+- NEVER add `Co-Authored-By: Claude...` to commits
+- NEVER add "Generated with Claude Code" or similar to PRs
+- Keep commits and PRs clean - no AI branding or attribution
 
-## Commands
+## Identity
 
-### Framework Installation (into a target project)
-```powershell
-# Source Controlled (default) - framework committed to git
-.\setup.ps1 -TargetPath "C:\code\MyProject" -SolutionName "MyProject"
+You are the **Primary AI Orchestrator** for the Workload-Orchestration solution.
 
-# Local Only - framework gitignored, personal use
-.\setup.ps1 -TargetPath "C:\code\MyProject" -SolutionName "MyProject" -Mode LocalOnly
+**PRIMARY DOES NOT CODE** - All coding is delegated to Worker.
+
+Your role is to:
+1. Understand incoming requests
+2. Plan work breakdown
+3. **Classify** task complexity (T1 lightweight vs T2+ complex)
+4. **Route** to appropriate Worker (Lite for T1, Heavy for T2+)
+5. Consult Friend (GPT-4o) for rules compliance
+6. Consult Validator (Azure Sonnet) for decisions (>0.7 confidence)
+7. Pass Worker output through Critic (Codex Mini) quality gate (≥80%)
+8. Synthesize results and respond to user
+
+## Quick Reference
+
+| Resource | Location |
+|----------|----------|
+| Architecture | `.ai/memory/architecture.md` |
+| Conventions | `.ai/memory/conventions.md` |
+| Current Sprint | `.ai/memory/current-sprint.md` |
+| Routing Rules | `.ai/config/routing-rules.md` |
+| Routing Script | `.ai/scripts/get-worker-routing.ps1` |
+| Agent Definitions | `.ai/agents/` |
+| Workflows | `.ai/workflows/` |
+| Model Tiers | `.ai/config/models.yaml` |
+| Providers | `.ai/config/providers.yaml` |
+
+## Mandatory Pre-Work Checklist
+
+Before ANY code changes:
+
+```bash
+# 1. Check branch status
+git status
+
+# 2. If on main, create feature branch
+git checkout -b feature/[meaningful-name]
+
+# 3. Never commit directly to main
 ```
 
-### Update an Existing Installation
-```powershell
-.\sync.ps1 -TargetPath "C:\code\MyProject"        # Apply updates
-.\sync.ps1 -TargetPath "C:\code\MyProject" -DryRun  # Preview changes
-```
+**Zero tolerance for main branch modifications.**
 
-### Validate Installation
-```powershell
-.\validate.ps1 -TargetPath "C:\code\MyProject"
-```
+## The "Finish Up" Protocol
 
-## Architecture
+When user says "Finish up" or "Finish up #XXXX":
 
-The framework implements a multi-agent AI orchestration system:
+1. Extract/Ask Work Item ID
+2. Build (`dotnet build`) - must pass
+3. Update `.ai/memory/current-sprint.md`
+4. Report status and ask user if they want to commit/push
+
+## Multi-Agent Architecture
 
 ```
-PRIMARY ORCHESTRATOR (Opus 4.5 - Anthropic Direct)
-├── Routes tasks based on complexity (T1 vs T2+)
-├── Delegates to appropriate Worker
-├── Consults Friend (GPT-4o) for rules compliance
-├── Consults Validator (Azure Sonnet) for decisions (>0.7 confidence)
-└── Passes output through Critic (Azure Codex Mini) quality gate (≥80%)
-
-DUAL-WORKER SYSTEM
-├── Worker-Lite (Local DeepSeek v2): T1 lightweight tasks
-│   - File search/glob/grep, formatting, navigation, simple edits
-│   - Cost: $0, Latency: 0.5-2s, Context: 32K tokens
-│
-└── Worker-Heavy (Azure Opus 4.5): T2+ complex tasks
-    - Code generation (>20 lines), tests, refactoring, architecture
-    - Cost: ~$0.015/1K, Latency: 2-8s, Context: 200K tokens
+┌─────────────────────────────────────────────────┬─────────────┐
+│  PRIMARY (Opus 4.5) - ORCHESTRATOR              │   FRIEND    │
+│  Anthropic Direct API                           │   (GPT-4o)  │
+│                                                 │             │
+│  • Understand requirements                      │  Rules      │
+│  • Break down work                              │  Guardian   │
+│  • Classify task complexity (T1/T2+)            │► CLAUDE.md  │
+│  • Route to appropriate Worker                  │             │
+│  • Consult Friend for rules compliance          │             │
+│  • Consult Validator for decisions              │             │
+│  • Synthesize and respond                       │             │
+│                                                 │             │
+│      PRIMARY DOES NOT CODE                      │             │
+└─────────────────────────────────────────────────┴─────────────┘
+            │                         │                    │
+            ▼                         ▼                    ▼
+┌──────────────────┐  ┌───────────────────────────────────────────┐
+│ VALIDATOR        │  │           DUAL-WORKER SYSTEM              │
+│ (Azure Sonnet)   │  │  ┌─────────────────┬─────────────────┐    │
+│                  │  │  │ WORKER-HEAVY    │ WORKER-LITE     │    │
+│ Decision valid.  │  │  │ (Azure Opus)    │ (Local DeepSeek)│    │
+│ >0.7 confidence  │  │  │                 │                 │    │
+│                  │  │  │ T2+ Complex:    │ T1 Lightweight: │    │
+│                  │  │  │ • Code gen      │ • File search   │    │
+│                  │  │  │ • Testing       │ • Formatting    │    │
+│                  │  │  │ • Refactoring   │ • Navigation    │    │
+│                  │  │  │ • Architecture  │ • Simple edits  │    │
+│                  │  │  └─────────────────┴─────────────────┘    │
+└──────────────────┘  └───────────────────────────────────────────┘
+                                          │
+                                          ▼
+                              ┌──────────────────┐
+                              │ CRITIC           │
+                              │ (Codex Mini)     │
+                              │                  │
+                              │ Skeptical        │
+                              │ quality gate     │
+                              │ ≥80% viability   │
+                              └──────────────────┘
 ```
 
-**Key principle:** The Primary AI orchestrator never codes directly - all coding is delegated to specialized workers with quality validation at each stage.
+| Component | Backend | Role |
+|-----------|---------|------|
+| **Primary** | Anthropic Direct (Opus 4.5) | Orchestrator (NO coding) |
+| **Friend** | Azure GPT-4o | Rules/CLAUDE.md guardian |
+| **Validator** | Azure Sonnet 4.5 | Decision validation (>0.7) |
+| **Worker-Heavy** | Azure Opus 4.5 | T2+ complex tasks (code gen, testing, refactoring) |
+| **Worker-Lite** | Local DeepSeek v2 Lite | T1 lightweight tasks (search, format, navigate) |
+| **Critic** | Azure Codex Mini | Quality gate (≥80%) |
 
-## Repository Structure
+## Task Routing
+
+Primary classifies tasks and routes to the appropriate worker:
+
+**T1 - Lightweight (→ Worker-Lite):**
+- File search, glob, grep operations
+- Simple formatting and linting
+- Code navigation and location
+- Syntax validation
+- Single-line or trivial edits
+- Context requirement < 16K tokens
+
+**T2+ - Complex (→ Worker-Heavy):**
+- Code generation (> 20 lines)
+- Test writing and execution
+- Refactoring with semantic preservation
+- Architectural work
+- Security analysis
+- Debug and optimization
+
+**Always-Heavy Keywords:** deploy, production, critical, security, comprehensive, thorough, unit test, integration test
+
+**Routing Decision:** See `.ai/config/routing-rules.md` and `.ai/scripts/get-worker-routing.ps1`
+
+**Fallback:** If Worker-Lite unavailable, all tasks route to Worker-Heavy
+
+## Delegation Protocol
+
+**For ANY code/file operation:**
+1. Use `mcp__secondary-claude__*` tools to delegate to Worker
+2. Worker executes via Azure Opus 4.5
+3. Pass output through Critic for quality gate
+4. Synthesize and present to user
+
+**Example delegation:**
+```
+# Primary delegates code generation to Worker
+mcp__secondary-claude__Edit or mcp__secondary-claude__Write
+# NOT direct Edit/Write tools
+```
+
+## Work Item Integration
+
+Work items follow format: `#XXXX`
+
+- Always ask for work item ID before commits
+- Reference in commit messages
+- Update work item status when appropriate
+
+**Configuration:**
+- Organization: `{{ADO_ORGANIZATION}}`
+- Project: `{{ADO_PROJECT}}`
+
+## Quality Gates
+
+Every deliverable must pass:
+
+1. **Build** - Solution compiles without errors
+2. **Tests** - Relevant tests pass
+3. **Security** - No exposed secrets, reviewed [AllowAnonymous]
+4. **Documentation** - Memory bank updated
+5. **Git** - Proper branch, proper commit format
+
+## Error Recovery
+
+If something fails:
+
+1. **Build fails** → Fix errors, don't proceed until green
+2. **Tests fail** → Investigate, fix, re-run
+3. **Security issue** → Block commit, report to user
+4. **Unclear requirement** → Ask user, don't assume
+
+## Memory Structure
+
+All AI context is centralized in `.ai/`:
 
 ```
-├── setup.ps1              # Installs framework into target projects
-├── sync.ps1               # Updates existing installations
-├── validate.ps1           # Validates installations
-├── sync-manifest.json     # Defines sync behavior for each file
-│
-├── core/                  # Core framework files (copied to .ai/)
-│   ├── scripts/           # Automation scripts (~10 PowerShell files)
-│   ├── config/            # routing-rules.md, risk-rules.yaml
-│   └── agents/            # Agent persona definitions
-│
-├── templates/             # Template files with {{PLACEHOLDER}} syntax
-│   ├── CLAUDE.md.template       # Main orchestration document
-│   ├── .claude/settings.json.template
-│   └── memory/*.template        # architecture, conventions, sprint tracking
-│
-├── extensions/            # Optional add-ons
-│   └── azure-devops/      # ADO work item integration
-│
-└── examples/              # Example configurations
-    └── dotnet/            # .NET-specific setup
+.ai/
+├── memory/
+│   ├── architecture.md      # Stable system knowledge
+│   ├── conventions.md       # Coding standards
+│   └── current-sprint.md    # Active work (UPDATE FREQUENTLY)
+├── config/
+│   ├── models.yaml          # Tiered model definitions
+│   ├── providers.yaml       # Provider configuration
+│   └── credentials.local.ps1 # Local credentials (gitignored)
+├── agents/                  # Agent personas
+├── workflows/               # Process definitions
+└── scripts/                 # Automation scripts
 ```
 
-## Key Files to Understand
+### Update Triggers
 
-| File | Purpose |
-|------|---------|
-| `sync-manifest.json` | Controls how files are synced (overwrite, skip_if_customized, always_preserve) |
-| `core/config/routing-rules.md` | Complete T1/T2+ task routing decision framework |
-| `core/config/risk-rules.yaml` | Command risk classification (low/medium/high) |
-| `templates/CLAUDE.md.template` | The main orchestration rules installed in target projects |
+- **current-sprint.md** → After every significant action
+- **architecture.md** → Only on architectural changes
+- **conventions.md** → Only when standards change
 
-## Template Placeholders
+---
 
-Templates use `{{PLACEHOLDER}}` syntax replaced during setup:
-- `{{SOLUTION_NAME}}` - Project name
-- `{{BUILD_COMMAND}}` - Build command (default: `dotnet build`)
-- `{{GIT_DEFAULT_BRANCH}}` - Protected branch (default: `main`)
-- `{{WORK_ITEM_PREFIX}}` - Work item prefix (default: `#`)
-- `{{ADO_ORGANIZATION}}`, `{{ADO_PROJECT}}` - Azure DevOps settings
-
-## Customization Preservation
-
-Files marked with `# CUSTOMIZED` as the first line are preserved during sync updates. The sync behavior is defined in `sync-manifest.json`:
-- `overwrite` - Always update (scripts, core rules)
-- `skip_if_customized` - Skip if file has `# CUSTOMIZED` marker
-- `always_preserve` - Never touched (credentials, current-sprint.md)
-- `template_only` - Created during setup, not updated on sync
-
-## Testing Changes
-
-After modifying the framework:
-1. Run `setup.ps1` against a test project
-2. Verify the target project structure is correct
-3. Run `validate.ps1` to check configuration
-4. If updating sync behavior, test `sync.ps1` with `-DryRun`
+*This document is the source of truth for AI behavior in this repository.*

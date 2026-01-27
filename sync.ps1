@@ -81,6 +81,23 @@ $aiDir = Join-Path $TargetPath ".ai"
 $updated = @()
 $skipped = @()
 $preserved = @()
+$deprecated = @()
+$newInstalledFiles = @()
+
+# Load previous installed files manifest
+$installedManifestFile = Join-Path $aiDir ".installed-files.json"
+$previousFiles = @()
+if (Test-Path $installedManifestFile) {
+    try {
+        $installedManifest = Get-Content $installedManifestFile -Raw | ConvertFrom-Json
+        $previousFiles = @($installedManifest.files)
+        Write-Host "  Previous Install: $($previousFiles.Count) files tracked"
+    } catch {
+        Write-Warn "Could not read installed files manifest, skipping orphan detection"
+    }
+} else {
+    Write-Host "  Previous Install: No manifest found (first sync or legacy install)"
+}
 
 function Test-PatternMatch {
     param(
@@ -120,6 +137,10 @@ foreach ($pattern in $manifest.overwrite.patterns) {
             $relativePath = $file.FullName.Substring($coreDir.Length + 1)
             $targetFile = Join-Path $aiDir $relativePath
 
+            # Track file for manifest (normalize path separators)
+            $normalizedPath = $relativePath -replace '\\', '/'
+            $newInstalledFiles += $normalizedPath
+
             if ($DryRun) {
                 Write-Info "Would update: $relativePath"
                 $updated += $relativePath
@@ -148,6 +169,10 @@ foreach ($pattern in $manifest.skip_if_customized.patterns) {
             $relativePath = $file.FullName.Substring($coreDir.Length + 1)
             $targetFile = Join-Path $aiDir $relativePath
 
+            # Track file for manifest (normalize path separators)
+            $normalizedPath = $relativePath -replace '\\', '/'
+            $newInstalledFiles += $normalizedPath
+
             if ((Test-Path $targetFile) -and (Test-FileCustomized $targetFile) -and -not $Force) {
                 Write-Info "Skipped (customized): $relativePath"
                 $skipped += $relativePath
@@ -174,6 +199,93 @@ foreach ($pattern in $manifest.always_preserve.patterns) {
     $preserved += $pattern
 }
 
+# Detect and handle orphaned files (in old manifest but not in new)
+if ($previousFiles.Count -gt 0) {
+    Write-Step "Checking for orphaned files..."
+
+    # Build list of patterns to exclude from orphan detection
+    # These are files created from templates or always preserved - they're expected to exist
+    $excludePatterns = @()
+    $excludePatterns += $manifest.always_preserve.patterns
+    $excludePatterns += $manifest.template_only.patterns
+
+    $orphanedFiles = $previousFiles | Where-Object {
+        $file = $_
+        $inNewManifest = $file -in $newInstalledFiles
+
+        # Check if file matches any exclude pattern
+        $isExcluded = $false
+        foreach ($pattern in $excludePatterns) {
+            # Convert pattern to work with our file paths
+            $normalizedPattern = $pattern -replace '\.ai/', '' -replace '\*', '.*'
+            if ($file -match "^$normalizedPattern$" -or ".ai/$file" -like $pattern) {
+                $isExcluded = $true
+                break
+            }
+        }
+
+        (-not $inNewManifest) -and (-not $isExcluded)
+    }
+
+    if ($orphanedFiles.Count -gt 0) {
+        $deprecatedDir = Join-Path $aiDir ".deprecated"
+
+        foreach ($orphan in $orphanedFiles) {
+            $orphanPath = Join-Path $aiDir ($orphan -replace '/', '\')
+
+            if (Test-Path $orphanPath) {
+                $isCustomized = Test-FileCustomized $orphanPath
+
+                if ($isCustomized) {
+                    Write-Warn "Orphaned (customized, preserved): $orphan"
+                    # Keep customized orphans in place but warn
+                } else {
+                    if ($DryRun) {
+                        Write-Info "Would deprecate: $orphan"
+                    } else {
+                        # Move to .deprecated folder
+                        $deprecatedPath = Join-Path $deprecatedDir ($orphan -replace '/', '\')
+                        $deprecatedParent = Split-Path $deprecatedPath -Parent
+
+                        if (-not (Test-Path $deprecatedParent)) {
+                            New-Item -ItemType Directory -Path $deprecatedParent -Force | Out-Null
+                        }
+
+                        Move-Item $orphanPath $deprecatedPath -Force
+                        Write-Info "Deprecated: $orphan -> .deprecated/$orphan"
+                    }
+                    $deprecated += $orphan
+                }
+            }
+        }
+
+        if ($deprecated.Count -gt 0 -and -not $DryRun) {
+            Write-Host ""
+            Write-Warn "$($deprecated.Count) file(s) moved to .ai/.deprecated/"
+            Write-Host "    Review and delete if no longer needed" -ForegroundColor Gray
+        }
+    } else {
+        Write-Info "No orphaned files detected"
+    }
+}
+
+# Update installed files manifest
+Write-Step "Updating installed files manifest..."
+$newManifest = @{
+    version = $newVersion
+    installedAt = (Get-Date -Format "yyyy-MM-ddTHH:mm:ssZ")
+    syncedFrom = $currentVersion
+    files = $newInstalledFiles | Sort-Object | Select-Object -Unique
+}
+
+if (-not $DryRun) {
+    $manifestJson = $newManifest | ConvertTo-Json -Depth 10
+    Set-Content -Path $installedManifestFile -Value $manifestJson -Encoding UTF8
+    Write-Info "Updated: .installed-files.json ($($newInstalledFiles.Count) files)"
+} else {
+    Write-Info "Would update: .installed-files.json ($($newInstalledFiles.Count) files)"
+}
+
 # Update version marker
 if (-not $DryRun) {
     $versionDir = Split-Path $targetVersionFile -Parent
@@ -189,9 +301,10 @@ Write-Host "====================================================================
 Write-Host "                              SYNC COMPLETE                                    " -ForegroundColor Green
 Write-Host "================================================================================" -ForegroundColor Green
 Write-Host ""
-Write-Host "  Updated:   $($updated.Count) files"
-Write-Host "  Skipped:   $($skipped.Count) files (customized)"
-Write-Host "  Preserved: $($preserved.Count) patterns"
+Write-Host "  Updated:    $($updated.Count) files"
+Write-Host "  Skipped:    $($skipped.Count) files (customized)"
+Write-Host "  Deprecated: $($deprecated.Count) files (orphaned)"
+Write-Host "  Preserved:  $($preserved.Count) patterns"
 Write-Host ""
 
 if ($DryRun) {
@@ -207,10 +320,19 @@ if ($skipped.Count -gt 0) {
     Write-Host ""
 }
 
+if ($deprecated.Count -gt 0) {
+    Write-Host "Deprecated files (moved to .ai/.deprecated/):" -ForegroundColor Yellow
+    foreach ($file in $deprecated) {
+        Write-Host "  - $file" -ForegroundColor Gray
+    }
+    Write-Host ""
+}
+
 return @{
     Success = $true
     Updated = $updated
     Skipped = $skipped
+    Deprecated = $deprecated
     Preserved = $preserved
     FromVersion = $currentVersion
     ToVersion = $newVersion
