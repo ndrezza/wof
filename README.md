@@ -2,6 +2,17 @@
 
 A reusable multi-agent AI orchestration framework for Claude Code projects. Enables intelligent task routing, quality gates, and automated workflows.
 
+## Terminology: WOF vs WOI
+
+| Term | Full Name | Description |
+|------|-----------|-------------|
+| **WOF** | Workload Orchestration **Framework** | The source repository, codebase, and product. This is what you're looking at now. |
+| **WOI** | Workload Orchestration **Instance** | A local installation of WOF in a target project. Each project gets its own WOI. |
+
+**Example:**
+- WOF v1.2.4 is the framework version in this repository
+- When you run `setup.ps1` on your project, you create a WOI (instance) based on WOF v1.2.4
+
 ## For AI Assistants
 
 **If you are an AI coding assistant** and a user wants WOF installed:

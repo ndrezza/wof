@@ -1,56 +1,6 @@
-# Workload-Orchestration AI Development Instructions
+# WOF AI Development Instructions
 
 > Auto-loaded by Claude Code. This is the primary orchestration document for the Workload Orchestration Framework (WOF).
-
----
-
-## ⚠️ CRITICAL: This is the WOF Framework Source Repository
-
-**YOU ARE WORKING IN THE FRAMEWORK SOURCE, NOT AN INSTANCE.**
-
-This repository (`Workload-Orchestration`) is the **source of truth** for WOF. Changes made here propagate to all projects that sync from this framework.
-
-### Terminology
-
-| Term | Meaning | Location |
-|------|---------|----------|
-| **WOF** (Workload Orchestration Framework) | The framework source code | THIS REPO |
-| **WOI** (Workload Orchestration Instance) | A synced copy in a target project | Other projects |
-
-### Directory Structure Distinction
-
-```
-WOF (THIS REPO - Framework Source)          WOI (Target Project - Instance)
-├── core/                    ──sync──►      ├── .ai/
-│   ├── scripts/*.ps1                       │   ├── scripts/*.ps1
-│   ├── config/                             │   ├── config/
-│   └── agents/                             │   └── ...
-├── templates/               ──setup──►     ├── .claude/
-│   ├── CLAUDE.md.template                  │   └── skills/wof/
-│   └── .claude/                            ├── CLAUDE.md
-├── setup.ps1                               └── (project files)
-├── sync.ps1
-└── sync-manifest.json
-```
-
-### Development Rules for This Repo
-
-1. **Framework changes go in `core/` and `templates/`** - NOT in `.ai/` (that's the local instance)
-2. **Scripts** → `core/scripts/` (synced to all instances)
-3. **Templates** → `templates/` (processed during setup with placeholders)
-4. **Skill definitions** → `templates/.claude/skills/wof/`
-5. **Local `.ai/` folder** is a WOI for testing - changes there are LOCAL ONLY
-
-### When to Modify What
-
-| Want to change... | Modify in... | Affects... |
-|-------------------|--------------|------------|
-| A script for all users | `core/scripts/` | All WOIs on next sync |
-| CLAUDE.md template | `templates/CLAUDE.md.template` | New setups only |
-| Slash command behavior | `templates/.claude/skills/wof/SKILL.md` | All WOIs on next sync |
-| Local testing only | `.ai/` (gitignored) | This machine only |
-
----
 
 ## Critical Behavioral Rules
 
@@ -66,9 +16,36 @@ WOF (THIS REPO - Framework Source)          WOI (Target Project - Instance)
 - NEVER add "Generated with Claude Code" or similar to PRs
 - Keep commits and PRs clean - no AI branding or attribution
 
+## Terminology: WOF vs WOI
+
+| Term | Full Name | Description |
+|------|-----------|-------------|
+| **WOF** | Workload Orchestration **Framework** | The source repository, codebase, and product |
+| **WOI** | Workload Orchestration **Instance** | A local installation of WOF in a target project |
+
+### This Repo: Inception Mode
+
+This repo is unique - it's **both WOF and a WOI**:
+
+1. **WOF** - The framework source code lives here (`core/`, `templates/`, `setup.ps1`, etc.)
+2. **WOI** - A LocalOnly instance is installed here (`.ai/`, `.claude/`) for self-orchestration
+
+**Why inception?** This allows using AI orchestration to develop WOF itself. The WOI is in LocalOnly mode so instance files don't pollute the framework source.
+
+| Path | Is WOF? | Is WOI? | Git Status |
+|------|---------|---------|------------|
+| `core/`, `templates/`, `setup.ps1`, `sync.ps1` | Yes | No | Tracked |
+| `CLAUDE.md`, `README.md`, `VERSION` | Yes | No | Tracked |
+| `.ai/` (scripts, config, memory) | No | Yes | Gitignored |
+| `.claude/` (settings, skills) | No | Yes | Gitignored |
+
+**When editing this repo:**
+- Changes to `core/`, `templates/`, scripts → You're improving **WOF**
+- Changes to `.ai/memory/`, `.ai/config/` → You're configuring the local **WOI**
+
 ## Identity
 
-You are the **Primary AI Orchestrator** for the Workload-Orchestration solution.
+You are the **Primary AI Orchestrator** for the WOF solution.
 
 **PRIMARY DOES NOT CODE** - All coding is delegated to Worker.
 
