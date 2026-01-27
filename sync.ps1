@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    Syncs the Workload Orchestration Framework in a target project with the latest version.
+    Syncs the Workload Orchestration Framework (WOF) in a target project with the latest version.
 
 .DESCRIPTION
     This script updates framework files in a target project based on the sync-manifest.json
@@ -66,7 +66,7 @@ $currentVersion = if (Test-Path $targetVersionFile) { (Get-Content $targetVersio
 
 Write-Host ""
 Write-Host "================================================================================" -ForegroundColor Cyan
-Write-Host "              WORKLOAD ORCHESTRATION FRAMEWORK SYNC                            " -ForegroundColor Cyan
+Write-Host "            WORKLOAD ORCHESTRATION FRAMEWORK (WOF) SYNC                       " -ForegroundColor Cyan
 Write-Host "================================================================================" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "  Target:          $TargetPath"

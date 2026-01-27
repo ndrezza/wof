@@ -1,9 +1,19 @@
 # Changelog
 
-All notable changes to the Workload Orchestration Framework will be documented in this file.
+All notable changes to the Workload Orchestration Framework (WOF) will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [1.2.2] - 2026-01-27
+
+### Changed
+
+- **WOF Branding** - Added "WOF" abbreviation across all framework files
+  - First mention in each file uses "Workload Orchestration Framework (WOF)"
+  - Subsequent mentions use "WOF" for brevity
+  - Updated banners in setup.ps1, sync.ps1, validate.ps1, update-framework.ps1
+  - Updated templates, config files, and documentation
 
 ## [1.2.0] - 2026-01-27
 
@@ -120,6 +130,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Template placeholders use `{{PLACEHOLDER}}` syntax
 - Files marked with `# CUSTOMIZED` are preserved during sync
 
+[1.2.2]: https://github.com/ndrezza/wof?version=GTv1.2.2
 [1.2.0]: https://github.com/ndrezza/wof?version=GTv1.2.0
 [1.1.1]: https://github.com/ndrezza/wof?version=GTv1.1.1
 [1.1.0]: https://github.com/ndrezza/wof?version=GTv1.1.0

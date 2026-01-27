@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What This Is
 
-This is the **Workload Orchestration Framework** - a reusable multi-agent AI orchestration framework for Claude Code projects. It provides intelligent task routing, quality gates, and automated workflows that get installed into target projects.
+This is the **Workload Orchestration Framework (WOF)** - a reusable multi-agent AI orchestration framework for Claude Code projects. It provides intelligent task routing, quality gates, and automated workflows that get installed into target projects.
 
 **This repository is the framework source, not a target project.** The framework is designed to be installed into other projects via `setup.ps1`.
 

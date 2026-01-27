@@ -1,6 +1,6 @@
 # .NET Project Example
 
-This example shows how to configure the Workload Orchestration Framework for a .NET solution.
+This example shows how to configure the Workload Orchestration Framework (WOF) for a .NET solution.
 
 ## Setup
 

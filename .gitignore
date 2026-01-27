@@ -19,3 +19,8 @@ logs/
 # Temp files
 *.tmp
 *.temp
+
+# Workload Orchestration Framework (WOF) - Local Only Mode
+.ai/
+.claude/
+CLAUDE.md

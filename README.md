@@ -1,4 +1,4 @@
-# Workload Orchestration Framework
+# Workload Orchestration Framework (WOF)
 
 A reusable multi-agent AI orchestration framework for Claude Code projects. Enables intelligent task routing, quality gates, and automated workflows.
 

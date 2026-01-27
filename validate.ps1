@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    Validates the Workload Orchestration Framework configuration in a target project.
+    Validates the Workload Orchestration Framework (WOF) configuration in a target project.
 
 .DESCRIPTION
     This script checks that the framework is correctly configured:
@@ -70,7 +70,7 @@ function Add-Result {
 
 Write-Host ""
 Write-Host "================================================================================" -ForegroundColor Cyan
-Write-Host "              WORKLOAD ORCHESTRATION FRAMEWORK VALIDATION                      " -ForegroundColor Cyan
+Write-Host "         WORKLOAD ORCHESTRATION FRAMEWORK (WOF) VALIDATION                    " -ForegroundColor Cyan
 Write-Host "================================================================================" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "  Target: $TargetPath"

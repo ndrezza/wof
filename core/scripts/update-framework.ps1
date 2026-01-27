@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    Updates the Workload Orchestration Framework to the latest version.
+    Updates the Workload Orchestration Framework (WOF) to the latest version.
 
 .DESCRIPTION
     This script pulls the latest framework version from the central Workload-Orchestration
@@ -81,7 +81,7 @@ $CurrentVersion = if (Test-Path $VersionFile) { (Get-Content $VersionFile).Trim(
 # Display header
 Write-Host ""
 Write-Host "================================================================================" -ForegroundColor Cyan
-Write-Host "              WORKLOAD ORCHESTRATION FRAMEWORK UPDATE                          " -ForegroundColor Cyan
+Write-Host "          WORKLOAD ORCHESTRATION FRAMEWORK (WOF) UPDATE                       " -ForegroundColor Cyan
 Write-Host "================================================================================" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "  Project:         $ProjectRoot" -ForegroundColor Gray

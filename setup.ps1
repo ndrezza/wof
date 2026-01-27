@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    Sets up the Workload Orchestration Framework in a target project.
+    Sets up the Workload Orchestration Framework (WOF) in a target project.
 
 .DESCRIPTION
     This script copies the framework files to a target project directory,
@@ -96,7 +96,7 @@ if (-not $SolutionName) {
 
 Write-Host ""
 Write-Host "================================================================================" -ForegroundColor Cyan
-Write-Host "              WORKLOAD ORCHESTRATION FRAMEWORK SETUP                           " -ForegroundColor Cyan
+Write-Host "           WORKLOAD ORCHESTRATION FRAMEWORK (WOF) SETUP                       " -ForegroundColor Cyan
 Write-Host "================================================================================" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "  Target:        $TargetPath"
@@ -305,7 +305,7 @@ if ($Mode -eq "LocalOnly") {
     # Local Only: Entire framework is gitignored
     $gitignoreEntries = @(
         "",
-        "# Workload Orchestration Framework (Local Only Mode)",
+        "# Workload Orchestration Framework (WOF) - Local Only Mode",
         ".ai/",
         ".claude/",
         "CLAUDE.md"
@@ -314,7 +314,7 @@ if ($Mode -eq "LocalOnly") {
     # Source Controlled: Only sensitive files gitignored
     $gitignoreEntries = @(
         "",
-        "# Workload Orchestration Framework (Source Controlled Mode)",
+        "# Workload Orchestration Framework (WOF) - Source Controlled Mode",
         ".ai/config/credentials.local.ps1",
         ".ai/state/",
         ".ai/logs/"
