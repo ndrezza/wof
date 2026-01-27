@@ -31,11 +31,19 @@
 .PARAMETER Force
     Overwrite existing files without prompting.
 
+.PARAMETER Cleanup
+    Remove the WOF source directory after successful installation.
+    Safe for temp directories; prompts for confirmation otherwise.
+
 .EXAMPLE
     .\setup.ps1 -TargetPath "C:\code\MyProject" -SolutionName "MyProject"
 
 .EXAMPLE
     .\setup.ps1 -TargetPath "C:\code\MyProject" -SolutionName "MyProject" -GitDefaultBranch "master" -BuildCommand "npm run build"
+
+.EXAMPLE
+    .\setup.ps1 -TargetPath "C:\code\MyProject" -Cleanup
+    # Installs WOF and removes the source directory afterward
 #>
 
 param(
@@ -68,7 +76,10 @@ param(
 
     [Parameter(Mandatory=$false)]
     [ValidateSet("v2", "legacy")]
-    [string]$ConfigFormat = "v2"
+    [string]$ConfigFormat = "v2",
+
+    [Parameter(Mandatory=$false)]
+    [switch]$Cleanup
 )
 
 $ErrorActionPreference = "Stop"
@@ -628,6 +639,44 @@ if ($configureChoice -and $configureChoice.ToLower() -eq "y") {
         & $wizardScript
     } else {
         Write-Warn "Configuration wizard not found at: $wizardScript"
+    }
+}
+
+# Step 10: Cleanup source directory if requested
+if ($Cleanup) {
+    Write-Host ""
+    Write-Step "Cleaning up WOF source directory..."
+
+    # Don't delete if running from the target path (self-install scenario)
+    $normalizedScriptRoot = (Resolve-Path $scriptRoot).Path.TrimEnd('\', '/')
+    $normalizedTargetPath = (Resolve-Path $TargetPath).Path.TrimEnd('\', '/')
+
+    if ($normalizedScriptRoot -eq $normalizedTargetPath) {
+        Write-Warn "Skipping cleanup: source and target are the same directory (inception mode)"
+    } elseif ($scriptRoot -match [regex]::Escape($env:TEMP) -or $scriptRoot -match "\\Temp\\" -or $scriptRoot -match "/tmp/") {
+        # Running from temp directory - safe to clean up
+        try {
+            Remove-Item -Recurse -Force $scriptRoot -ErrorAction Stop
+            Write-Success "Removed temporary WOF source: $scriptRoot"
+        } catch {
+            Write-Warn "Could not remove source directory: $_"
+            Write-Host "    You can manually delete: $scriptRoot" -ForegroundColor Gray
+        }
+    } else {
+        # Not in temp - ask for confirmation
+        Write-Host "Source directory is not in a temp location: $scriptRoot" -ForegroundColor Yellow
+        Write-Host "Delete this directory? [y/N]: " -NoNewline
+        $confirmDelete = Read-Host
+        if ($confirmDelete -and $confirmDelete.ToLower() -eq "y") {
+            try {
+                Remove-Item -Recurse -Force $scriptRoot -ErrorAction Stop
+                Write-Success "Removed WOF source: $scriptRoot"
+            } catch {
+                Write-Warn "Could not remove source directory: $_"
+            }
+        } else {
+            Write-Host "    Keeping source directory" -ForegroundColor Gray
+        }
     }
 }
 

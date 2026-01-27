@@ -143,6 +143,7 @@ This ensures `credentials.local.json` stays gitignored even after removing WOF.
 | `ConfigFormat` | `v2` | Config format: `v2` (JSON) or `legacy` (YAML/PS1) |
 | `SkipTemplates` | `false` | Copy core files only |
 | `Force` | `false` | Overwrite existing files |
+| `Cleanup` | `false` | Remove WOF source directory after install |
 
 ### Post-Setup
 

@@ -68,14 +68,15 @@ $existingInstall = Test-Path $aiFolder
 # Navigate to cloned framework
 cd "$env:TEMP\wof-install"
 
-# Run setup
-.\setup.ps1 -TargetPath "{TARGET}"
+# Run setup (with cleanup to remove temp clone after)
+.\setup.ps1 -TargetPath "{TARGET}" -Cleanup
 ```
 
 **Parameters:**
 - `TargetPath`: Absolute path to target project root
 - `SolutionName`: (Optional) Defaults to directory name
 - `Force`: Add if updating existing installation
+- `Cleanup`: Remove WOF source directory after successful installation
 
 ### Step 4: CONFIGURE_CREDENTIALS
 
@@ -106,8 +107,10 @@ Run the health check to verify installation:
 
 ### Step 7: CLEANUP
 
+**Note:** If you used `-Cleanup` in Step 3, this step is automatic.
+
 ```powershell
-# Remove temporary clone
+# Remove temporary clone (only needed if -Cleanup was not used)
 Remove-Item -Recurse -Force "$env:TEMP\wof-install"
 ```
 
