@@ -20,11 +20,17 @@ health_check: .ai/scripts/check-orchestration-health.ps1
 
 ## QUICK_REFERENCE
 
+**One-liner for Claude Code (recommended):**
 ```
-Clone:    git clone https://github.com/ndrezza/wof.git "$env:TEMP\wof-install"
-Setup:    .\setup.ps1 -TargetPath "{TARGET}"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Remove-Item -Recurse -Force 'C:/Temp/wof-install' -ErrorAction SilentlyContinue; git clone https://github.com/ndrezza/wof.git 'C:/Temp/wof-install'; Set-Location 'C:/Temp/wof-install'; ./setup.ps1 -TargetPath '{TARGET}' -Force -Cleanup"
+```
+
+**Manual steps:**
+```
+Clone:    git clone https://github.com/ndrezza/wof.git C:/Temp/wof-install
+Setup:    ./setup.ps1 -TargetPath "{TARGET}" -Cleanup
 Config:   .ai/config/credentials.local.json
-Verify:   .\.ai\scripts\check-orchestration-health.ps1
+Verify:   ./.ai/scripts/check-orchestration-health.ps1
 ```
 
 ## PREREQUISITES
@@ -40,37 +46,30 @@ Before installation, verify:
 
 ## INSTALLATION_STEPS
 
-### Step 1: CLONE_FRAMEWORK
+### Step 1: CLONE_AND_SETUP
+
+**IMPORTANT for Claude Code:** Run this as a single PowerShell command to avoid variable escaping issues:
 
 ```powershell
-# Clone WOF to a temporary location
-git clone https://github.com/ndrezza/wof.git "$env:TEMP\wof-install"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Remove-Item -Recurse -Force 'C:/Temp/wof-install' -ErrorAction SilentlyContinue; git clone https://github.com/ndrezza/wof.git 'C:/Temp/wof-install'; Set-Location 'C:/Temp/wof-install'; ./setup.ps1 -TargetPath '{TARGET}' -Force -Cleanup"
 ```
 
-### Step 2: DETECT_EXISTING
+Replace `{TARGET}` with the actual target path (e.g., `C:/code/MyProject`).
 
-Check if WOF is already installed in the target project:
+**What this does:**
+1. Removes any previous temp clone
+2. Clones WOF to `C:/Temp/wof-install`
+3. Runs setup with `-Force` (overwrites existing) and `-Cleanup` (removes temp clone after)
+
+### Step 2: DETECT_EXISTING (Optional)
+
+If you want to check first before overwriting:
 
 ```powershell
-# Check for existing installation
-$aiFolder = Join-Path "{TARGET}" ".ai"
-$existingInstall = Test-Path $aiFolder
+powershell -Command "Test-Path '{TARGET}/.ai'"
 ```
 
-**If existing installation found:**
-- Ask user: "WOF is already installed. Do you want to update it? (This preserves your credentials and memory files)"
-- If yes: Run setup with `-Force` flag
-- If no: Abort installation
-
-### Step 3: RUN_SETUP
-
-```powershell
-# Navigate to cloned framework
-cd "$env:TEMP\wof-install"
-
-# Run setup (with cleanup to remove temp clone after)
-.\setup.ps1 -TargetPath "{TARGET}" -Cleanup
-```
+If true, ask user: "WOF is already installed. Update it? (Credentials and memory are preserved)"
 
 **Parameters:**
 - `TargetPath`: Absolute path to target project root
