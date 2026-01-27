@@ -69,6 +69,18 @@ refactor/[description]   # Code refactoring
 
 Types: `feat`, `fix`, `refactor`, `docs`, `test`, `chore`
 
+### Version Bumping
+
+**Always bump VERSION after adding features or making changes:**
+
+| Change Type | Version Bump | Example |
+|-------------|--------------|---------|
+| New feature | Minor (x.Y.0) | 1.4.0 → 1.5.0 |
+| Bug fix | Patch (x.y.Z) | 1.5.0 → 1.5.1 |
+| Breaking change | Major (X.0.0) | 1.5.0 → 2.0.0 |
+
+Include version in commit message: `Bump version to X.Y.Z - description`
+
 ## Documentation
 
 - Document public APIs
