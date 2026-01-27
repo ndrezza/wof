@@ -8,7 +8,7 @@
     connection details for the specified role.
 
 .PARAMETER Role
-    The role to resolve (e.g., "primary", "worker-heavy", "worker-lite", "validator", "friend", "critic").
+    The role to resolve (e.g., "primary", "worker-heavy", "worker-lite", "validator", "critic").
 
 .PARAMETER ConfigPath
     Path to the .ai/config directory. Defaults to .ai/config in the current directory.
@@ -25,7 +25,7 @@
 
 param(
     [Parameter(Mandatory=$true)]
-    [ValidateSet("primary", "worker-heavy", "worker-lite", "validator", "friend", "critic")]
+    [ValidateSet("primary", "worker-heavy", "worker-lite", "validator", "critic")]
     [string]$Role,
 
     [Parameter(Mandatory=$false)]

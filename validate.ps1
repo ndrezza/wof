@@ -207,8 +207,8 @@ if ($env:AI1_API_KEY) {
     Add-Result "AI1_API_KEY" "fail" "Required for Worker-Heavy"
 }
 
-# AI2 (Friend)
-Write-Check "AI2_ENDPOINT configured (Friend)"
+# AI2 (Optional)
+Write-Check "AI2_ENDPOINT configured (Optional)"
 if ($env:AI2_ENDPOINT) {
     Write-Pass
     Write-Host "AI2_ENDPOINT configured"
@@ -216,7 +216,7 @@ if ($env:AI2_ENDPOINT) {
 } else {
     Write-Warn
     Write-Host "AI2_ENDPOINT not set"
-    Add-Result "AI2_ENDPOINT" "warn" "Optional (Friend AI)"
+    Add-Result "AI2_ENDPOINT" "warn" "Optional - available for additional services"
 }
 
 # AI3 (Critic)

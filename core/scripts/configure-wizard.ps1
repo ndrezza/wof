@@ -278,7 +278,7 @@ function Save-Roles {
     }
 
     # Define role order
-    $roleOrder = @("primary", "worker-heavy", "worker-lite", "validator", "friend", "critic")
+    $roleOrder = @("primary", "worker-heavy", "worker-lite", "validator", "critic")
 
     foreach ($roleName in $roleOrder) {
         if ($Roles.ContainsKey($roleName)) {
@@ -468,7 +468,7 @@ function Show-RoleMappings {
     Write-Host "Current Role Mappings:" -ForegroundColor Cyan
     Write-Host ""
 
-    $roleOrder = @("primary", "worker-heavy", "worker-lite", "validator", "friend", "critic")
+    $roleOrder = @("primary", "worker-heavy", "worker-lite", "validator", "critic")
 
     foreach ($roleName in $roleOrder) {
         if ($Config.roles.ContainsKey($roleName)) {
@@ -654,7 +654,7 @@ function Start-RoleMappingWizard {
     Write-Host ""
 
     # Map each role (except primary which is always native)
-    $rolesToMap = @("worker-heavy", "worker-lite", "validator", "friend", "critic")
+    $rolesToMap = @("worker-heavy", "worker-lite", "validator", "critic")
 
     foreach ($roleName in $rolesToMap) {
         $currentConn = if ($Config.roles.ContainsKey($roleName)) { $Config.roles[$roleName].connection } else { "" }

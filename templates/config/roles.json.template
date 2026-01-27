@@ -29,11 +29,6 @@
       "model": "claude-sonnet-4-5",
       "threshold": 0.7
     },
-    "friend": {
-      "description": "Rules guardian - enforces CLAUDE.md compliance",
-      "connection": "ai2",
-      "model": "gpt-4o"
-    },
     "critic": {
       "description": "Quality gate - skeptical review of outputs",
       "connection": "ai3",

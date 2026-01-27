@@ -106,14 +106,13 @@ $healthStatus = @{
 }
 
 # Add role-based health status entries
-$roleNames = @("worker-heavy", "worker-lite", "validator", "friend", "critic")
+$roleNames = @("worker-heavy", "worker-lite", "validator", "critic")
 foreach ($roleName in $roleNames) {
     $conn = if ($roleConfig.ContainsKey($roleName)) { $roleConfig[$roleName].Connection } else { "" }
     $displayName = switch ($roleName) {
         "worker-heavy" { "Worker-Heavy" }
         "worker-lite" { "Worker-Lite" }
         "validator" { "Validator" }
-        "friend" { "Friend" }
         "critic" { "Critic" }
     }
 
@@ -267,14 +266,12 @@ $primaryInd = Get-StatusIndicator $healthStatus.Primary.Status
 $workerHeavyInd = Get-StatusIndicator $healthStatus["worker-heavy"].Status
 $workerLiteInd = Get-StatusIndicator $healthStatus["worker-lite"].Status
 $validatorInd = Get-StatusIndicator $healthStatus["validator"].Status
-$friendInd = Get-StatusIndicator $healthStatus["friend"].Status
 $criticInd = Get-StatusIndicator $healthStatus["critic"].Status
 
 # Get connection IDs for display
 $workerHeavyConn = if ($roleConfig.ContainsKey("worker-heavy")) { $roleConfig["worker-heavy"].Connection.ToUpper() } else { "N/C" }
 $workerLiteConn = if ($roleConfig.ContainsKey("worker-lite")) { $roleConfig["worker-lite"].Connection.ToUpper() } else { "N/C" }
 $validatorConn = if ($roleConfig.ContainsKey("validator")) { $roleConfig["validator"].Connection.ToUpper() } else { "N/C" }
-$friendConn = if ($roleConfig.ContainsKey("friend")) { $roleConfig["friend"].Connection.ToUpper() } else { "N/C" }
 $criticConn = if ($roleConfig.ContainsKey("critic")) { $roleConfig["critic"].Connection.ToUpper() } else { "N/C" }
 
 # Render the architecture diagram
@@ -291,19 +288,19 @@ $diagram = @"
 +------------------+
           |
           v
-+---------------------------------------------------------+---------------+
-|  $primaryInd PRIMARY - ORCHESTRATOR                     | $friendInd FRIEND   |
-|        Native Claude Code                               |   ($friendConn)     |
-|                                                         |                 |
-|  Responsibilities:                                      |  Rules          |
-|  * Understand requirements                              |  Guardian       |
-|  * Classify task complexity (T1 vs T2+)                 |                 |
-|  * Route to appropriate Worker                          |  Enforces       |
-|  * Consult Validator for decisions                      |  CLAUDE.md      |
-|  * Synthesize and respond                               |                 |
-|                                                         |                 |
-|    PRIMARY DOES NOT CODE                                |                 |
-+---------------------------------------------------------+-----------------+
++-----------------------------------------------------------------------+
+|  $primaryInd PRIMARY - ORCHESTRATOR                                       |
+|        Native Claude Code                                             |
+|                                                                       |
+|  Responsibilities:                                                    |
+|  * Understand requirements                                            |
+|  * Classify task complexity (T1 vs T2+)                               |
+|  * Route to appropriate Worker                                        |
+|  * Consult Validator for decisions                                    |
+|  * Synthesize and respond                                             |
+|                                                                       |
+|    PRIMARY DOES NOT CODE                                              |
++-----------------------------------------------------------------------+
             |                    |                    |
             |             +------+------+             |
             v             v             v             v

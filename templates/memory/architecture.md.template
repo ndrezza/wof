@@ -26,18 +26,18 @@
 ### Architecture Diagram
 
 ```
-┌─────────────────────────────────────────────────┬─────────────┐
-│  PRIMARY (Opus 4.5) - ORCHESTRATOR              │   FRIEND    │
-│  Anthropic Direct API                           │   (GPT-4o)  │
-│                                                 │             │
-│  • Understand requirements                      │  Rules      │
-│  • Break down work                              │  Guardian   │
-│  • Route tasks to appropriate Worker            │► CLAUDE.md  │
-│  • Consult Validator for decisions              │             │
-│  • Synthesize and respond                       │             │
-│                                                 │             │
-│      PRIMARY DOES NOT CODE                      │             │
-└─────────────────────────────────────────────────┴─────────────┘
+┌───────────────────────────────────────────────────────────────┐
+│  PRIMARY (Opus 4.5) - ORCHESTRATOR                            │
+│  Anthropic Direct API                                         │
+│                                                               │
+│  • Understand requirements                                    │
+│  • Break down work                                            │
+│  • Route tasks to appropriate Worker                          │
+│  • Consult Validator for decisions                            │
+│  • Synthesize and respond                                     │
+│                                                               │
+│      PRIMARY DOES NOT CODE                                    │
+└───────────────────────────────────────────────────────────────┘
             │                    │                    │
             │         ┌─────────┴─────────┐          │
             ▼         ▼                   ▼          ▼
@@ -63,7 +63,6 @@
 | **Worker-Heavy** | Azure AI Foundry | `claude-opus-4-5-20251101` | Complex tasks (T2+): code gen, tests, files |
 | **Worker-Lite** | Local | `deepseek-coder-v2-lite-instruct` | Simple tasks (T1): search, format, navigate |
 | **Validator** | Azure AI Foundry | `claude-sonnet-4-5` | Decision validation (>0.7 confidence) |
-| **Friend** | Azure OpenAI | `gpt-4o` | Rules/CLAUDE.md guardian |
 | **Critic** | Azure OpenAI | `gpt-5.1-codex-mini` | Quality gate (≥80% viability) |
 
 ### Worker Routing
@@ -90,7 +89,6 @@ Endpoints are configured in `.ai/config/credentials.local.json` with generic con
 | **Worker-Heavy** | AI1 | Azure AI Foundry (Claude) |
 | **Worker-Lite** | AI4 | Local model server or cloud |
 | **Validator** | AI1 | Azure AI Foundry (Claude) |
-| **Friend** | AI2 | Azure OpenAI (GPT-4o) |
 | **Critic** | AI3 | Azure OpenAI (Codex) |
 
 > Role-to-connection mappings are defined in `.ai/config/roles.json`.
@@ -98,15 +96,14 @@ Endpoints are configured in `.ai/config/credentials.local.json` with generic con
 ### Workflow
 
 1. **Primary** receives user request
-2. **Primary** consults **Friend** for CLAUDE.md compliance
-3. **Primary** classifies task complexity (T1 vs T2+)
-4. **Primary** routes to appropriate **Worker**:
+2. **Primary** classifies task complexity (T1 vs T2+)
+3. **Primary** routes to appropriate **Worker**:
    - T1 simple tasks → **Worker-Lite** (local DeepSeek)
    - T2+ complex tasks → **Worker-Heavy** (Azure Opus)
-5. **Worker** executes the task
-6. **Critic** validates Worker output (≥80% viability required)
-7. **Primary** consults **Validator** for key decisions (>0.7 confidence)
-8. **Primary** synthesizes results and responds to user
+4. **Worker** executes the task
+5. **Critic** validates Worker output (≥80% viability required)
+6. **Primary** consults **Validator** for key decisions (>0.7 confidence)
+7. **Primary** synthesizes results and responds to user
 
 ### Key Rules
 

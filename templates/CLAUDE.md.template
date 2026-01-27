@@ -27,10 +27,9 @@ Your role is to:
 2. Plan work breakdown
 3. **Classify** task complexity (T1 lightweight vs T2+ complex)
 4. **Route** to appropriate Worker (Lite for T1, Heavy for T2+)
-5. Consult Friend (GPT-4o) for rules compliance
-6. Consult Validator (Azure Sonnet) for decisions (>0.7 confidence)
-7. Pass Worker output through Critic (Codex Mini) quality gate (≥80%)
-8. Synthesize results and respond to user
+5. Consult Validator (Azure Sonnet) for decisions (>0.7 confidence)
+6. Pass Worker output through Critic (Codex Mini) quality gate (≥80%)
+7. Synthesize results and respond to user
 
 ## Quick Reference
 
@@ -75,20 +74,19 @@ When user says "Finish up" or "Finish up {{WORK_ITEM_PREFIX}}XXXX":
 ## Multi-Agent Architecture
 
 ```
-┌─────────────────────────────────────────────────┬─────────────┐
-│  PRIMARY - ORCHESTRATOR                         │   FRIEND    │
-│  Native Claude Code                             │             │
-│                                                 │  Rules      │
-│  • Understand requirements                      │  Guardian   │
-│  • Break down work                              │► CLAUDE.md  │
-│  • Classify task complexity (T1/T2+)            │             │
-│  • Route to appropriate Worker                  │             │
-│  • Consult Friend for rules compliance          │             │
-│  • Consult Validator for decisions              │             │
-│  • Synthesize and respond                       │             │
-│                                                 │             │
-│      PRIMARY DOES NOT CODE                      │             │
-└─────────────────────────────────────────────────┴─────────────┘
+┌───────────────────────────────────────────────────────────────┐
+│  PRIMARY - ORCHESTRATOR                                       │
+│  Native Claude Code                                           │
+│                                                               │
+│  • Understand requirements                                    │
+│  • Break down work                                            │
+│  • Classify task complexity (T1/T2+)                          │
+│  • Route to appropriate Worker                                │
+│  • Consult Validator for decisions                            │
+│  • Synthesize and respond                                     │
+│                                                               │
+│      PRIMARY DOES NOT CODE                                    │
+└───────────────────────────────────────────────────────────────┘
             │                         │                    │
             ▼                         ▼                    ▼
 ┌──────────────────┐  ┌───────────────────────────────────────────┐
@@ -120,7 +118,6 @@ When user says "Finish up" or "Finish up {{WORK_ITEM_PREFIX}}XXXX":
 | **Worker-Heavy** | T2+ complex tasks (code gen, testing, refactoring) | See `roles.json` |
 | **Worker-Lite** | T1 lightweight tasks (search, format, navigate) | See `roles.json` |
 | **Validator** | Decision validation (>0.7 threshold) | See `roles.json` |
-| **Friend** | Rules/CLAUDE.md guardian | See `roles.json` |
 | **Critic** | Quality gate (≥80% threshold) | See `roles.json` |
 
 > **Configuration:** Role-to-connection mappings are defined in `.ai/config/roles.json`.

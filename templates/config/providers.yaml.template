@@ -72,25 +72,6 @@ providers:
     role: validator
     threshold: 0.7
 
-  # FRIEND - Azure OpenAI (GPT-4o)
-  azure_friend:
-    name: "Friend (Azure GPT-4o)"
-    description: "Rules Guardian - Enforces CLAUDE.md compliance"
-    type: azure_openai
-    status: active
-    configuration:
-      endpoint: "${AZURE_OPENAI_ENDPOINT}"
-      api_key: "${AZURE_OPENAI_API_KEY}"
-      api_version: "2025-01-01-preview"
-    capabilities:
-      - rules_enforcement
-      - compliance_checking
-    tier_support:
-      - t2_standard
-    models:
-      gpt4o: "gpt-4o"
-    role: friend
-
   # CRITIC - Azure Codex Mini
   azure_critic:
     name: "Critic (Azure Codex Mini)"
@@ -142,7 +123,6 @@ orchestration:
     worker_heavy: azure_worker
     worker_lite: local_deepseek_worker
     validator: azure_validator
-    friend: azure_friend
     critic: azure_critic
 
   delegation_routing:
@@ -168,10 +148,6 @@ orchestration:
     decision_validation:
       target: azure_validator
       threshold: 0.7
-      tier: t2_standard
-
-    rules_check:
-      target: azure_friend
       tier: t2_standard
 
     quality_gate:
@@ -211,12 +187,6 @@ task_delegation:
     tier: t2_standard
     model: claude-sonnet-4-5
     threshold: 0.7
-
-  Friend:
-    description: "CLAUDE.md rules guardian"
-    provider: azure_friend
-    tier: t2_standard
-    model: gpt-4o
 
   Critic:
     description: "Quality gate (≥80% viability)"

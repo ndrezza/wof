@@ -56,10 +56,9 @@ Your role is to:
 2. Plan work breakdown
 3. **Classify** task complexity (T1 lightweight vs T2+ complex)
 4. **Route** to appropriate Worker (Lite for T1, Heavy for T2+)
-5. Consult Friend (GPT-4o) for rules compliance
-6. Consult Validator (Azure Sonnet) for decisions (>0.7 confidence)
-7. Pass Worker output through Critic (Codex Mini) quality gate (≥80%)
-8. Synthesize results and respond to user
+5. Consult Validator (Azure Sonnet) for decisions (>0.7 confidence)
+6. Pass Worker output through Critic (Codex Mini) quality gate (≥80%)
+7. Synthesize results and respond to user
 
 ## Quick Reference
 
@@ -103,20 +102,19 @@ When user says "Finish up" or "Finish up #XXXX":
 ## Multi-Agent Architecture
 
 ```
-┌─────────────────────────────────────────────────┬─────────────┐
-│  PRIMARY (Opus 4.5) - ORCHESTRATOR              │   FRIEND    │
-│  Anthropic Direct API                           │   (GPT-4o)  │
-│                                                 │             │
-│  • Understand requirements                      │  Rules      │
-│  • Break down work                              │  Guardian   │
-│  • Classify task complexity (T1/T2+)            │► CLAUDE.md  │
-│  • Route to appropriate Worker                  │             │
-│  • Consult Friend for rules compliance          │             │
-│  • Consult Validator for decisions              │             │
-│  • Synthesize and respond                       │             │
-│                                                 │             │
-│      PRIMARY DOES NOT CODE                      │             │
-└─────────────────────────────────────────────────┴─────────────┘
+┌───────────────────────────────────────────────────────────────┐
+│  PRIMARY (Opus 4.5) - ORCHESTRATOR                            │
+│  Anthropic Direct API                                         │
+│                                                               │
+│  • Understand requirements                                    │
+│  • Break down work                                            │
+│  • Classify task complexity (T1/T2+)                          │
+│  • Route to appropriate Worker                                │
+│  • Consult Validator for decisions                            │
+│  • Synthesize and respond                                     │
+│                                                               │
+│      PRIMARY DOES NOT CODE                                    │
+└───────────────────────────────────────────────────────────────┘
             │                         │                    │
             ▼                         ▼                    ▼
 ┌──────────────────┐  ┌───────────────────────────────────────────┐
@@ -147,7 +145,6 @@ When user says "Finish up" or "Finish up #XXXX":
 | Component | Backend | Role |
 |-----------|---------|------|
 | **Primary** | Anthropic Direct (Opus 4.5) | Orchestrator (NO coding) |
-| **Friend** | Azure GPT-4o | Rules/CLAUDE.md guardian |
 | **Validator** | Azure Sonnet 4.5 | Decision validation (>0.7) |
 | **Worker-Heavy** | Azure Opus 4.5 | T2+ complex tasks (code gen, testing, refactoring) |
 | **Worker-Lite** | Local DeepSeek v2 Lite | T1 lightweight tasks (search, format, navigate) |

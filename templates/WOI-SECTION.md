@@ -31,18 +31,18 @@ This project has the Workload Orchestration Framework installed as a local insta
 ### Multi-Agent Architecture
 
 ```
-┌─────────────────────────────────────────────────┬─────────────┐
-│  PRIMARY (Opus 4.5) - ORCHESTRATOR              │   FRIEND    │
-│  Anthropic Direct API                           │   (GPT-4o)  │
-│                                                 │             │
-│  • Understand requirements                      │  Rules      │
-│  • Classify task complexity (T1/T2+)            │  Guardian   │
-│  • Route to appropriate Worker                  │► CLAUDE.md  │
-│  • Consult Validator for decisions              │             │
-│  • Synthesize and respond                       │             │
-│                                                 │             │
-│      PRIMARY DOES NOT CODE                      │             │
-└─────────────────────────────────────────────────┴─────────────┘
+┌───────────────────────────────────────────────────────────────┐
+│  PRIMARY (Opus 4.5) - ORCHESTRATOR                            │
+│  Anthropic Direct API                                         │
+│                                                               │
+│  • Understand requirements                                    │
+│  • Classify task complexity (T1/T2+)                          │
+│  • Route to appropriate Worker                                │
+│  • Consult Validator for decisions                            │
+│  • Synthesize and respond                                     │
+│                                                               │
+│      PRIMARY DOES NOT CODE                                    │
+└───────────────────────────────────────────────────────────────┘
             │                         │                    │
             ▼                         ▼                    ▼
 ┌──────────────────┐  ┌───────────────────────────────────────────┐
@@ -70,7 +70,6 @@ This project has the Workload Orchestration Framework installed as a local insta
 | Component | Backend | Role |
 |-----------|---------|------|
 | **Primary** | Anthropic Direct (Opus 4.5) | Orchestrator (NO coding) |
-| **Friend** | Azure GPT-4o | Rules/CLAUDE.md guardian |
 | **Validator** | Azure Sonnet 4.5 | Decision validation (>0.7) |
 | **Worker-Heavy** | Azure Opus 4.5 | T2+ complex tasks |
 | **Worker-Lite** | Local DeepSeek v2 Lite | T1 lightweight tasks |

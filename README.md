@@ -31,22 +31,23 @@ This framework provides:
 
 - **Multi-Agent Architecture** - Primary orchestrator with specialized workers
 - **Dual-Worker Routing** - T1 lightweight tasks → local model, T2+ complex → Azure
-- **Quality Gates** - Validator, Friend, and Critic agents for decision validation
+- **Quality Gates** - Validator and Critic agents for decision validation
 - **Automated Workflows** - 9-phase feature development with phase gates
 - **Hook Integration** - Claude Code hooks for command approval and file validation
 
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────┬─────────────┐
-│  PRIMARY - ORCHESTRATOR                         │   FRIEND    │
-│  • Understand requirements                      │   Rules     │
-│  • Classify task complexity (T1/T2+)            │   Guardian  │
-│  • Route to appropriate Worker                  │             │
-│  • Synthesize and respond                       │             │
-│                                                 │             │
-│      PRIMARY DOES NOT CODE                      │             │
-└─────────────────────────────────────────────────┴─────────────┘
+┌───────────────────────────────────────────────────────────────┐
+│  PRIMARY - ORCHESTRATOR                                       │
+│  • Understand requirements                                    │
+│  • Classify task complexity (T1/T2+)                          │
+│  • Route to appropriate Worker                                │
+│  • Consult Validator for decisions                            │
+│  • Synthesize and respond                                     │
+│                                                               │
+│      PRIMARY DOES NOT CODE                                    │
+└───────────────────────────────────────────────────────────────┘
             │                         │                    │
             ▼                         ▼                    ▼
 ┌──────────────────┐  ┌───────────────────────────────────────────┐
@@ -75,7 +76,6 @@ This framework provides:
 | **Worker-Heavy** | T2+ complex tasks (code gen, testing) | See `roles.json` |
 | **Worker-Lite** | T1 lightweight tasks (search, format) | See `roles.json` |
 | **Validator** | Decision validation (>0.7 threshold) | See `roles.json` |
-| **Friend** | Rules/CLAUDE.md guardian | See `roles.json` |
 | **Critic** | Quality gate (≥80% threshold) | See `roles.json` |
 
 > **Configuration:** Role-to-connection mappings are defined in `.ai/config/roles.json`.
@@ -211,7 +211,6 @@ your-project/
 | `get-worker-routing.ps1` | Classify tasks and route to Worker-Lite or Worker-Heavy |
 | `validate-autonomy.ps1` | Validate decisions with Azure Sonnet (>0.7 confidence) |
 | `bias-control.ps1` | Skeptical Q&A quality gate with Codex Mini (≥80%) |
-| `friend-watchdog.ps1` | CLAUDE.md rules compliance with GPT-4o |
 | `phase-gate.ps1` | 9-phase workflow enforcement |
 | `check-orchestration-health.ps1` | AI component status dashboard |
 | `delegate-to-local-worker.ps1` | Worker-Lite task delegation |
@@ -294,7 +293,7 @@ Copy-Item "extensions\azure-devops\ado-utils.ps1.template" ".ai\scripts\ado-util
 - PowerShell 5.1+
 - Claude Code CLI
 - Azure AI Foundry access (for Worker-Heavy, Validator)
-- Azure OpenAI access (for Friend, Critic)
+- Azure OpenAI access (for Critic)
 - (Optional) LM Studio with local model for Worker-Lite
 
 ## Environment Variables (v2 Format)

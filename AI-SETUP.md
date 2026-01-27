@@ -154,7 +154,7 @@ depends_on: AI1_ENDPOINT
 
 ### Optional Credentials
 
-#### AI2_ENDPOINT (Secondary AI - typically Azure OpenAI)
+#### AI2_ENDPOINT (Secondary AI - optional, for additional services)
 ```yaml
 id: AI2_ENDPOINT
 prompt: "What is your secondary AI endpoint URL? (Press Enter to skip)"
@@ -166,8 +166,8 @@ help: |
   2. Navigate to Keys and Endpoint
   3. Copy the endpoint URL
 sensitive: false
-enables: "Friend role (rules guardian)"
-skip_message: "Friend role will be disabled. You can add this later."
+enables: "Additional AI services (optional)"
+skip_message: "AI2 slot will remain empty. You can add this later."
 maps_to: "ai2 connection in connections.json"
 ```
 
@@ -179,7 +179,7 @@ required: false
 format: "32-character alphanumeric string"
 help: "Same location as endpoint - copy Key 1 or Key 2"
 sensitive: true
-enables: "Friend role"
+enables: "Additional AI services"
 depends_on: AI2_ENDPOINT
 ```
 
@@ -384,7 +384,7 @@ Fix: Install Claude Code CLI or add to PATH
 | Component | Status Red | Fix |
 |-----------|------------|-----|
 | AI1 (Primary) | "NOT SET" | Add AI1_ENDPOINT and AI1_API_KEY in credentials.local.json |
-| AI2 (Secondary) | "NOT SET" | Optional - add AI2_* if you want Friend role |
+| AI2 (Secondary) | "NOT SET" | Optional - add AI2_* for additional services |
 | AI3 (Tertiary) | "NOT SET" | Optional - add AI3_* if you want Critic role |
 | AI4 (Worker-Lite) | "NOT SET" | Optional - add AI4_ENDPOINT or start LM Studio on port 1234 |
 

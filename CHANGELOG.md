@@ -5,6 +5,25 @@ All notable changes to the Workload Orchestration Framework (WOF) will be docume
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.0] - 2026-01-27
+
+### Removed
+
+- **Friend Role** - Removed the Friend (GPT-4o Rules Guardian) role from the framework
+  - Deleted `friend-watchdog.ps1` script
+  - Removed friend from role lists in all scripts and templates
+  - Updated architecture diagrams to reflect simplified 4-role architecture
+  - AI2 connection slot remains available for other purposes
+  - The Validator role continues to provide decision validation
+
+### Changed
+
+- **Simplified Architecture** - Now uses 4 roles instead of 5:
+  - Primary (Orchestrator)
+  - Validator (Decision validation >0.7 confidence)
+  - Worker-Heavy / Worker-Lite (Task execution)
+  - Critic (Quality gate ≥80%)
+
 ## [2.0.0] - 2026-01-27
 
 ### Added
@@ -12,7 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Configuration Wizard** - Interactive AI connection setup via `/wof configure`
   - Add/manage up to 10 AI connections (AI1-AI10)
   - Real-time connection testing with latency reporting
-  - Role mapping wizard (worker-heavy, worker-lite, validator, friend, critic)
+  - Role mapping wizard (worker-heavy, worker-lite, validator, critic)
   - Support for 3 connection types: `azure_ai_foundry_anthropic`, `azure_openai`, `openai_compatible`
   - `--test-only` flag to only test existing connections
   - `--quick` flag to skip confirmations
@@ -241,6 +260,7 @@ When upgrading from v1.x:
 - Template placeholders use `{{PLACEHOLDER}}` syntax
 - Files marked with `# CUSTOMIZED` are preserved during sync
 
+[2.1.0]: https://github.com/ndrezza/wof?version=GTv2.1.0
 [2.0.0]: https://github.com/ndrezza/wof?version=GTv2.0.0
 [1.5.1]: https://github.com/ndrezza/wof?version=GTv1.5.1
 [1.2.7]: https://github.com/ndrezza/wof?version=GTv1.2.7
