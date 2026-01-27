@@ -622,7 +622,7 @@ if ($AdoOrganization -and $AdoProject) {
 # Optional: Run configuration wizard
 Write-Host "Would you like to configure AI connections now? [y/N]: " -NoNewline
 $configureChoice = Read-Host
-if ($configureChoice.ToLower() -eq "y") {
+if ($configureChoice -and $configureChoice.ToLower() -eq "y") {
     $wizardScript = Join-Path $aiDir "scripts\configure-wizard.ps1"
     if (Test-Path $wizardScript) {
         & $wizardScript
