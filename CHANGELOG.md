@@ -5,6 +5,17 @@ All notable changes to the Workload Orchestration Framework (WOF) will be docume
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.5] - 2026-01-27
+
+### Added
+
+- **WOF/WOI Terminology** - Formalized naming distinction
+  - WOF = Workload Orchestration **Framework** (source repo/product)
+  - WOI = Workload Orchestration **Instance** (local installation in a project)
+- **Inception Mode** - WOF repo now uses LocalOnly WOI for self-orchestration
+  - `.ai/` and `.claude/` are gitignored in framework repo
+  - Allows using AI orchestration to develop WOF itself
+
 ## [1.2.4] - 2026-01-27
 
 ### Added
@@ -164,6 +175,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Template placeholders use `{{PLACEHOLDER}}` syntax
 - Files marked with `# CUSTOMIZED` are preserved during sync
 
+[1.2.5]: https://github.com/ndrezza/wof?version=GTv1.2.5
 [1.2.4]: https://github.com/ndrezza/wof?version=GTv1.2.4
 [1.2.3]: https://github.com/ndrezza/wof?version=GTv1.2.3
 [1.2.2]: https://github.com/ndrezza/wof?version=GTv1.2.2
