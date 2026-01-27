@@ -716,17 +716,20 @@ $configuredCount = Show-ConnectionsTable -Config $config
 if ($configuredCount -eq 0) {
     Write-Host "No AI connections configured. Add one now? [Y/n]: " -NoNewline
     $addFirst = Read-Host
-    if ($addFirst -eq "" -or $addFirst.ToLower() -eq "y") {
+    if (-not $addFirst -or $addFirst.ToLower() -eq "y") {
         $config = Add-AIConnection -SlotNumber 1 -Config $config
     }
 } else {
     Write-Host "Add or modify a connection? [y/N]: " -NoNewline
     $modify = Read-Host
-    if ($modify.ToLower() -eq "y") {
+    if ($modify -and $modify.ToLower() -eq "y") {
         Write-Host "Enter slot number (1-10): " -NoNewline
-        $slot = [int](Read-Host)
-        if ($slot -ge 1 -and $slot -le 10) {
-            $config = Add-AIConnection -SlotNumber $slot -Config $config
+        $slotInput = Read-Host
+        if ($slotInput) {
+            $slot = [int]$slotInput
+            if ($slot -ge 1 -and $slot -le 10) {
+                $config = Add-AIConnection -SlotNumber $slot -Config $config
+            }
         }
     }
 }
@@ -738,7 +741,7 @@ while ($addMore) {
     Write-Host "Add another connection? [y/N]: " -NoNewline
     $response = Read-Host
 
-    if ($response.ToLower() -eq "y") {
+    if ($response -and $response.ToLower() -eq "y") {
         # Find next available slot
         $nextSlot = 0
         1..10 | ForEach-Object {
@@ -774,7 +777,7 @@ Show-ConnectionsTable -Config $config | Out-Null
 Write-Host ""
 Write-Host "Configure role mappings? [Y/n]: " -NoNewline
 $doRoles = Read-Host
-if ($doRoles -eq "" -or $doRoles.ToLower() -eq "y") {
+if (-not $doRoles -or $doRoles.ToLower() -eq "y") {
     $config = Start-RoleMappingWizard -Config $config
 }
 
@@ -808,7 +811,7 @@ Show-RoleMappings -Config $config
 Write-Host ""
 Write-Host "Run full health check? [Y/n]: " -NoNewline
 $doHealth = Read-Host
-if ($doHealth -eq "" -or $doHealth.ToLower() -eq "y") {
+if (-not $doHealth -or $doHealth.ToLower() -eq "y") {
     $healthScript = Join-Path $PSScriptRoot "check-orchestration-health.ps1"
     if (Test-Path $healthScript) {
         & $healthScript
