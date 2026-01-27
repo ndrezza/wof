@@ -1,0 +1,257 @@
+# Scan Work Items Script
+#
+# Queries Azure DevOps for work items in the current iteration.
+# Helps Primary AI discover new work and questions to address.
+#
+# Usage:
+#   # Get all User Stories with value area "Architectural" that are New
+#   $items = & '.\.ai\scripts\scan-workitems.ps1' -ValueArea 'Architectural' -State 'New'
+#
+#   # Get all tasks for a specific parent
+#   $tasks = & '.\.ai\scripts\scan-workitems.ps1' -ParentId 2937 -Type 'Task'
+#
+#   # Get items with unread comments/questions
+#   $questions = & '.\.ai\scripts\scan-workitems.ps1' -HasQuestions
+
+param(
+    [Parameter(Mandatory=$false)]
+    [ValidateSet('User Story', 'Task', 'Bug', 'Feature')]
+    [string]$Type = 'User Story',
+
+    [Parameter(Mandatory=$false)]
+    [string]$ValueArea = '',
+
+    [Parameter(Mandatory=$false)]
+    [ValidateSet('New', 'Active', 'Resolved', 'Closed', '')]
+    [string]$State = '',
+
+    [Parameter(Mandatory=$false)]
+    [int]$ParentId = 0,
+
+    [Parameter(Mandatory=$false)]
+    [switch]$HasQuestions,
+
+    [Parameter(Mandatory=$false)]
+    [switch]$CurrentIteration,
+
+    [Parameter(Mandatory=$false)]
+    [string]$IterationPath = ''
+)
+
+$ErrorActionPreference = "Stop"
+
+# Azure DevOps configuration - populated from WOF setup
+$script:AdoOrg = "{{ADO_ORGANIZATION}}"
+$script:AdoProject = "{{ADO_PROJECT}}"
+$script:AdoApiVersion = "7.1"
+
+function Get-AdoHeaders {
+    $pat = $env:AZURE_DEVOPS_PAT
+
+    if (-not $pat) {
+        try {
+            $pat = az account get-access-token --resource "499b84ac-1321-427f-aa17-267ca6975798" --query accessToken -o tsv 2>$null
+        }
+        catch {
+            throw "No Azure DevOps PAT found. Set AZURE_DEVOPS_PAT environment variable or login with 'az login'."
+        }
+    }
+
+    $base64Auth = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes(":$pat"))
+    return @{
+        "Authorization" = "Basic $base64Auth"
+        "Content-Type" = "application/json"
+    }
+}
+
+function Get-CurrentIteration {
+    $headers = Get-AdoHeaders
+    $uri = "https://dev.azure.com/$script:AdoOrg/$script:AdoProject/_apis/work/teamsettings/iterations?`$timeframe=current&api-version=$script:AdoApiVersion"
+
+    try {
+        $result = Invoke-RestMethod -Uri $uri -Headers $headers -Method Get
+        if ($result.value -and $result.value.Count -gt 0) {
+            return $result.value[0].path
+        }
+    }
+    catch {
+        Write-Warning "Could not get current iteration: $_"
+    }
+    return $null
+}
+
+function Invoke-WiqlQuery {
+    param([string]$Wiql)
+
+    $headers = Get-AdoHeaders
+    $uri = "https://dev.azure.com/$script:AdoOrg/$script:AdoProject/_apis/wit/wiql?api-version=$script:AdoApiVersion"
+
+    $body = @{ query = $Wiql } | ConvertTo-Json
+
+    try {
+        return Invoke-RestMethod -Uri $uri -Headers $headers -Method Post -Body $body -ContentType "application/json"
+    }
+    catch {
+        Write-Warning "WIQL query failed: $_"
+        return $null
+    }
+}
+
+function Get-WorkItemDetails {
+    param([int[]]$Ids)
+
+    if ($Ids.Count -eq 0) { return @() }
+
+    $headers = Get-AdoHeaders
+    $idsString = $Ids -join ","
+    $uri = "https://dev.azure.com/$script:AdoOrg/$script:AdoProject/_apis/wit/workitems?ids=$idsString&`$expand=relations&api-version=$script:AdoApiVersion"
+
+    try {
+        $result = Invoke-RestMethod -Uri $uri -Headers $headers -Method Get
+        return $result.value
+    }
+    catch {
+        Write-Warning "Failed to get work item details: $_"
+        return @()
+    }
+}
+
+function Get-WorkItemComments {
+    param([int]$Id)
+
+    $headers = Get-AdoHeaders
+    $uri = "https://dev.azure.com/$script:AdoOrg/$script:AdoProject/_apis/wit/workitems/$Id/comments?api-version=$script:AdoApiVersion-preview"
+
+    try {
+        $result = Invoke-RestMethod -Uri $uri -Headers $headers -Method Get
+        return $result.comments
+    }
+    catch {
+        return @()
+    }
+}
+
+# Build WIQL query
+$conditions = @()
+$conditions += "[System.TeamProject] = '$script:AdoProject'"
+$conditions += "[System.WorkItemType] = '$Type'"
+
+if ($State) {
+    $conditions += "[System.State] = '$State'"
+}
+
+if ($ValueArea) {
+    $conditions += "[Microsoft.VSTS.Common.ValueArea] = '$ValueArea'"
+}
+
+if ($CurrentIteration -or -not $IterationPath) {
+    $currentIter = Get-CurrentIteration
+    if ($currentIter) {
+        $conditions += "[System.IterationPath] = '$currentIter'"
+    }
+}
+elseif ($IterationPath) {
+    $conditions += "[System.IterationPath] = '$IterationPath'"
+}
+
+$whereClause = $conditions -join " AND "
+$wiql = "SELECT [System.Id] FROM WorkItems WHERE $whereClause ORDER BY [System.Id] DESC"
+
+Write-Host "Scanning work items..." -ForegroundColor Cyan
+Write-Host "Query: $wiql" -ForegroundColor Gray
+
+# Execute query
+$queryResult = Invoke-WiqlQuery -Wiql $wiql
+
+if (-not $queryResult -or -not $queryResult.workItems) {
+    Write-Host "No work items found matching criteria." -ForegroundColor Yellow
+    return @{
+        Success = $true
+        Count = 0
+        Items = @()
+    }
+}
+
+$workItemIds = $queryResult.workItems | ForEach-Object { $_.id }
+Write-Host "Found $($workItemIds.Count) work items" -ForegroundColor Green
+
+# Get details
+$workItems = Get-WorkItemDetails -Ids $workItemIds
+
+# Filter by parent if specified
+if ($ParentId -gt 0) {
+    $workItems = $workItems | Where-Object {
+        $_.fields.'System.Parent' -eq $ParentId
+    }
+}
+
+# Build result objects
+$results = @()
+foreach ($item in $workItems) {
+    $hasComments = $false
+    $questionCount = 0
+
+    if ($HasQuestions) {
+        $comments = Get-WorkItemComments -Id $item.id
+        $hasComments = $comments.Count -gt 0
+        # Count comments that look like questions (end with ?)
+        $questionCount = ($comments | Where-Object { $_.text -match '\?$' }).Count
+    }
+
+    $result = @{
+        Id = $item.id
+        Title = $item.fields.'System.Title'
+        State = $item.fields.'System.State'
+        Type = $item.fields.'System.WorkItemType'
+        ValueArea = $item.fields.'Microsoft.VSTS.Common.ValueArea'
+        IterationPath = $item.fields.'System.IterationPath'
+        AssignedTo = $item.fields.'System.AssignedTo'.displayName
+        ParentId = $item.fields.'System.Parent'
+        Description = $item.fields.'System.Description'
+        HasComments = $hasComments
+        QuestionCount = $questionCount
+        Url = "https://dev.azure.com/$script:AdoOrg/$script:AdoProject/_workitems/edit/$($item.id)"
+    }
+
+    # Check for embedded images in description
+    if ($result.Description -match '<img\s+src="([^"]+)"') {
+        $result.HasEmbeddedImages = $true
+        $result.ImageUrls = [regex]::Matches($result.Description, '<img\s+src="([^"]+)"') | ForEach-Object { $_.Groups[1].Value }
+    }
+    else {
+        $result.HasEmbeddedImages = $false
+        $result.ImageUrls = @()
+    }
+
+    $results += $result
+}
+
+# Filter for questions if requested
+if ($HasQuestions) {
+    $results = $results | Where-Object { $_.QuestionCount -gt 0 -or $_.HasComments }
+}
+
+# Output summary
+Write-Host ""
+Write-Host "========================================" -ForegroundColor Cyan
+Write-Host "Scan Results" -ForegroundColor Cyan
+Write-Host "========================================" -ForegroundColor Cyan
+
+foreach ($item in $results) {
+    Write-Host "#$($item.Id) - $($item.Title)" -ForegroundColor White
+    Write-Host "  State: $($item.State) | Type: $($item.Type)" -ForegroundColor Gray
+    if ($item.ValueArea) {
+        Write-Host "  Value Area: $($item.ValueArea)" -ForegroundColor Yellow
+    }
+    if ($item.HasEmbeddedImages) {
+        Write-Host "  Has embedded images: Yes ($($item.ImageUrls.Count))" -ForegroundColor Magenta
+    }
+    Write-Host ""
+}
+
+return @{
+    Success = $true
+    Count = $results.Count
+    Items = $results
+    Query = $wiql
+}
