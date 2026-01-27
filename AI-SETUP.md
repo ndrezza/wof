@@ -7,7 +7,7 @@
 
 ```yaml
 name: Workload Orchestration Framework (WOF)
-version: 1.2.4
+version: 1.3.0
 repository: https://github.com/ndrezza/wof
 setup_script: setup.ps1
 config_location: .ai/config/credentials.local.ps1
@@ -17,8 +17,8 @@ health_check: .ai/scripts/check-orchestration-health.ps1
 ## QUICK_REFERENCE
 
 ```
-Clone:    git clone https://github.com/ndrezza/wof.git
-Setup:    .\setup.ps1 -TargetPath "{TARGET}" -Mode "{MODE}"
+Clone:    git clone https://github.com/ndrezza/wof.git "$env:TEMP\wof-install"
+Setup:    .\setup.ps1 -TargetPath "{TARGET}"
 Config:   .ai/config/credentials.local.ps1
 Verify:   .\.ai\scripts\check-orchestration-health.ps1
 ```
@@ -58,43 +58,28 @@ $existingInstall = Test-Path $aiFolder
 - If yes: Run setup with `-Force` flag
 - If no: Abort installation
 
-### Step 3: SELECT_MODE
-
-**Ask user to choose installation mode:**
-
-| Mode | Description | Best For |
-|------|-------------|----------|
-| **SourceControlled** (default) | Framework committed to git, shared with team | Teams using AI workflows together |
-| **LocalOnly** | Framework completely gitignored | Personal use, trying it out, teams not ready for AI |
-
-**Interview prompt:**
-> "How would you like to install WOF?
-> 1. **SourceControlled** (Recommended) - Framework is committed to your repo and shared with your team
-> 2. **LocalOnly** - Framework is gitignored, only you can see it, invisible to other developers"
-
-### Step 4: RUN_SETUP
+### Step 3: RUN_SETUP
 
 ```powershell
 # Navigate to cloned framework
 cd "$env:TEMP\wof-install"
 
-# Run setup (adjust Mode based on user choice)
-.\setup.ps1 -TargetPath "{TARGET}" -Mode "{MODE}"
+# Run setup
+.\setup.ps1 -TargetPath "{TARGET}"
 ```
 
 **Parameters:**
 - `TargetPath`: Absolute path to target project root
-- `Mode`: `SourceControlled` or `LocalOnly`
 - `SolutionName`: (Optional) Defaults to directory name
 - `Force`: Add if updating existing installation
 
-### Step 5: CONFIGURE_CREDENTIALS
+### Step 4: CONFIGURE_CREDENTIALS
 
 See [CREDENTIAL_INTERVIEW](#credential_interview) section below.
 
 After collecting credentials, write them to `.ai/config/credentials.local.ps1` in the target project.
 
-### Step 6: SETUP_MCP
+### Step 5: SETUP_MCP
 
 Register the secondary-claude MCP server for Worker delegation:
 
@@ -104,7 +89,7 @@ claude mcp add --scope local secondary-claude -- claude mcp serve
 
 **Note:** This step requires Claude Code CLI to be available.
 
-### Step 7: VERIFY
+### Step 6: VERIFY
 
 Run the health check to verify installation:
 
@@ -115,7 +100,7 @@ Run the health check to verify installation:
 
 **Expected output:** Status dashboard showing which components are configured.
 
-### Step 8: CLEANUP
+### Step 7: CLEANUP
 
 ```powershell
 # Remove temporary clone
@@ -292,36 +277,30 @@ if ($hasAzureAnthropic) {
 > - Yes: Use existing credentials (recommended if this is an update)
 > - No: Enter new credentials"
 
-## MODE_SELECTION_DETAILS
+## GIT_BEHAVIOR
 
-### SourceControlled Mode (Default)
+WOI (Workload Orchestration Instance) files are gitignored at the **individual file level**. The setup script adds a managed WOI section to your `.gitignore`:
 
-**What gets committed:**
-- `CLAUDE.md` - Main orchestration document
-- `.claude/settings.json` - Claude Code hooks
-- `.claude/skills/` - Slash commands
-- `.ai/scripts/` - Core automation scripts
-- `.ai/config/` - Configuration (except credentials)
-- `.ai/memory/` - Architecture and conventions
-- `.ai/agents/` - Agent persona definitions
-- `.ai/workflows/` - Process definitions
+```gitignore
+# <!-- WOI-SECTION-START - Managed by WOF, do not edit manually -->
+# Workload Orchestration Instance (WOI)
+/.ai/config/credentials.local.ps1
+/.ai/config/models.yaml
+/.ai/scripts/approve-command.ps1
+# ... (all installed WOI files listed individually)
+/.ai/state/
+/.ai/logs/
+/.claude/settings.json
+/CLAUDE.md
+# <!-- WOI-SECTION-END -->
+```
 
-**What gets gitignored:**
-- `.ai/config/credentials.local.ps1` - Sensitive credentials
-- `.ai/state/` - Runtime state
-- `.ai/logs/` - Operation logs
+**This approach allows:**
+- WOI framework files to remain local (not committed by default)
+- User-created files in `.ai/` to be tracked if desired
+- Clean separation between framework and custom content
 
-### LocalOnly Mode
-
-**Everything gitignored:**
-- `.ai/` - Entire framework directory
-- `.claude/` - Claude Code settings
-- `CLAUDE.md` - Orchestration document
-
-**Use cases:**
-- Trying WOF without team buy-in
-- Personal AI workflows
-- Projects where team doesn't use AI tooling yet
+**To share WOI with team:** Remove specific files from the WOI section in `.gitignore`, then commit them
 
 ## VERIFICATION_CHECKLIST
 

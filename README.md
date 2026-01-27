@@ -87,64 +87,38 @@ This framework provides:
 ```powershell
 # Clone the framework
 git clone https://github.com/ndrezza/wof.git
-```
 
-**Option A: Source Controlled** (team shares framework)
-```powershell
+# Run setup
 .\setup.ps1 -TargetPath "C:\code\MyProject" -SolutionName "MyProject"
 ```
 
-**Option B: Local Only** (personal use, invisible to team)
-```powershell
-.\setup.ps1 -TargetPath "C:\code\MyProject" -SolutionName "MyProject" -Mode LocalOnly
-```
+### Git Behavior
 
-### Installation Modes
+WOI (Workload Orchestration Instance) files are gitignored at the **individual file level**. The setup script adds a managed WOI section to your `.gitignore`:
 
-| Mode | Git Behavior | Use Case |
-|------|--------------|----------|
-| **SourceControlled** (default) | Framework committed to repo | Team collaboration, shared AI workflows |
-| **LocalOnly** | Framework completely gitignored | Personal use, trying out, other devs unaffected |
-
-#### Source Controlled (Default)
-
-Framework files are tracked in git and shared with the team. Only sensitive files are gitignored.
-
-```powershell
-.\setup.ps1 -TargetPath "C:\code\MyProject" -SolutionName "MyProject"
-```
-
-**.gitignore entries:**
 ```gitignore
-.ai/config/credentials.local.ps1
-.ai/state/
-.ai/logs/
+# <!-- WOI-SECTION-START - Managed by WOF, do not edit manually -->
+# Workload Orchestration Instance (WOI)
+/.ai/config/credentials.local.ps1
+/.ai/config/models.yaml
+/.ai/config/providers.yaml
+/.ai/memory/architecture.md
+/.ai/scripts/approve-command.ps1
+# ... (all installed WOI files)
+/.ai/state/
+/.ai/logs/
+/.claude/settings.json
+/.claude/skills/finish-up/SKILL.md
+/CLAUDE.md
+# <!-- WOI-SECTION-END -->
 ```
 
-#### Local Only
+**This approach allows:**
+- WOI framework files to remain local (not committed)
+- User-created files in `.ai/` to be tracked if desired
+- Clean separation between framework and custom content
 
-Framework is completely gitignored. Your AI orchestration setup is invisible to other developers.
-
-```powershell
-.\setup.ps1 -TargetPath "C:\code\MyProject" -SolutionName "MyProject" -Mode LocalOnly
-```
-
-**.gitignore entries:**
-```gitignore
-.ai/
-.claude/
-CLAUDE.md
-```
-
-**Use Local Only when:**
-- You want to try the framework without affecting the team
-- Other developers don't use Claude Code
-- You want personal AI workflows that aren't shared
-- The team hasn't decided on AI tooling yet
-
-**Switching modes:** To convert from LocalOnly to SourceControlled:
-1. Remove `.ai/`, `.claude/`, `CLAUDE.md` entries from `.gitignore`
-2. Commit the framework files to the repository
+**To share WOI with your team:** Remove the specific files you want to share from the WOI section in `.gitignore`, then commit them.
 
 ### Setup Parameters
 
@@ -152,7 +126,6 @@ CLAUDE.md
 |-----------|---------|-------------|
 | `TargetPath` | (required) | Root path of target project |
 | `SolutionName` | Directory name | Name for templates |
-| `Mode` | `SourceControlled` | `SourceControlled` or `LocalOnly` |
 | `GitDefaultBranch` | `main` | Protected branch name |
 | `BuildCommand` | `dotnet build` | Build verification command |
 | `WorkItemPrefix` | `#` | Work item reference prefix |
