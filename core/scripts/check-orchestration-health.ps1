@@ -100,6 +100,24 @@ if (Test-Path $rolesJsonPath) {
     }
 }
 
+# Auto-detect connection type from URL pattern
+function Get-ConnectionTypeFromUrl {
+    param([string]$Url)
+
+    if (-not $Url) { return "openai_compatible" }
+
+    # Azure AI Foundry with Anthropic models
+    if ($Url -match "\.services\.ai\.azure\.com/anthropic" -or $Url -match "/anthropic$") {
+        return "azure_ai_foundry_anthropic"
+    }
+    # Azure OpenAI Service
+    if ($Url -match "\.openai\.azure\.com" -or $Url -match "\.cognitiveservices\.azure\.com") {
+        return "azure_openai"
+    }
+    # Default to OpenAI-compatible
+    return "openai_compatible"
+}
+
 # Health check results - dynamically built from roles
 $healthStatus = @{
     Primary = @{ Name = "Primary"; Status = "ONLINE"; Latency = 0; Connection = "native" }
@@ -222,7 +240,12 @@ foreach ($roleName in $roleNames) {
 
     if ($aiCredentials.ContainsKey($aiId)) {
         $cred = $aiCredentials[$aiId]
-        $connType = if ($aiConnections.ContainsKey($conn)) { $aiConnections[$conn].Type } else { "openai_compatible" }
+        # Get type from config, or auto-detect from URL pattern
+        $connType = if ($aiConnections.ContainsKey($conn) -and $aiConnections[$conn].Type) {
+            $aiConnections[$conn].Type
+        } else {
+            Get-ConnectionTypeFromUrl -Url $cred.Endpoint
+        }
 
         $headers = @{}
         if ($connType -eq "azure_openai") {

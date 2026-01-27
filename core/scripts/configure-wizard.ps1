@@ -77,6 +77,27 @@ function Write-Info {
 }
 
 # ============================================================================
+# URL Pattern Auto-Detection
+# ============================================================================
+
+function Get-ConnectionTypeFromUrl {
+    param([string]$Url)
+
+    if (-not $Url) { return "openai_compatible" }
+
+    # Azure AI Foundry with Anthropic models
+    if ($Url -match "\.services\.ai\.azure\.com/anthropic" -or $Url -match "/anthropic$") {
+        return "azure_ai_foundry_anthropic"
+    }
+    # Azure OpenAI Service
+    if ($Url -match "\.openai\.azure\.com" -or $Url -match "\.cognitiveservices\.azure\.com") {
+        return "azure_openai"
+    }
+    # Default to OpenAI-compatible
+    return "openai_compatible"
+}
+
+# ============================================================================
 # Configuration Paths
 # ============================================================================
 
@@ -328,14 +349,23 @@ function Test-AIEndpoint {
     try {
         $headers = @{}
         $testUrl = $Endpoint
+        $method = "GET"
+        $body = $null
 
         switch ($Type) {
             "azure_ai_foundry_anthropic" {
-                $headers["api-key"] = $ApiKey
-                # Azure AI Foundry doesn't have a simple ping endpoint, try models
-                $testUrl = "$Endpoint/models?api-version=2023-06-01"
+                # Azure AI Foundry Anthropic uses Bearer token and requires POST to /v1/messages
+                if ($ApiKey) {
+                    $headers["Authorization"] = "Bearer $ApiKey"
+                }
+                $headers["anthropic-version"] = "2023-06-01"
+                $headers["Content-Type"] = "application/json"
+                $testUrl = "$Endpoint/v1/messages"
+                $method = "POST"
+                $body = '{"model":"claude-opus-4-5-20251101","max_tokens":1,"messages":[{"role":"user","content":"ping"}]}'
             }
             "azure_openai" {
+                # Azure OpenAI uses api-key header
                 $headers["api-key"] = $ApiKey
                 $testUrl = "$Endpoint/openai/models?api-version=2025-01-01-preview"
             }
@@ -353,10 +383,15 @@ function Test-AIEndpoint {
 
         $params = @{
             Uri = $testUrl
-            Method = "GET"
+            Method = $method
             Headers = $headers
             TimeoutSec = 10
             ErrorAction = "Stop"
+        }
+
+        if ($body) {
+            $params.Body = $body
+            $params.ContentType = "application/json"
         }
 
         $response = Invoke-WebRequest @params
@@ -520,27 +555,46 @@ function Add-AIConnection {
         $alias = "AI$SlotNumber"
     }
 
-    # Type selection
+    # Endpoint first - so we can auto-detect type
     Write-Host ""
-    Write-Host "Type:" -ForegroundColor Cyan
+    Write-Host "Endpoint URL: " -NoNewline
+    $endpoint = Read-Host
+
+    # Auto-detect type from URL
+    $detectedType = Get-ConnectionTypeFromUrl -Url $endpoint
+    $detectedLabel = switch ($detectedType) {
+        "azure_ai_foundry_anthropic" { "Azure AI Foundry Anthropic" }
+        "azure_openai" { "Azure OpenAI" }
+        "openai_compatible" { "OpenAI-compatible" }
+        default { "OpenAI-compatible" }
+    }
+
+    # Type selection with auto-detected default
+    Write-Host ""
+    Write-Host "Type (auto-detected: $detectedLabel):" -ForegroundColor Cyan
     Write-Host "  [1] azure_ai_foundry_anthropic (Claude on Azure)"
     Write-Host "  [2] azure_openai (GPT on Azure)"
     Write-Host "  [3] openai_compatible (LM Studio, Ollama, OpenAI API)"
     Write-Host ""
-    Write-Host "Select [1-3]: " -NoNewline
+    $defaultChoice = switch ($detectedType) {
+        "azure_ai_foundry_anthropic" { "1" }
+        "azure_openai" { "2" }
+        "openai_compatible" { "3" }
+        default { "3" }
+    }
+    Write-Host "Select [1-3, default=$defaultChoice]: " -NoNewline
     $typeChoice = Read-Host
+
+    if (-not $typeChoice) {
+        $typeChoice = $defaultChoice
+    }
 
     $type = switch ($typeChoice) {
         "1" { "azure_ai_foundry_anthropic" }
         "2" { "azure_openai" }
         "3" { "openai_compatible" }
-        default { "openai_compatible" }
+        default { $detectedType }
     }
-
-    # Endpoint
-    Write-Host ""
-    Write-Host "Endpoint URL: " -NoNewline
-    $endpoint = Read-Host
 
     # API Key (optional for openai_compatible)
     Write-Host ""
