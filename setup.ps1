@@ -598,8 +598,8 @@ Write-Host ""
 Write-Host "  2. Set up MCP server:" -ForegroundColor Cyan
 Write-Host "     claude mcp add --scope local secondary-claude -- claude mcp serve"
 Write-Host ""
-Write-Host "  3. (Optional) Start local Worker-Lite:" -ForegroundColor Cyan
-Write-Host "     Start LM Studio with deepseek-coder-v2-lite on port 1234"
+Write-Host "  3. (Optional) Configure Worker-Lite:" -ForegroundColor Cyan
+Write-Host "     Use local models, vLLMs, network deployments, or cloud providers"
 Write-Host ""
 Write-Host "  4. Verify setup:" -ForegroundColor Cyan
 Write-Host "     .\.ai\scripts\check-orchestration-health.ps1"

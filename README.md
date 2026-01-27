@@ -164,8 +164,8 @@ This ensures `credentials.local.json` stays gitignored even after removing WOF.
    claude mcp add --scope local secondary-claude -- claude mcp serve
    ```
 
-3. **Start local Worker-Lite (optional):**
-   - Start LM Studio with DeepSeek Coder v2 Lite on port 1234
+3. **Configure Worker-Lite (optional):**
+   - Worker-Lite can use local models (vLLM, LM Studio, Ollama), network deployments, or cloud providers
 
 4. **Verify setup:**
    ```powershell

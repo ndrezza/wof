@@ -118,105 +118,94 @@ For each credential, interview the user. Only write values that are provided (sk
 **Note:** WOF v2.0 uses generic connection IDs (AI1-AI10) instead of provider-specific names.
 This allows role reassignment without changing credentials.
 
-### Required Credentials
+### AI Connection Credentials
 
-#### AI1_ENDPOINT (Primary AI connection)
+WOF supports up to 10 AI connections (AI1-AI10). At minimum, one connection (AI1) is required.
+After collecting credentials, use the configuration wizard or `roles.json` to map connections to roles.
+
+#### AI1_ENDPOINT
 ```yaml
 id: AI1_ENDPOINT
-prompt: "What is your primary AI endpoint URL?"
+prompt: "What is your AI1 endpoint URL?"
 required: true
 format: "URL to your AI service"
 help: |
-  Enter the endpoint URL for your primary AI service.
-  This will be used for Worker-Heavy and Validator roles.
+  Enter the endpoint URL for your first AI connection.
 sensitive: false
-enables: "Worker-Heavy, Validator roles (via connections.json)"
 maps_to: "ai1 connection in connections.json"
 ```
 
 #### AI1_API_KEY
 ```yaml
 id: AI1_API_KEY
-prompt: "What is your primary AI API key?"
+prompt: "What is your AI1 API key?"
 required: true
 format: "API key string"
 help: |
-  Enter the API key for your primary AI service.
+  Enter the API key for AI1.
 sensitive: true
-enables: "Worker-Heavy, Validator roles"
 depends_on: AI1_ENDPOINT
 ```
 
-### Optional Credentials
-
-#### AI2_ENDPOINT (Secondary AI - optional, for additional services)
+#### AI2_ENDPOINT (Optional)
 ```yaml
 id: AI2_ENDPOINT
-prompt: "What is your secondary AI endpoint URL? (Press Enter to skip)"
+prompt: "What is your AI2 endpoint URL? (Press Enter to skip)"
 required: false
-format: "https://{resource-name}.cognitiveservices.azure.com"
+format: "URL to your AI service"
 help: |
-  Find this in Azure Portal:
-  1. Go to Azure OpenAI resource
-  2. Navigate to Keys and Endpoint
-  3. Copy the endpoint URL
+  Enter the endpoint URL for your second AI connection.
 sensitive: false
-enables: "Additional AI services (optional)"
-skip_message: "AI2 slot will remain empty. You can add this later."
+skip_message: "AI2 will remain unconfigured. You can add this later."
 maps_to: "ai2 connection in connections.json"
 ```
 
 #### AI2_API_KEY
 ```yaml
 id: AI2_API_KEY
-prompt: "What is your secondary AI API key?"
+prompt: "What is your AI2 API key?"
 required: false
-format: "32-character alphanumeric string"
-help: "Same location as endpoint - copy Key 1 or Key 2"
+format: "API key string"
+help: "Enter the API key for AI2."
 sensitive: true
-enables: "Additional AI services"
 depends_on: AI2_ENDPOINT
 ```
 
-#### AI3_ENDPOINT (Tertiary AI - for Critic role)
+#### AI3_ENDPOINT (Optional)
 ```yaml
 id: AI3_ENDPOINT
-prompt: "What is your tertiary AI endpoint URL? (Press Enter to skip)"
+prompt: "What is your AI3 endpoint URL? (Press Enter to skip)"
 required: false
 format: "URL to your AI service"
 help: |
-  Enter the endpoint URL for your tertiary AI service.
-  This will be used for the Critic role (quality gate).
+  Enter the endpoint URL for your third AI connection.
 sensitive: false
-enables: "Critic role (quality gate)"
-skip_message: "Critic role will be disabled. Quality gates will be skipped."
+skip_message: "AI3 will remain unconfigured. You can add this later."
 maps_to: "ai3 connection in connections.json"
 ```
 
 #### AI3_API_KEY
 ```yaml
 id: AI3_API_KEY
-prompt: "What is your tertiary AI API key?"
+prompt: "What is your AI3 API key?"
 required: false
-format: "32-character alphanumeric string"
-help: "Same location as endpoint"
+format: "API key string"
+help: "Enter the API key for AI3."
 sensitive: true
-enables: "Critic role"
 depends_on: AI3_ENDPOINT
 ```
 
-#### AI4_ENDPOINT (Worker-Lite)
+#### AI4_ENDPOINT (Optional)
 ```yaml
 id: AI4_ENDPOINT
-prompt: "What is your AI4/Worker-Lite endpoint? (Press Enter to skip)"
+prompt: "What is your AI4 endpoint URL? (Press Enter to skip)"
 required: false
 format: "URL to your AI service"
 help: |
-  Enter the endpoint URL for Worker-Lite (lightweight tasks).
-  Can be a local or cloud AI service.
+  Enter the endpoint URL for your fourth AI connection.
+  Can be local (vLLM, LM Studio, Ollama), network, or cloud.
 sensitive: false
-enables: "Worker-Lite role (lightweight tasks)"
-skip_message: "Worker-Lite disabled. All tasks will route to Worker-Heavy."
+skip_message: "AI4 will remain unconfigured. You can add this later."
 maps_to: "ai4 connection in connections.json"
 ```
 
@@ -371,12 +360,14 @@ Fix: Install Claude Code CLI or add to PATH
 
 ### Health Check Failures
 
-| Component | Status Red | Fix |
-|-----------|------------|-----|
-| AI1 (Primary) | "NOT SET" | Add AI1_ENDPOINT and AI1_API_KEY in credentials.local.json |
-| AI2 (Secondary) | "NOT SET" | Optional - add AI2_* for additional services |
-| AI3 (Tertiary) | "NOT SET" | Optional - add AI3_* if you want Critic role |
-| AI4 (Worker-Lite) | "NOT SET" | Optional - add AI4_ENDPOINT or start LM Studio on port 1234 |
+| Connection | Status Red | Fix |
+|------------|------------|-----|
+| AI1 | "NOT SET" | Add AI1_ENDPOINT and AI1_API_KEY in credentials.local.json |
+| AI2 | "NOT SET" | Optional - add AI2_ENDPOINT and AI2_API_KEY |
+| AI3 | "NOT SET" | Optional - add AI3_ENDPOINT and AI3_API_KEY |
+| AI4 | "NOT SET" | Optional - add AI4_ENDPOINT (and AI4_API_KEY if required) |
+
+> **Note:** AI slots are generic. Use `roles.json` to map connections to roles (Worker-Heavy, Worker-Lite, Validator, Critic).
 
 ## POST_INSTALLATION
 
@@ -391,6 +382,6 @@ Next steps:
 3. Use "Finish up #XXXX" to complete work items with proper workflow
 
 Optional:
-- Start LM Studio with DeepSeek for Worker-Lite (lightweight tasks)
+- Configure Worker-Lite (AI4) using local models, vLLMs, network deployments, or cloud providers
 - Run .\.ai\scripts\check-orchestration-health.ps1 to see component status
 ```
