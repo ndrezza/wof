@@ -21,20 +21,49 @@ param(
 
 $ErrorActionPreference = "SilentlyContinue"
 
-# Load credentials if available
-$credentialsPath = Join-Path $PSScriptRoot "..\config\credentials.local.ps1"
-if (Test-Path $credentialsPath) {
-    . $credentialsPath
+# Load credentials - try v2 JSON first, then fall back to v1 PS1
+$configDir = Join-Path $PSScriptRoot "..\config"
+$credentialsJsonPath = Join-Path $configDir "credentials.local.json"
+$credentialsPs1Path = Join-Path $configDir "credentials.local.ps1"
+
+if (Test-Path $credentialsJsonPath) {
+    # v2 format: JSON credentials
+    try {
+        $creds = Get-Content $credentialsJsonPath -Raw | ConvertFrom-Json
+        if ($creds.credentials) {
+            # Map v2 generic names to environment variables
+            if ($creds.credentials.AI1_ENDPOINT) { $env:AI1_ENDPOINT = $creds.credentials.AI1_ENDPOINT }
+            if ($creds.credentials.AI1_API_KEY) { $env:AI1_API_KEY = $creds.credentials.AI1_API_KEY }
+            if ($creds.credentials.AI2_ENDPOINT) { $env:AI2_ENDPOINT = $creds.credentials.AI2_ENDPOINT }
+            if ($creds.credentials.AI2_API_KEY) { $env:AI2_API_KEY = $creds.credentials.AI2_API_KEY }
+            if ($creds.credentials.AI3_ENDPOINT) { $env:AI3_ENDPOINT = $creds.credentials.AI3_ENDPOINT }
+            if ($creds.credentials.AI3_API_KEY) { $env:AI3_API_KEY = $creds.credentials.AI3_API_KEY }
+            if ($creds.credentials.LOCAL1_ENDPOINT) { $env:LOCAL1_ENDPOINT = $creds.credentials.LOCAL1_ENDPOINT }
+        }
+    } catch {
+        Write-Host "Warning: Could not parse credentials.local.json" -ForegroundColor Yellow
+    }
+} elseif (Test-Path $credentialsPs1Path) {
+    # v1 format: PowerShell credentials (legacy)
+    . $credentialsPs1Path
 }
 
-# Health check results
+# Normalize environment variables - support both v1 and v2 naming
+# v2 names take precedence if both exist
+$localEndpointVar = if ($env:LOCAL1_ENDPOINT) { $env:LOCAL1_ENDPOINT } elseif ($env:LOCAL_WORKER_ENDPOINT) { $env:LOCAL_WORKER_ENDPOINT } else { "http://127.0.0.1:1234" }
+$friendEndpoint = if ($env:AI2_ENDPOINT) { $env:AI2_ENDPOINT } else { $env:AZURE_OPENAI_ENDPOINT }
+$friendApiKey = if ($env:AI2_API_KEY) { $env:AI2_API_KEY } else { $env:AZURE_OPENAI_API_KEY }
+$criticEndpoint = if ($env:AI3_ENDPOINT) { $env:AI3_ENDPOINT } else { $env:AZURE_CODEX_ENDPOINT }
+$criticApiKey = if ($env:AI3_API_KEY) { $env:AI3_API_KEY } else { $env:AZURE_CODEX_API_KEY }
+
+# Health check results (role-agnostic names - see roles.json for backend config)
 $healthStatus = @{
-    Primary = @{ Name = "Primary (Opus 4.5)"; Status = "ONLINE"; Latency = 0 }
-    WorkerHeavy = @{ Name = "Worker-Heavy (Azure Opus)"; Status = "UNKNOWN"; Latency = 0 }
-    WorkerLite = @{ Name = "Worker-Lite (Local)"; Status = "UNKNOWN"; Latency = 0 }
-    Validator = @{ Name = "Validator (Azure Sonnet)"; Status = "UNKNOWN"; Latency = 0 }
-    Friend = @{ Name = "Friend (Azure GPT-4o)"; Status = "UNKNOWN"; Latency = 0 }
-    Critic = @{ Name = "Critic (Codex Mini)"; Status = "UNKNOWN"; Latency = 0 }
+    Primary = @{ Name = "Primary"; Status = "ONLINE"; Latency = 0 }
+    WorkerHeavy = @{ Name = "Worker-Heavy (AI1)"; Status = "UNKNOWN"; Latency = 0 }
+    WorkerLite = @{ Name = "Worker-Lite (LOCAL1)"; Status = "UNKNOWN"; Latency = 0 }
+    Validator = @{ Name = "Validator (AI1)"; Status = "UNKNOWN"; Latency = 0 }
+    Friend = @{ Name = "Friend (AI2)"; Status = "UNKNOWN"; Latency = 0 }
+    Critic = @{ Name = "Critic (AI3)"; Status = "UNKNOWN"; Latency = 0 }
 }
 
 function Test-Endpoint {
@@ -87,8 +116,7 @@ Write-Host "Testing AI components..." -ForegroundColor Gray
 
 # Test Worker-Lite (Local)
 Write-Host "  Checking Worker-Lite (Local)..." -ForegroundColor Gray -NoNewline
-$localEndpoint = if ($env:LOCAL_WORKER_ENDPOINT) { $env:LOCAL_WORKER_ENDPOINT } else { "http://127.0.0.1:1234" }
-$localResult = Test-Endpoint -Name "WorkerLite" -Url "$localEndpoint/v1/models" -TimeoutSec 5
+$localResult = Test-Endpoint -Name "WorkerLite" -Url "$localEndpointVar/v1/models" -TimeoutSec 5
 $healthStatus.WorkerLite.Status = $localResult.Status
 $healthStatus.WorkerLite.Latency = $localResult.Latency
 if ($localResult.Status -eq "ONLINE") {
@@ -110,10 +138,10 @@ $healthStatus.Validator.Status = "ONLINE"
 $healthStatus.Validator.Latency = 0
 Write-Host " ONLINE (MCP)" -ForegroundColor Green
 
-# Test Friend (Azure GPT-4o)
-Write-Host "  Checking Friend (Azure GPT-4o)..." -ForegroundColor Gray -NoNewline
-if ($env:AZURE_OPENAI_ENDPOINT) {
-    $friendResult = Test-Endpoint -Name "Friend" -Url "$env:AZURE_OPENAI_ENDPOINT/openai/models?api-version=2025-01-01-preview" -Headers @{ "api-key" = $env:AZURE_OPENAI_API_KEY } -TimeoutSec 10
+# Test Friend (AI2)
+Write-Host "  Checking Friend (AI2)..." -ForegroundColor Gray -NoNewline
+if ($friendEndpoint) {
+    $friendResult = Test-Endpoint -Name "Friend" -Url "$friendEndpoint/openai/models?api-version=2025-01-01-preview" -Headers @{ "api-key" = $friendApiKey } -TimeoutSec 10
     $healthStatus.Friend.Status = $friendResult.Status
     $healthStatus.Friend.Latency = $friendResult.Latency
 } else {
@@ -127,10 +155,10 @@ if ($healthStatus.Friend.Status -eq "ONLINE") {
     Write-Host " OFFLINE" -ForegroundColor Red
 }
 
-# Test Critic (Azure Codex)
-Write-Host "  Checking Critic (Codex Mini)..." -ForegroundColor Gray -NoNewline
-if ($env:AZURE_CODEX_ENDPOINT) {
-    $criticResult = Test-Endpoint -Name "Critic" -Url "$env:AZURE_CODEX_ENDPOINT" -Headers @{ "api-key" = $env:AZURE_CODEX_API_KEY } -TimeoutSec 10
+# Test Critic (AI3)
+Write-Host "  Checking Critic (AI3)..." -ForegroundColor Gray -NoNewline
+if ($criticEndpoint) {
+    $criticResult = Test-Endpoint -Name "Critic" -Url "$criticEndpoint" -Headers @{ "api-key" = $criticApiKey } -TimeoutSec 10
     $healthStatus.Critic.Status = $criticResult.Status
     $healthStatus.Critic.Latency = $criticResult.Latency
 } else {
@@ -187,8 +215,8 @@ $diagram = @"
           |
           v
 +---------------------------------------------------------+---------------+
-|  $primaryInd PRIMARY (Opus 4.5) - ORCHESTRATOR          | $friendInd FRIEND   |
-|        Anthropic Direct API                             |     (GPT-4o)    |
+|  $primaryInd PRIMARY - ORCHESTRATOR                     | $friendInd FRIEND   |
+|        Native Claude Code                               |     (AI2)       |
 |                                                         |                 |
 |  Responsibilities:                                      |  Rules          |
 |  * Understand requirements                              |  Guardian       |
@@ -204,8 +232,8 @@ $diagram = @"
             v             v             v             v
 +------------------+  +-------------+  +-------------+  +------------------+
 | $validatorInd VALIDATOR  |  |$workerHeavyInd WORKER- |  |$workerLiteInd WORKER- |  | $criticInd CRITIC      |
-| (Azure Sonnet)   |  |    HEAVY    |  |    LITE     |  | (Codex Mini)     |
-|                  |  | (Azure Opus)|  | (Local)     |  |                  |
+|     (AI1)        |  |    HEAVY    |  |    LITE     |  |     (AI3)        |
+|                  |  |    (AI1)    |  |  (LOCAL1)   |  |                  |
 | Decision valid.  |  |             |  |             |  | Skeptical        |
 | >0.7 confidence  |  | T2+ Tasks:  |  | T1 Tasks:   |  | quality gate     |
 |                  |  | * Code gen  |  | * Search    |  | >=80% viability  |

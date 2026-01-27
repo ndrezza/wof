@@ -10,8 +10,15 @@
       "endpoint": "${AI1_ENDPOINT}",
       "api_key": "${AI1_API_KEY}",
       "api_version": "2023-06-01",
-      "models": ["claude-opus-4-5-20251101", "claude-sonnet-4-5"],
-      "context_window": 200000
+      "models": {
+        "claude-opus-4-5-20251101": {
+          "context_window": 200000
+        },
+        "claude-sonnet-4-5": {
+          "context_window": 200000
+        }
+      },
+      "default_model": "claude-opus-4-5-20251101"
     },
     "ai2": {
       "alias": "Azure OpenAI",
@@ -20,8 +27,13 @@
       "endpoint": "${AI2_ENDPOINT}",
       "api_key": "${AI2_API_KEY}",
       "api_version": "2025-01-01-preview",
-      "models": ["gpt-4o"],
-      "context_window": 128000
+      "models": {
+        "gpt-4o": {
+          "deployment": "gpt-4o",
+          "context_window": 128000
+        }
+      },
+      "default_model": "gpt-4o"
     },
     "ai3": {
       "alias": "Azure Codex",
@@ -30,8 +42,13 @@
       "endpoint": "${AI3_ENDPOINT}",
       "api_key": "${AI3_API_KEY}",
       "api_version": "2025-04-01-preview",
-      "models": ["gpt-5.1-codex-mini"],
-      "context_window": 32000
+      "models": {
+        "gpt-5.1-codex-mini": {
+          "deployment": "codex-mini",
+          "context_window": 32000
+        }
+      },
+      "default_model": "gpt-5.1-codex-mini"
     },
     "local1": {
       "alias": "Local DeepSeek",
@@ -39,14 +56,21 @@
       "type": "openai_compatible",
       "endpoint": "${LOCAL1_ENDPOINT}",
       "api_key": "",
-      "models": ["deepseek-coder-v2-lite-instruct"],
-      "context_window": 32000
+      "models": {
+        "deepseek-coder-v2-lite-instruct": {
+          "context_window": 32000
+        }
+      },
+      "default_model": "deepseek-coder-v2-lite-instruct"
     },
     "native": {
       "alias": "Claude Code Native",
       "description": "Native Claude Code connection (no external API)",
       "type": "claude_code_native",
-      "models": ["claude-opus-4-5-20251101"]
+      "models": {
+        "claude-opus-4-5-20251101": {}
+      },
+      "default_model": "claude-opus-4-5-20251101"
     }
   }
 }

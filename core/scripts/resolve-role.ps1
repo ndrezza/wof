@@ -115,6 +115,15 @@ function Resolve-EnvPlaceholder {
     return $resolved
 }
 
+# Determine which model to use
+$modelName = if ($roleConfig.model) { $roleConfig.model } else { $connectionConfig.default_model }
+
+# Get model-specific configuration
+$modelConfig = $null
+if ($connectionConfig.models -and $connectionConfig.models.$modelName) {
+    $modelConfig = $connectionConfig.models.$modelName
+}
+
 # Build resolved connection object
 $resolvedConnection = @{
     role = $Role
@@ -122,7 +131,12 @@ $resolvedConnection = @{
     connection_id = $connectionId
     connection_alias = $connectionConfig.alias
     type = $connectionConfig.type
-    model = $roleConfig.model
+    model = $modelName
+}
+
+# Add deployment name if present (required for Azure OpenAI)
+if ($modelConfig -and $modelConfig.deployment) {
+    $resolvedConnection.deployment = $modelConfig.deployment
 }
 
 # Add resolved endpoint if present
@@ -146,8 +160,10 @@ if ($connectionConfig.api_version) {
     $resolvedConnection.api_version = $connectionConfig.api_version
 }
 
-# Add context window if present
-if ($connectionConfig.context_window) {
+# Add context window - prefer model-specific, fall back to connection-level
+if ($modelConfig -and $modelConfig.context_window) {
+    $resolvedConnection.context_window = $modelConfig.context_window
+} elseif ($connectionConfig.context_window) {
     $resolvedConnection.context_window = $connectionConfig.context_window
 }
 
@@ -171,9 +187,9 @@ if ($roleConfig.restrictions) {
     $resolvedConnection.restrictions = @($roleConfig.restrictions)
 }
 
-# Add available models
+# Add available models (list of model names from the models object)
 if ($connectionConfig.models) {
-    $resolvedConnection.available_models = @($connectionConfig.models)
+    $resolvedConnection.available_models = @($connectionConfig.models.PSObject.Properties.Name)
 }
 
 # Output

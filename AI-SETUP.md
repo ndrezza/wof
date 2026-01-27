@@ -1,16 +1,20 @@
 # WOF AI Installation Protocol
 
 <!-- AI-READABLE: Structured instructions for AI coding assistants -->
-<!-- Version: 1.0 | Last Updated: 2026-01-27 -->
+<!-- Version: 2.0 | Last Updated: 2026-01-27 -->
 
 ## METADATA
 
 ```yaml
 name: Workload Orchestration Framework (WOF)
-version: 1.4.0
+version: 2.0.0
 repository: https://github.com/ndrezza/wof
 setup_script: setup.ps1
-config_location: .ai/config/credentials.local.ps1
+config_format: v2 (JSON-based)
+config_files:
+  connections: .ai/config/connections.json
+  roles: .ai/config/roles.json
+  credentials: .ai/config/credentials.local.json
 health_check: .ai/scripts/check-orchestration-health.ps1
 ```
 
@@ -19,7 +23,7 @@ health_check: .ai/scripts/check-orchestration-health.ps1
 ```
 Clone:    git clone https://github.com/ndrezza/wof.git "$env:TEMP\wof-install"
 Setup:    .\setup.ps1 -TargetPath "{TARGET}"
-Config:   .ai/config/credentials.local.ps1
+Config:   .ai/config/credentials.local.json
 Verify:   .\.ai\scripts\check-orchestration-health.ps1
 ```
 
@@ -77,7 +81,7 @@ cd "$env:TEMP\wof-install"
 
 See [CREDENTIAL_INTERVIEW](#credential_interview) section below.
 
-After collecting credentials, write them to `.ai/config/credentials.local.ps1` in the target project.
+After collecting credentials, write them to `.ai/config/credentials.local.json` in the target project.
 
 ### Step 5: SETUP_MCP
 
@@ -111,12 +115,15 @@ Remove-Item -Recurse -Force "$env:TEMP\wof-install"
 
 For each credential, interview the user. Only write values that are provided (skip placeholders for empty ones).
 
+**Note:** WOF v2.0 uses generic connection IDs (AI1, AI2, AI3, LOCAL1) instead of provider-specific names.
+This allows role reassignment without changing credentials.
+
 ### Required Credentials
 
-#### AZURE_ANTHROPIC_ENDPOINT
+#### AI1_ENDPOINT (Primary AI - typically Azure AI Foundry Anthropic)
 ```yaml
-id: AZURE_ANTHROPIC_ENDPOINT
-prompt: "What is your Azure AI Foundry Anthropic endpoint URL?"
+id: AI1_ENDPOINT
+prompt: "What is your primary AI endpoint URL? (Azure AI Foundry Anthropic recommended)"
 required: true
 format: "https://{resource-name}.services.ai.azure.com/anthropic"
 help: |
@@ -125,13 +132,14 @@ help: |
   2. Navigate to Keys and Endpoint
   3. Copy the Anthropic endpoint URL
 sensitive: false
-enables: "Worker-Heavy, Validator agents"
+enables: "Worker-Heavy, Validator roles (via connections.json)"
+maps_to: "ai1 connection in connections.json"
 ```
 
-#### AZURE_ANTHROPIC_API_KEY
+#### AI1_API_KEY
 ```yaml
-id: AZURE_ANTHROPIC_API_KEY
-prompt: "What is your Azure AI Foundry API key?"
+id: AI1_API_KEY
+prompt: "What is your primary AI API key?"
 required: true
 format: "32-character alphanumeric string"
 help: |
@@ -140,16 +148,16 @@ help: |
   2. Navigate to Keys and Endpoint
   3. Copy Key 1 or Key 2
 sensitive: true
-enables: "Worker-Heavy, Validator agents"
-depends_on: AZURE_ANTHROPIC_ENDPOINT
+enables: "Worker-Heavy, Validator roles"
+depends_on: AI1_ENDPOINT
 ```
 
 ### Optional Credentials
 
-#### AZURE_OPENAI_ENDPOINT
+#### AI2_ENDPOINT (Secondary AI - typically Azure OpenAI)
 ```yaml
-id: AZURE_OPENAI_ENDPOINT
-prompt: "What is your Azure OpenAI endpoint URL? (Press Enter to skip)"
+id: AI2_ENDPOINT
+prompt: "What is your secondary AI endpoint URL? (Press Enter to skip)"
 required: false
 format: "https://{resource-name}.cognitiveservices.azure.com"
 help: |
@@ -158,26 +166,27 @@ help: |
   2. Navigate to Keys and Endpoint
   3. Copy the endpoint URL
 sensitive: false
-enables: "Friend agent (GPT-4o rules guardian)"
-skip_message: "Friend agent will be disabled. You can add this later."
+enables: "Friend role (rules guardian)"
+skip_message: "Friend role will be disabled. You can add this later."
+maps_to: "ai2 connection in connections.json"
 ```
 
-#### AZURE_OPENAI_API_KEY
+#### AI2_API_KEY
 ```yaml
-id: AZURE_OPENAI_API_KEY
-prompt: "What is your Azure OpenAI API key?"
+id: AI2_API_KEY
+prompt: "What is your secondary AI API key?"
 required: false
 format: "32-character alphanumeric string"
 help: "Same location as endpoint - copy Key 1 or Key 2"
 sensitive: true
-enables: "Friend agent (GPT-4o rules guardian)"
-depends_on: AZURE_OPENAI_ENDPOINT
+enables: "Friend role"
+depends_on: AI2_ENDPOINT
 ```
 
-#### AZURE_CODEX_ENDPOINT
+#### AI3_ENDPOINT (Tertiary AI - typically Azure OpenAI for Codex)
 ```yaml
-id: AZURE_CODEX_ENDPOINT
-prompt: "What is your Azure Codex endpoint URL? (Press Enter to skip)"
+id: AI3_ENDPOINT
+prompt: "What is your tertiary AI endpoint URL? (Press Enter to skip)"
 required: false
 format: "https://{resource-name}.cognitiveservices.azure.com/openai/responses"
 help: |
@@ -186,25 +195,26 @@ help: |
   2. Navigate to Keys and Endpoint
   3. Append /openai/responses to the endpoint
 sensitive: false
-enables: "Critic agent (quality gate)"
-skip_message: "Critic agent will be disabled. Quality gates will be skipped."
+enables: "Critic role (quality gate)"
+skip_message: "Critic role will be disabled. Quality gates will be skipped."
+maps_to: "ai3 connection in connections.json"
 ```
 
-#### AZURE_CODEX_API_KEY
+#### AI3_API_KEY
 ```yaml
-id: AZURE_CODEX_API_KEY
-prompt: "What is your Azure Codex API key?"
+id: AI3_API_KEY
+prompt: "What is your tertiary AI API key?"
 required: false
 format: "32-character alphanumeric string"
-help: "Same location as Codex endpoint"
+help: "Same location as endpoint"
 sensitive: true
-enables: "Critic agent (quality gate)"
-depends_on: AZURE_CODEX_ENDPOINT
+enables: "Critic role"
+depends_on: AI3_ENDPOINT
 ```
 
-#### LOCAL_WORKER_ENDPOINT
+#### LOCAL1_ENDPOINT (Local model server)
 ```yaml
-id: LOCAL_WORKER_ENDPOINT
+id: LOCAL1_ENDPOINT
 prompt: "What is your local model endpoint? (Press Enter for default: http://localhost:1234)"
 required: false
 format: "http://localhost:{port}"
@@ -214,61 +224,70 @@ help: |
   - LM Studio default: http://localhost:1234
   - Ollama default: http://localhost:11434
 sensitive: false
-enables: "Worker-Lite agent (lightweight tasks)"
+enables: "Worker-Lite role (lightweight tasks)"
 skip_message: "Worker-Lite disabled. All tasks will route to Worker-Heavy."
+maps_to: "local1 connection in connections.json"
 ```
 
 ## CREDENTIAL_FILE_FORMAT
 
-After collecting credentials, generate `.ai/config/credentials.local.ps1`:
+After collecting credentials, generate `.ai/config/credentials.local.json`:
 
-```powershell
-# WOF Credentials - Auto-generated
-# This file is gitignored and contains sensitive values
-
-# Azure AI Foundry (Anthropic Models)
-$env:AZURE_ANTHROPIC_ENDPOINT = '{AZURE_ANTHROPIC_ENDPOINT}'
-$env:AZURE_ANTHROPIC_API_KEY = '{AZURE_ANTHROPIC_API_KEY}'
-
-# Azure OpenAI (Friend - GPT-4o)
-$env:AZURE_OPENAI_ENDPOINT = '{AZURE_OPENAI_ENDPOINT}'
-$env:AZURE_OPENAI_API_KEY = '{AZURE_OPENAI_API_KEY}'
-
-# Azure Codex (Critic)
-$env:AZURE_CODEX_ENDPOINT = '{AZURE_CODEX_ENDPOINT}'
-$env:AZURE_CODEX_API_KEY = '{AZURE_CODEX_API_KEY}'
-
-# Local Worker
-$env:LOCAL_WORKER_ENDPOINT = '{LOCAL_WORKER_ENDPOINT}'
-
-# Verification
-Write-Host "WOF Credentials loaded" -ForegroundColor Cyan
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "version": "2.0.0",
+  "description": "WOF Credentials - Auto-generated. This file is gitignored.",
+  "credentials": {
+    "AI1_ENDPOINT": "{AI1_ENDPOINT}",
+    "AI1_API_KEY": "{AI1_API_KEY}",
+    "AI2_ENDPOINT": "{AI2_ENDPOINT}",
+    "AI2_API_KEY": "{AI2_API_KEY}",
+    "AI3_ENDPOINT": "{AI3_ENDPOINT}",
+    "AI3_API_KEY": "{AI3_API_KEY}",
+    "LOCAL1_ENDPOINT": "{LOCAL1_ENDPOINT}"
+  }
+}
 ```
 
 **Notes:**
-- Only include lines for credentials the user provided
-- Leave out or comment out credentials they skipped
+- Only include keys for credentials the user provided
+- Omit keys they skipped (don't include empty values)
 - The file is automatically gitignored by setup.ps1
+- Connection types are defined in `connections.json`, not here
 
 ## EXISTING_CONFIG_DETECTION
 
 Before interviewing for credentials, check these locations for reusable values:
 
-### Location 1: Target Project
+### Location 1: Target Project (v2 format)
 ```powershell
-$existingCreds = "{TARGET}/.ai/config/credentials.local.ps1"
+$existingCreds = "{TARGET}/.ai/config/credentials.local.json"
 if (Test-Path $existingCreds) {
-    # Parse and extract existing values
+    # Parse JSON and extract existing values
+    $creds = Get-Content $existingCreds | ConvertFrom-Json
     # Ask: "Found existing credentials. Reuse them?"
 }
 ```
 
-### Location 2: Environment Variables
+### Location 2: Target Project (legacy v1 format)
 ```powershell
-# Check if credentials are already in environment
-$hasAzureAnthropic = $env:AZURE_ANTHROPIC_ENDPOINT -and $env:AZURE_ANTHROPIC_API_KEY
-if ($hasAzureAnthropic) {
-    # Ask: "Found Azure Anthropic credentials in environment. Use these?"
+$legacyCreds = "{TARGET}/.ai/config/credentials.local.ps1"
+if (Test-Path $legacyCreds) {
+    # Parse PS1 and extract existing values
+    # Note: Will be auto-migrated to v2 format on sync
+    # Ask: "Found legacy credentials. Migrate and reuse them?"
+}
+```
+
+### Location 3: Environment Variables
+```powershell
+# Check for v2 format first
+$hasAI1 = $env:AI1_ENDPOINT -and $env:AI1_API_KEY
+# Fallback to legacy format
+$hasLegacy = $env:AZURE_ANTHROPIC_ENDPOINT -and $env:AZURE_ANTHROPIC_API_KEY
+if ($hasAI1 -or $hasLegacy) {
+    # Ask: "Found credentials in environment. Use these?"
 }
 ```
 
@@ -293,7 +312,9 @@ WOI files are gitignored using **two managed sections** in `.gitignore`:
 
 # <!-- WOI-USERDATA-START - Managed by WOF, preserved after removal -->
 # WOI User Data (kept after WOF removal - contains secrets/customizations)
-/.ai/config/credentials.local.ps1
+/.ai/config/credentials.local.json
+/.ai/config/connections.json
+/.ai/config/roles.json
 /.ai/config/models.yaml
 /.ai/memory/architecture.md
 /.ai/state/
@@ -305,7 +326,7 @@ WOI files are gitignored using **two managed sections** in `.gitignore`:
 - **FRAMEWORK**: Removed when WOF is uninstalled (scripts, agents, CLAUDE.md)
 - **USERDATA**: Preserved after uninstall (credentials, memory stay gitignored)
 
-This ensures `credentials.local.ps1` remains gitignored even after removing WOF.
+This ensures `credentials.local.json` remains gitignored even after removing WOF.
 
 **To share files with team:** Remove specific entries from either section, then commit those files
 
@@ -317,7 +338,9 @@ After installation, verify these items:
 |-------|---------|-----------------|
 | Framework installed | `Test-Path "{TARGET}/.ai"` | `True` |
 | CLAUDE.md exists | `Test-Path "{TARGET}/CLAUDE.md"` | `True` |
-| Credentials file | `Test-Path "{TARGET}/.ai/config/credentials.local.ps1"` | `True` |
+| Connections config | `Test-Path "{TARGET}/.ai/config/connections.json"` | `True` |
+| Roles config | `Test-Path "{TARGET}/.ai/config/roles.json"` | `True` |
+| Credentials file | `Test-Path "{TARGET}/.ai/config/credentials.local.json"` | `True` |
 | Health check passes | `.\.ai\scripts\check-orchestration-health.ps1` | Status output |
 | MCP server registered | `claude mcp list` | Shows `secondary-claude` |
 
@@ -359,10 +382,10 @@ Fix: Install Claude Code CLI or add to PATH
 
 | Component | Status Red | Fix |
 |-----------|------------|-----|
-| Azure Anthropic | "NOT SET" | Add AZURE_ANTHROPIC_ENDPOINT and API_KEY |
-| Azure OpenAI | "NOT SET" | Optional - add if you want Friend agent |
-| Azure Codex | "NOT SET" | Optional - add if you want Critic agent |
-| Local Worker | "NOT SET" | Optional - start LM Studio on port 1234 |
+| AI1 (Primary) | "NOT SET" | Add AI1_ENDPOINT and AI1_API_KEY in credentials.local.json |
+| AI2 (Secondary) | "NOT SET" | Optional - add AI2_* if you want Friend role |
+| AI3 (Tertiary) | "NOT SET" | Optional - add AI3_* if you want Critic role |
+| LOCAL1 | "NOT SET" | Optional - add LOCAL1_ENDPOINT or start LM Studio on port 1234 |
 
 ## POST_INSTALLATION
 
