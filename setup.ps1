@@ -55,6 +55,12 @@ param(
     [string]$WorkItemPrefix = "#",
 
     [Parameter(Mandatory=$false)]
+    [string]$AdoOrganization = "",
+
+    [Parameter(Mandatory=$false)]
+    [string]$AdoProject = "",
+
+    [Parameter(Mandatory=$false)]
     [switch]$SkipTemplates,
 
     [Parameter(Mandatory=$false)]
@@ -93,6 +99,10 @@ Write-Host "  Target:        $TargetPath"
 Write-Host "  Solution:      $SolutionName"
 Write-Host "  Git Branch:    $GitDefaultBranch"
 Write-Host "  Build Command: $BuildCommand"
+if ($AdoOrganization -and $AdoProject) {
+    Write-Host "  ADO Org:       $AdoOrganization"
+    Write-Host "  ADO Project:   $AdoProject"
+}
 Write-Host ""
 
 # Placeholder values
@@ -102,6 +112,8 @@ $placeholders = @{
     "{{BUILD_COMMAND}}" = $BuildCommand
     "{{WORK_ITEM_PREFIX}}" = $WorkItemPrefix
     "{{CURRENT_DATE}}" = (Get-Date -Format "yyyy-MM-dd")
+    "{{ADO_ORGANIZATION}}" = $AdoOrganization
+    "{{ADO_PROJECT}}" = $AdoProject
 }
 
 function Replace-Placeholders {
@@ -168,6 +180,22 @@ if (Test-Path $scriptsSource) {
         } else {
             Copy-Item $_.FullName $destFile -Force
             Write-Host "    Copied: $($_.Name)" -ForegroundColor Gray
+        }
+    }
+}
+
+# Step 2b: Process script templates
+Write-Step "Processing script templates..."
+$scriptTemplatesSource = Join-Path $templatesDir "scripts"
+if (Test-Path $scriptTemplatesSource) {
+    Get-ChildItem $scriptTemplatesSource -Filter "*.template" | ForEach-Object {
+        $destName = $_.Name -replace '\.template$', ''
+        $destFile = Join-Path $scriptsTarget $destName
+        if ((Test-Path $destFile) -and -not $Force) {
+            Write-Warn "    Skipping (exists): $destName"
+        } else {
+            Copy-WithPlaceholders -SourceFile $_.FullName -DestFile $destFile -Values $placeholders
+            Write-Host "    Created: $destName" -ForegroundColor Gray
         }
     }
 }
@@ -545,10 +573,17 @@ Write-Host ""
 Write-Host "  4. Verify setup:" -ForegroundColor Cyan
 Write-Host "     .\.ai\scripts\check-orchestration-health.ps1"
 Write-Host ""
-Write-Host "  5. (Optional) Add Azure DevOps integration:" -ForegroundColor Cyan
-Write-Host "     Copy extensions/azure-devops/*.template to .ai/scripts/"
-Write-Host "     Update placeholders with your ADO organization/project"
-Write-Host ""
+if ($AdoOrganization -and $AdoProject) {
+    Write-Host "  5. Azure DevOps integration:" -ForegroundColor Cyan
+    Write-Host "     ADO utilities installed to .ai/scripts/ado-utils.ps1"
+    Write-Host "     Usage: . '.\.ai\scripts\ado-utils.ps1'"
+    Write-Host "            Set-WorkItemActiveWithParent -WorkItemId 1234"
+    Write-Host ""
+} else {
+    Write-Host "  5. (Optional) Add Azure DevOps integration:" -ForegroundColor Cyan
+    Write-Host "     Re-run setup with -AdoOrganization and -AdoProject parameters"
+    Write-Host ""
+}
 
 return @{
     Success = $true
