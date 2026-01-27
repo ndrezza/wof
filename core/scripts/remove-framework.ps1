@@ -219,10 +219,19 @@ else {
         $FilesToRemove += @{ Path = $WofSkillDir; Type = "Directory"; Description = ".claude/skills/wof/" }
     }
 
-    # 5. CLAUDE.md
+    # 5. CLAUDE.md - Remove WOI section only (not the whole file)
     $ClaudeMd = Join-Path $ProjectRoot "CLAUDE.md"
+    $WoiSectionFound = $false
     if (Test-Path $ClaudeMd) {
-        $FilesToRemove += @{ Path = $ClaudeMd; Type = "File"; Description = "CLAUDE.md" }
+        $claudeContent = Get-Content $ClaudeMd -Raw
+        if ($claudeContent -match "<!-- WOI-SECTION-START") {
+            $WoiSectionFound = $true
+            # Don't add to FilesToRemove - we'll handle this separately
+            Write-Host "    [WOI]   CLAUDE.md WOI section will be removed (file preserved)" -ForegroundColor Yellow
+        } else {
+            # Legacy: no WOI section markers, remove entire file
+            $FilesToRemove += @{ Path = $ClaudeMd; Type = "File"; Description = "CLAUDE.md (legacy, no WOI section)" }
+        }
     }
 
     # Find user files that will be preserved
@@ -387,6 +396,29 @@ foreach ($item in $FilesToRemove) {
 }
 
 Write-Host "       Removed $removedCount items" -ForegroundColor Green
+
+# Remove WOI section from CLAUDE.md if present
+if ($WoiSectionFound -and (Test-Path $ClaudeMd)) {
+    Write-Host "[1.5/4] Removing WOI section from CLAUDE.md..." -ForegroundColor Cyan
+    try {
+        $claudeContent = Get-Content $ClaudeMd -Raw
+        $startMarker = "<!-- WOI-SECTION-START"
+        $endMarker = "<!-- WOI-SECTION-END -->"
+        $pattern = "(?s)\r?\n?$([regex]::Escape($startMarker)).*?$([regex]::Escape($endMarker))\r?\n?"
+
+        $newContent = $claudeContent -replace $pattern, "`n"
+        # Clean up multiple consecutive newlines
+        $newContent = $newContent -replace "(\r?\n){3,}", "`n`n"
+        $newContent = $newContent.Trim() + "`n"
+
+        Set-Content -Path $ClaudeMd -Value $newContent -NoNewline
+        Write-Host "       WOI section removed from CLAUDE.md" -ForegroundColor Green
+    }
+    catch {
+        Write-Host "       FAILED to remove WOI section: $_" -ForegroundColor Red
+        $failedCount++
+    }
+}
 
 # Clean up empty directories
 Write-Host "[2/4] Cleaning empty directories..." -ForegroundColor Cyan

@@ -333,6 +333,62 @@ if (-not $DryRun) {
     Set-Content -Path $targetVersionFile -Value $newVersion
 }
 
+# Inject/Update WOI section in CLAUDE.md
+Write-Step "Processing WOI section in CLAUDE.md..."
+$claudeMdPath = Join-Path $TargetPath "CLAUDE.md"
+$woiSectionTemplate = Join-Path $scriptRoot "templates\WOI-SECTION.md"
+
+if (Test-Path $claudeMdPath) {
+    $claudeMdContent = Get-Content $claudeMdPath -Raw
+
+    # Read installation mode
+    $modeFile = Join-Path $aiDir ".mode"
+    $installMode = if (Test-Path $modeFile) { (Get-Content $modeFile).Trim() } else { "Unknown" }
+
+    # Load WOI section template and replace placeholders
+    if (Test-Path $woiSectionTemplate) {
+        $woiSection = Get-Content $woiSectionTemplate -Raw
+        $woiSection = $woiSection -replace '\{\{WOI_VERSION\}\}', $newVersion
+        $woiSection = $woiSection -replace '\{\{WOI_MODE\}\}', $installMode
+
+        $startMarker = "<!-- WOI-SECTION-START"
+        $endMarker = "<!-- WOI-SECTION-END -->"
+
+        if ($claudeMdContent -match [regex]::Escape($startMarker)) {
+            # Update existing WOI section
+            $pattern = "(?s)$([regex]::Escape($startMarker)).*?$([regex]::Escape($endMarker))"
+            if ($DryRun) {
+                Write-Info "Would update WOI section in CLAUDE.md"
+            } else {
+                $newContent = $claudeMdContent -replace $pattern, $woiSection.Trim()
+                Set-Content -Path $claudeMdPath -Value $newContent -NoNewline
+                Write-Info "Updated WOI section in CLAUDE.md"
+            }
+        } else {
+            # Inject new WOI section after first heading or at the top
+            if ($DryRun) {
+                Write-Info "Would inject WOI section into CLAUDE.md"
+            } else {
+                # Find position after first # heading line
+                if ($claudeMdContent -match "(?m)^#[^#].*$") {
+                    $firstHeadingMatch = [regex]::Match($claudeMdContent, "(?m)^#[^#].*$")
+                    $insertPos = $firstHeadingMatch.Index + $firstHeadingMatch.Length
+                    $newContent = $claudeMdContent.Insert($insertPos, "`n`n" + $woiSection.Trim() + "`n")
+                } else {
+                    # No heading found, add at beginning
+                    $newContent = $woiSection.Trim() + "`n`n" + $claudeMdContent
+                }
+                Set-Content -Path $claudeMdPath -Value $newContent -NoNewline
+                Write-Info "Injected WOI section into CLAUDE.md"
+            }
+        }
+    } else {
+        Write-Warn "WOI section template not found, skipping CLAUDE.md update"
+    }
+} else {
+    Write-Info "CLAUDE.md not found, skipping WOI section injection"
+}
+
 # Summary
 Write-Host ""
 Write-Host "================================================================================" -ForegroundColor Green
