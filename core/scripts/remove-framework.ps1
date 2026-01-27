@@ -15,7 +15,9 @@
     - WOF-related entries from .gitignore (optional)
 
     Components PRESERVED by default:
-    - config/credentials.local.ps1 (API keys, connection strings)
+    - config/credentials.local.json (API keys - v2 format)
+    - config/credentials.local.ps1 (API keys - legacy v1 format)
+    - config/connections.json, roles.json (v2 config)
     - config/providers.yaml, models.yaml, ai-rules.md (customized settings)
     - memory/current-sprint.md, architecture.md, conventions.md (project context)
     - User-created files not in the manifest
@@ -56,7 +58,8 @@
 .NOTES
     The manifest file (.ai/.installed-files.json) tracks all WOF-installed files.
     Config and memory files are preserved by default because they contain:
-    - API keys and connection strings (credentials.local.ps1)
+    - API keys and connection strings (credentials.local.json, credentials.local.ps1)
+    - AI connection and role configurations (connections.json, roles.json)
     - Project-specific customizations (architecture.md, conventions.md)
     - Active work tracking (current-sprint.md)
 #>
@@ -157,14 +160,21 @@ else {
     # These match the always_preserve and template_only patterns in sync-manifest.json
     # Can be overridden with -IncludeConfig flag
     $PreservePatterns = @(
-        "config/credentials.local.ps1",   # API keys, connection strings - NEVER delete
+        # Credentials - NEVER delete (both v1 and v2 formats)
+        "config/credentials.local.ps1",   # API keys (legacy v1 format)
+        "config/credentials.local.json",  # API keys (v2 format)
+        # v2 config files
+        "config/connections.json",        # AI connection definitions (v2)
+        "config/roles.json",              # Role-to-connection mappings (v2)
+        # Shared config files
+        "config/providers.yaml",          # Customized provider settings (legacy)
+        "config/models.yaml",             # Customized model tiers
+        "config/ai-rules.md",             # Customized AI behavior rules
+        # Memory files
         "memory/current-sprint.md",       # Active work tracking
         "memory/local-dev-setup.md",      # Local environment notes
         "memory/architecture.md",         # Project-specific architecture
-        "memory/conventions.md",          # Project-specific conventions
-        "config/providers.yaml",          # Customized provider settings
-        "config/models.yaml",             # Customized model tiers
-        "config/ai-rules.md"              # Customized AI behavior rules
+        "memory/conventions.md"           # Project-specific conventions
     )
 
     if ($IncludeConfig) {
