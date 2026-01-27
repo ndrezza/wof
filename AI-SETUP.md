@@ -20,17 +20,14 @@ health_check: .ai/scripts/check-orchestration-health.ps1
 
 ## QUICK_REFERENCE
 
-**Recommended: Step-by-step approach (most reliable):**
+**Step-by-step (use `powershell` not `pwsh` for consistent escaping):**
 
 ```bash
-# Step 1: Clone to a known writable location
-git clone --depth 1 https://github.com/ndrezza/wof.git C:/wof-install
+# Step 1: Clone to temp
+powershell -Command 'git clone --depth 1 https://github.com/ndrezza/wof.git "$env:TEMP\wof-install"'
 
 # Step 2: Run setup
-powershell -ExecutionPolicy Bypass -File C:/wof-install/setup.ps1 -TargetPath "{TARGET}" -Force
-
-# Step 3: Cleanup
-powershell -Command "Remove-Item -Recurse -Force C:/wof-install"
+powershell -ExecutionPolicy Bypass -Command '& "$env:TEMP\wof-install\setup.ps1" -TargetPath "{TARGET}" -Force -Cleanup'
 ```
 
 **Config files after install:**
@@ -40,7 +37,7 @@ powershell -Command "Remove-Item -Recurse -Force C:/wof-install"
 .ai/config/roles.json              - Role mappings
 ```
 
-**Verify:** `./.ai/scripts/check-orchestration-health.ps1`
+**Verify:** `powershell -File "./.ai/scripts/check-orchestration-health.ps1"`
 
 ## PREREQUISITES
 
@@ -57,20 +54,20 @@ Before installation, verify:
 
 ### Step 1: CLONE_FRAMEWORK
 
-Clone WOF to a simple, writable path (avoid environment variables - they get mangled):
+Clone WOF to temp folder. **Use single quotes** around the PowerShell command to preserve `$env:TEMP`:
 
 ```bash
-git clone --depth 1 https://github.com/ndrezza/wof.git C:/wof-install
+powershell -Command 'Remove-Item -Recurse -Force "$env:TEMP\wof-install" -ErrorAction SilentlyContinue; git clone --depth 1 https://github.com/ndrezza/wof.git "$env:TEMP\wof-install"'
 ```
 
-**Note:** Use `C:/wof-install` or another simple path. Avoid `$env:TEMP` as dollar signs get stripped when passing through Bash.
+**Note:** Use `powershell` (Windows PowerShell), not `pwsh` (PowerShell Core) - escaping behavior differs.
 
 ### Step 2: CHECK_EXISTING (Optional)
 
 Check if WOF is already installed:
 
 ```bash
-powershell -Command "Test-Path '{TARGET}/.ai'"
+powershell -Command 'Test-Path "{TARGET}/.ai"'
 ```
 
 If true, inform user: "WOF is already installed. Running setup with -Force will update it while preserving your credentials and memory files."
@@ -78,7 +75,7 @@ If true, inform user: "WOF is already installed. Running setup with -Force will 
 ### Step 3: RUN_SETUP
 
 ```bash
-powershell -ExecutionPolicy Bypass -File C:/wof-install/setup.ps1 -TargetPath "{TARGET}" -Force
+powershell -ExecutionPolicy Bypass -Command '& "$env:TEMP\wof-install\setup.ps1" -TargetPath "{TARGET}" -Force -Cleanup'
 ```
 
 Replace `{TARGET}` with the actual target path (e.g., `C:/code/MyProject`).
@@ -86,23 +83,15 @@ Replace `{TARGET}` with the actual target path (e.g., `C:/code/MyProject`).
 **Parameters:**
 - `-TargetPath`: Absolute path to target project root
 - `-Force`: Overwrite existing files (preserves credentials, connections, roles, memory)
-- `-Cleanup`: (Optional) Remove the clone directory after setup
+- `-Cleanup`: Automatically removes the temp clone after successful setup
 
-### Step 4: CLEANUP
-
-Remove the temporary clone:
-
-```bash
-powershell -Command "Remove-Item -Recurse -Force C:/wof-install"
-```
-
-### Step 5: CONFIGURE_CREDENTIALS
+### Step 4: CONFIGURE_CREDENTIALS
 
 See [CREDENTIAL_INTERVIEW](#credential_interview) section below.
 
 After collecting credentials, write them to `.ai/config/credentials.local.json` in the target project.
 
-### Step 6: SETUP_MCP
+### Step 5: SETUP_MCP
 
 Register the secondary-claude MCP server for Worker delegation:
 
@@ -112,7 +101,7 @@ claude mcp add --scope local secondary-claude -- claude mcp serve
 
 **Note:** This step requires Claude Code CLI to be available.
 
-### Step 7: VERIFY
+### Step 6: VERIFY
 
 Run the health check to verify installation:
 
