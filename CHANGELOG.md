@@ -5,6 +5,15 @@ All notable changes to the Workload Orchestration Framework (WOF) will be docume
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.2] - 2026-01-27
+
+### Changed
+
+- **Generic Provider Names** - Removed all hardcoded provider references
+  - Replaced "Azure Opus", "Azure Sonnet", "Codex Mini", "local DeepSeek"
+  - Now uses generic role names: Worker-Heavy, Worker-Lite, Validator, Critic
+  - Connections are fully configurable via `roles.json`
+
 ## [2.2.1] - 2026-01-27
 
 ### Added
