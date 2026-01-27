@@ -120,17 +120,15 @@ This allows role reassignment without changing credentials.
 
 ### Required Credentials
 
-#### AI1_ENDPOINT (Primary AI - typically Azure AI Foundry Anthropic)
+#### AI1_ENDPOINT (Primary AI connection)
 ```yaml
 id: AI1_ENDPOINT
-prompt: "What is your primary AI endpoint URL? (Azure AI Foundry Anthropic recommended)"
+prompt: "What is your primary AI endpoint URL?"
 required: true
-format: "https://{resource-name}.services.ai.azure.com/anthropic"
+format: "URL to your AI service"
 help: |
-  Find this in Azure Portal:
-  1. Go to Azure AI Foundry resource
-  2. Navigate to Keys and Endpoint
-  3. Copy the Anthropic endpoint URL
+  Enter the endpoint URL for your primary AI service.
+  This will be used for Worker-Heavy and Validator roles.
 sensitive: false
 enables: "Worker-Heavy, Validator roles (via connections.json)"
 maps_to: "ai1 connection in connections.json"
@@ -141,12 +139,9 @@ maps_to: "ai1 connection in connections.json"
 id: AI1_API_KEY
 prompt: "What is your primary AI API key?"
 required: true
-format: "32-character alphanumeric string"
+format: "API key string"
 help: |
-  Find this in Azure Portal:
-  1. Go to Azure AI Foundry resource
-  2. Navigate to Keys and Endpoint
-  3. Copy Key 1 or Key 2
+  Enter the API key for your primary AI service.
 sensitive: true
 enables: "Worker-Heavy, Validator roles"
 depends_on: AI1_ENDPOINT
@@ -183,17 +178,15 @@ enables: "Additional AI services"
 depends_on: AI2_ENDPOINT
 ```
 
-#### AI3_ENDPOINT (Tertiary AI - typically Azure OpenAI for Codex)
+#### AI3_ENDPOINT (Tertiary AI - for Critic role)
 ```yaml
 id: AI3_ENDPOINT
 prompt: "What is your tertiary AI endpoint URL? (Press Enter to skip)"
 required: false
-format: "https://{resource-name}.cognitiveservices.azure.com/openai/responses"
+format: "URL to your AI service"
 help: |
-  Find this in Azure Portal:
-  1. Go to Azure OpenAI resource with Codex model deployed
-  2. Navigate to Keys and Endpoint
-  3. Append /openai/responses to the endpoint
+  Enter the endpoint URL for your tertiary AI service.
+  This will be used for the Critic role (quality gate).
 sensitive: false
 enables: "Critic role (quality gate)"
 skip_message: "Critic role will be disabled. Quality gates will be skipped."
@@ -212,18 +205,15 @@ enables: "Critic role"
 depends_on: AI3_ENDPOINT
 ```
 
-#### AI4_ENDPOINT (Local model server / Worker-Lite)
+#### AI4_ENDPOINT (Worker-Lite)
 ```yaml
 id: AI4_ENDPOINT
-prompt: "What is your AI4/Worker-Lite endpoint? (Press Enter for default: http://localhost:1234)"
+prompt: "What is your AI4/Worker-Lite endpoint? (Press Enter to skip)"
 required: false
-format: "http://localhost:{port}"
-default: "http://localhost:1234"
+format: "URL to your AI service"
 help: |
-  For local models via LM Studio, Ollama, or similar:
-  - LM Studio default: http://localhost:1234
-  - Ollama default: http://localhost:11434
-  Or use a cloud provider for Worker-Lite tasks.
+  Enter the endpoint URL for Worker-Lite (lightweight tasks).
+  Can be a local or cloud AI service.
 sensitive: false
 enables: "Worker-Lite role (lightweight tasks)"
 skip_message: "Worker-Lite disabled. All tasks will route to Worker-Heavy."

@@ -30,7 +30,7 @@ This provides machine-readable step-by-step instructions for installing WOF into
 This framework provides:
 
 - **Multi-Agent Architecture** - Primary orchestrator with specialized workers
-- **Dual-Worker Routing** - T1 lightweight tasks → local model, T2+ complex → Azure
+- **Dual-Worker Routing** - T1 lightweight tasks → Worker-Lite, T2+ complex → Worker-Heavy
 - **Quality Gates** - Validator and Critic agents for decision validation
 - **Automated Workflows** - 9-phase feature development with phase gates
 - **Hook Integration** - Claude Code hooks for command approval and file validation
@@ -210,7 +210,7 @@ your-project/
 |--------|---------|
 | `get-worker-routing.ps1` | Classify tasks and route to Worker-Lite or Worker-Heavy |
 | `validate-autonomy.ps1` | Validate decisions with Azure Sonnet (>0.7 confidence) |
-| `bias-control.ps1` | Skeptical Q&A quality gate with Codex Mini (≥80%) |
+| `bias-control.ps1` | Skeptical Q&A quality gate (≥80% viability) |
 | `phase-gate.ps1` | 9-phase workflow enforcement |
 | `check-orchestration-health.ps1` | AI component status dashboard |
 | `delegate-to-local-worker.ps1` | Worker-Lite task delegation |
@@ -292,9 +292,8 @@ Copy-Item "extensions\azure-devops\ado-utils.ps1.template" ".ai\scripts\ado-util
 
 - PowerShell 5.1+
 - Claude Code CLI
-- Azure AI Foundry access (for Worker-Heavy, Validator)
-- Azure OpenAI access (for Critic)
-- (Optional) LM Studio with local model for Worker-Lite
+- AI service access for Worker-Heavy, Validator, and Critic roles
+- (Optional) Additional AI service for Worker-Lite
 
 ## Environment Variables (v2 Format)
 
@@ -302,16 +301,16 @@ Credentials are stored in `.ai/config/credentials.local.json` with generic names
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `AI1_ENDPOINT` | Yes | Primary AI endpoint (e.g., Azure AI Foundry Anthropic) |
+| `AI1_ENDPOINT` | Yes | Primary AI endpoint (Worker-Heavy, Validator) |
 | `AI1_API_KEY` | Yes | Primary AI API key |
-| `AI2_ENDPOINT` | Optional | Secondary AI endpoint (e.g., Azure OpenAI) |
+| `AI2_ENDPOINT` | Optional | Secondary AI endpoint |
 | `AI2_API_KEY` | Optional | Secondary AI API key |
-| `AI3_ENDPOINT` | Optional | Tertiary AI endpoint (e.g., Azure Codex) |
+| `AI3_ENDPOINT` | Optional | Tertiary AI endpoint (Critic) |
 | `AI3_API_KEY` | Optional | Tertiary AI API key |
-| `AI4_ENDPOINT` | Optional | Worker-Lite/local model endpoint |
+| `AI4_ENDPOINT` | Optional | Worker-Lite endpoint |
 
-> **Note:** The generic naming (AI1, AI2, AI3) allows role reassignment without changing credentials.
-> Connection types (Azure AI Foundry, Azure OpenAI, etc.) are specified in `connections.json`.
+> **Note:** The generic naming (AI1-AI10) allows flexible role assignment.
+> Connection types are specified in `connections.json`.
 
 ## License
 

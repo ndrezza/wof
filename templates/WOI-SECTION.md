@@ -61,19 +61,19 @@ This project has the Workload Orchestration Framework installed as a local insta
                                           ▼
                               ┌──────────────────┐
                               │ CRITIC           │
-                              │ (Codex Mini)     │
+                              │                  │
                               │ Skeptical Q&A    │
                               │ ≥80% viability   │
                               └──────────────────┘
 ```
 
-| Component | Backend | Role |
-|-----------|---------|------|
-| **Primary** | Anthropic Direct (Opus 4.5) | Orchestrator (NO coding) |
-| **Validator** | Azure Sonnet 4.5 | Decision validation (>0.7) |
-| **Worker-Heavy** | Azure Opus 4.5 | T2+ complex tasks |
-| **Worker-Lite** | Local DeepSeek v2 Lite | T1 lightweight tasks |
-| **Critic** | Azure Codex Mini | Quality gate (≥80%) |
+| Component | Role |
+|-----------|------|
+| **Primary** | Orchestrator (NO coding) |
+| **Validator** | Decision validation (>0.7 confidence) |
+| **Worker-Heavy** | T2+ complex tasks |
+| **Worker-Lite** | T1 lightweight tasks |
+| **Critic** | Quality gate (≥80% viability) |
 
 ### Task Routing
 

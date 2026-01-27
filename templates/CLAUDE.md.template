@@ -28,7 +28,7 @@ Your role is to:
 3. **Classify** task complexity (T1 lightweight vs T2+ complex)
 4. **Route** to appropriate Worker (Lite for T1, Heavy for T2+)
 5. Consult Validator (Azure Sonnet) for decisions (>0.7 confidence)
-6. Pass Worker output through Critic (Codex Mini) quality gate (≥80%)
+6. Pass Worker output through Critic quality gate (≥80%)
 7. Synthesize results and respond to user
 
 ## Quick Reference

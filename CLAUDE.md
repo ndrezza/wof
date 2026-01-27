@@ -57,7 +57,7 @@ Your role is to:
 3. **Classify** task complexity (T1 lightweight vs T2+ complex)
 4. **Route** to appropriate Worker (Lite for T1, Heavy for T2+)
 5. Consult Validator (Azure Sonnet) for decisions (>0.7 confidence)
-6. Pass Worker output through Critic (Codex Mini) quality gate (≥80%)
+6. Pass Worker output through Critic quality gate (≥80%)
 7. Synthesize results and respond to user
 
 ## Quick Reference
@@ -134,7 +134,6 @@ When user says "Finish up" or "Finish up #XXXX":
                                           ▼
                               ┌──────────────────┐
                               │ CRITIC           │
-                              │ (Codex Mini)     │
                               │                  │
                               │ Skeptical        │
                               │ quality gate     │
@@ -142,13 +141,13 @@ When user says "Finish up" or "Finish up #XXXX":
                               └──────────────────┘
 ```
 
-| Component | Backend | Role |
-|-----------|---------|------|
-| **Primary** | Anthropic Direct (Opus 4.5) | Orchestrator (NO coding) |
-| **Validator** | Azure Sonnet 4.5 | Decision validation (>0.7) |
-| **Worker-Heavy** | Azure Opus 4.5 | T2+ complex tasks (code gen, testing, refactoring) |
-| **Worker-Lite** | Local DeepSeek v2 Lite | T1 lightweight tasks (search, format, navigate) |
-| **Critic** | Azure Codex Mini | Quality gate (≥80%) |
+| Component | Role |
+|-----------|------|
+| **Primary** | Orchestrator (NO coding) |
+| **Validator** | Decision validation (>0.7 confidence) |
+| **Worker-Heavy** | T2+ complex tasks (code gen, testing, refactoring) |
+| **Worker-Lite** | T1 lightweight tasks (search, format, navigate) |
+| **Critic** | Quality gate (≥80% viability) |
 
 ## Task Routing
 
