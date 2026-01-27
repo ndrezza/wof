@@ -1,0 +1,232 @@
+# AI Provider Configuration
+#
+# This file defines the available AI providers and how to use them.
+# Claude Code can delegate subtasks to different providers based on:
+# - Cost optimization (T1 tasks to cheaper providers)
+# - Capability requirements (complex tasks to more capable models)
+# - Availability (fallback when primary is unavailable)
+
+providers:
+  # Primary provider - Current Anthropic connection
+  anthropic_direct:
+    name: "Anthropic Direct"
+    description: "Primary Orchestrator - NO coding, delegation only"
+    type: claude_code_native
+    status: active
+    configuration:
+      connection_type: native
+    capabilities:
+      - orchestration
+      - requirement_analysis
+      - work_breakdown
+      - synthesis
+    tier_support:
+      - t3_advanced
+      - t4_critical
+    models:
+      opus: claude-opus-4-20250514
+    role: primary_orchestrator
+    restrictions:
+      - "PRIMARY DOES NOT CODE"
+      - "All coding delegated to Worker (Azure Opus)"
+      - "All file operations delegated to Worker"
+
+  # WORKER - Azure AI Foundry (Opus)
+  azure_worker:
+    name: "Worker (Azure Opus)"
+    description: "ALL code generation, file operations, execution"
+    type: azure_ai_foundry_anthropic
+    status: active
+    configuration:
+      endpoint: "${AZURE_ANTHROPIC_ENDPOINT}"
+      api_key: "${AZURE_ANTHROPIC_API_KEY}"
+      api_version: "2023-06-01"
+    capabilities:
+      - code_generation
+      - file_operations
+      - test_execution
+      - research_tasks
+    tier_support:
+      - t3_advanced
+    models:
+      opus: "claude-opus-4-5-20251101"
+    role: worker
+
+  # VALIDATOR - Azure AI Foundry (Sonnet)
+  azure_validator:
+    name: "Validator (Azure Sonnet)"
+    description: "Decision validation with >0.7 confidence threshold"
+    type: azure_ai_foundry_anthropic
+    status: active
+    configuration:
+      endpoint: "${AZURE_ANTHROPIC_ENDPOINT}"
+      api_key: "${AZURE_ANTHROPIC_API_KEY}"
+      api_version: "2023-06-01"
+    capabilities:
+      - decision_validation
+      - confidence_scoring
+    tier_support:
+      - t2_standard
+    models:
+      sonnet: "claude-sonnet-4-5"
+    role: validator
+    threshold: 0.7
+
+  # FRIEND - Azure OpenAI (GPT-4o)
+  azure_friend:
+    name: "Friend (Azure GPT-4o)"
+    description: "Rules Guardian - Enforces CLAUDE.md compliance"
+    type: azure_openai
+    status: active
+    configuration:
+      endpoint: "${AZURE_OPENAI_ENDPOINT}"
+      api_key: "${AZURE_OPENAI_API_KEY}"
+      api_version: "2025-01-01-preview"
+    capabilities:
+      - rules_enforcement
+      - compliance_checking
+    tier_support:
+      - t2_standard
+    models:
+      gpt4o: "gpt-4o"
+    role: friend
+
+  # CRITIC - Azure Codex Mini
+  azure_critic:
+    name: "Critic (Azure Codex Mini)"
+    description: "Skeptical quality gate - ≥80% viability required"
+    type: azure_openai
+    status: active
+    configuration:
+      endpoint: "${AZURE_CODEX_ENDPOINT}"
+      api_key: "${AZURE_CODEX_API_KEY}"
+      api_version: "2025-04-01-preview"
+    capabilities:
+      - quality_assessment
+      - viability_scoring
+    tier_support:
+      - t1_lightweight
+    models:
+      codex_mini: "gpt-5.1-codex-mini"
+    role: critic
+    threshold: 0.8
+
+  # WORKER-LITE - Local DeepSeek (Lightweight Tasks)
+  local_deepseek_worker:
+    name: "Worker-Lite (Local DeepSeek)"
+    description: "Lightweight worker for simple tasks - runs locally"
+    type: openai_compatible
+    status: active
+    configuration:
+      endpoint: "${LOCAL_WORKER_ENDPOINT}/v1/chat/completions"
+      api_key: ""
+    capabilities:
+      - file_search
+      - simple_formatting
+      - code_navigation
+      - syntax_validation
+      - simple_qa
+    tier_support:
+      - t1_lightweight
+    models:
+      deepseek: "deepseek-coder-v2-lite-instruct"
+    role: worker_lite
+    context_window: 32000
+
+# Orchestration rules
+orchestration:
+  primary: anthropic_direct
+
+  roles:
+    orchestrator: anthropic_direct
+    worker_heavy: azure_worker
+    worker_lite: local_deepseek_worker
+    validator: azure_validator
+    friend: azure_friend
+    critic: azure_critic
+
+  delegation_routing:
+    code_generation:
+      target: azure_worker
+      required: true
+      tier: t3_advanced
+
+    file_operations:
+      target: azure_worker
+      required: true
+      tier: t3_advanced
+
+    test_execution:
+      target: azure_worker
+      required: true
+      tier: t3_advanced
+
+    research:
+      target: azure_worker
+      tier: t3_advanced
+
+    decision_validation:
+      target: azure_validator
+      threshold: 0.7
+      tier: t2_standard
+
+    rules_check:
+      target: azure_friend
+      tier: t2_standard
+
+    quality_gate:
+      target: azure_critic
+      threshold: 0.8
+      tier: t1_lightweight
+
+    orchestration:
+      target: anthropic_direct
+      tier: t3_advanced
+
+    lightweight_tasks:
+      target: local_deepseek_worker
+      tier: t1_lightweight
+
+# Task delegation configuration
+task_delegation:
+  WorkerHeavy:
+    description: "Complex code generation, file ops, execution (T2+)"
+    provider: azure_worker
+    mcp_server: secondary-claude
+    tier: t3_advanced
+    model: claude-opus-4-5-20251101
+
+  WorkerLite:
+    description: "Simple tasks: search, format, navigate (T1)"
+    provider: local_deepseek_worker
+    mcp_server: tertiary-claude-lite
+    tier: t1_lightweight
+    model: deepseek-coder-v2-lite-instruct
+    endpoint: "${LOCAL_WORKER_ENDPOINT}"
+    fallback: WorkerHeavy
+
+  Validator:
+    description: "Decision validation (>0.7 confidence)"
+    provider: azure_validator
+    tier: t2_standard
+    model: claude-sonnet-4-5
+    threshold: 0.7
+
+  Friend:
+    description: "CLAUDE.md rules guardian"
+    provider: azure_friend
+    tier: t2_standard
+    model: gpt-4o
+
+  Critic:
+    description: "Quality gate (≥80% viability)"
+    provider: azure_critic
+    tier: t1_lightweight
+    model: gpt-5.1-codex-mini
+    threshold: 0.8
+
+  Explore:
+    description: "Codebase exploration (read-only)"
+    provider: anthropic_direct
+    tier: t1_lightweight
+    note: "Read-only exploration is allowed for Primary"

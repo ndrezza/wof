@@ -1,0 +1,236 @@
+# Azure DevOps Utility Functions
+#
+# This script provides helper functions for Azure DevOps work item management.
+# Key feature: Automatically sets parent work items to Active when children are activated.
+#
+# TEMPLATE - Replace placeholders before use:
+#   {{ADO_ORGANIZATION}} - Your ADO organization name
+#   {{ADO_PROJECT}} - Your ADO project name
+#
+# Usage:
+#   . '.\.ai\scripts\ado-utils.ps1'
+#   Set-WorkItemActiveWithParent -WorkItemId 2939
+
+param(
+    [Parameter(Mandatory=$false)]
+    [int]$WorkItemId,
+
+    [Parameter(Mandatory=$false)]
+    [ValidateSet('activate', 'close')]
+    [string]$Action = 'activate'
+)
+
+$ErrorActionPreference = "Stop"
+
+# Azure DevOps configuration - REPLACE WITH YOUR VALUES
+$script:AdoOrg = "{{ADO_ORGANIZATION}}"
+$script:AdoProject = "{{ADO_PROJECT}}"
+$script:AdoApiVersion = "7.1"
+
+function Get-AdoHeaders {
+    # Try to get PAT from environment or az cli
+    $pat = $env:AZURE_DEVOPS_PAT
+
+    if (-not $pat) {
+        # Try az cli
+        try {
+            $pat = az account get-access-token --resource "499b84ac-1321-427f-aa17-267ca6975798" --query accessToken -o tsv 2>$null
+        }
+        catch {
+            throw "No Azure DevOps PAT found. Set AZURE_DEVOPS_PAT environment variable or login with 'az login'."
+        }
+    }
+
+    $base64Auth = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes(":$pat"))
+    return @{
+        "Authorization" = "Basic $base64Auth"
+        "Content-Type" = "application/json-patch+json"
+    }
+}
+
+function Get-WorkItem {
+    param([int]$Id)
+
+    $headers = Get-AdoHeaders
+    $uri = "https://dev.azure.com/$script:AdoOrg/$script:AdoProject/_apis/wit/workitems/${Id}?`$expand=relations&api-version=$script:AdoApiVersion"
+
+    try {
+        return Invoke-RestMethod -Uri $uri -Headers $headers -Method Get
+    }
+    catch {
+        Write-Warning "Failed to get work item $Id : $_"
+        return $null
+    }
+}
+
+function Update-WorkItemState {
+    param(
+        [int]$Id,
+        [string]$State,
+        [string]$Comment = ""
+    )
+
+    $headers = Get-AdoHeaders
+    $uri = "https://dev.azure.com/$script:AdoOrg/$script:AdoProject/_apis/wit/workitems/${Id}?api-version=$script:AdoApiVersion"
+
+    $body = @(
+        @{
+            op = "add"
+            path = "/fields/System.State"
+            value = $State
+        }
+    )
+
+    if ($Comment) {
+        $body += @{
+            op = "add"
+            path = "/fields/System.History"
+            value = $Comment
+        }
+    }
+
+    try {
+        return Invoke-RestMethod -Uri $uri -Headers $headers -Method Patch -Body ($body | ConvertTo-Json -Depth 5)
+    }
+    catch {
+        Write-Warning "Failed to update work item $Id to $State : $_"
+        return $null
+    }
+}
+
+function Get-ParentWorkItemId {
+    param([object]$WorkItem)
+
+    if (-not $WorkItem.relations) {
+        return $null
+    }
+
+    $parentRelation = $WorkItem.relations | Where-Object { $_.rel -eq "System.LinkTypes.Hierarchy-Reverse" }
+
+    if ($parentRelation) {
+        # Extract ID from URL like: https://.../_apis/wit/workItems/2937
+        if ($parentRelation.url -match '/workItems/(\d+)$') {
+            return [int]$Matches[1]
+        }
+    }
+
+    return $null
+}
+
+function Set-WorkItemActiveWithParent {
+    <#
+    .SYNOPSIS
+    Sets a work item to Active and ensures its parent is also Active.
+
+    .DESCRIPTION
+    When a child work item (Task) is set to Active, the parent (User Story)
+    should also be Active to reflect that work has started.
+
+    .PARAMETER WorkItemId
+    The ID of the work item to activate.
+
+    .EXAMPLE
+    Set-WorkItemActiveWithParent -WorkItemId 2939
+    #>
+    param(
+        [Parameter(Mandatory=$true)]
+        [int]$WorkItemId
+    )
+
+    Write-Host "Activating work item #$WorkItemId..." -ForegroundColor Cyan
+
+    # Get the work item with relations
+    $workItem = Get-WorkItem -Id $WorkItemId
+    if (-not $workItem) {
+        return @{ Success = $false; Error = "Could not retrieve work item #$WorkItemId" }
+    }
+
+    $currentState = $workItem.fields.'System.State'
+    Write-Host "  Current state: $currentState"
+
+    # Activate the work item if not already active
+    if ($currentState -ne "Active") {
+        $result = Update-WorkItemState -Id $WorkItemId -State "Active" -Comment "Activated via ado-utils.ps1"
+        if ($result) {
+            Write-Host "  Set #$WorkItemId to Active" -ForegroundColor Green
+        }
+        else {
+            return @{ Success = $false; Error = "Failed to activate work item #$WorkItemId" }
+        }
+    }
+    else {
+        Write-Host "  Already Active" -ForegroundColor Gray
+    }
+
+    # Check and activate parent if needed
+    $parentId = Get-ParentWorkItemId -WorkItem $workItem
+    if ($parentId) {
+        Write-Host "  Found parent: #$parentId" -ForegroundColor Cyan
+
+        $parentItem = Get-WorkItem -Id $parentId
+        if ($parentItem) {
+            $parentState = $parentItem.fields.'System.State'
+            Write-Host "  Parent state: $parentState"
+
+            if ($parentState -eq "New") {
+                $result = Update-WorkItemState -Id $parentId -State "Active" -Comment "Auto-activated because child #$WorkItemId was activated"
+                if ($result) {
+                    Write-Host "  Set parent #$parentId to Active" -ForegroundColor Green
+                }
+                else {
+                    Write-Host "  Warning: Could not activate parent #$parentId" -ForegroundColor Yellow
+                }
+            }
+            elseif ($parentState -eq "Active") {
+                Write-Host "  Parent already Active" -ForegroundColor Gray
+            }
+        }
+    }
+    else {
+        Write-Host "  No parent work item found" -ForegroundColor Gray
+    }
+
+    return @{ Success = $true; WorkItemId = $WorkItemId; ParentId = $parentId }
+}
+
+function Set-WorkItemClosed {
+    <#
+    .SYNOPSIS
+    Sets a work item to Closed.
+
+    .PARAMETER WorkItemId
+    The ID of the work item to close.
+
+    .PARAMETER Comment
+    Optional comment to add to the work item.
+    #>
+    param(
+        [Parameter(Mandatory=$true)]
+        [int]$WorkItemId,
+
+        [string]$Comment = ""
+    )
+
+    Write-Host "Closing work item #$WorkItemId..." -ForegroundColor Cyan
+
+    $result = Update-WorkItemState -Id $WorkItemId -State "Closed" -Comment $Comment
+    if ($result) {
+        Write-Host "  Set #$WorkItemId to Closed" -ForegroundColor Green
+        return @{ Success = $true; WorkItemId = $WorkItemId }
+    }
+    else {
+        return @{ Success = $false; Error = "Failed to close work item #$WorkItemId" }
+    }
+}
+
+# Main execution when script is called directly with parameters
+if ($WorkItemId -gt 0) {
+    switch ($Action) {
+        'activate' {
+            Set-WorkItemActiveWithParent -WorkItemId $WorkItemId
+        }
+        'close' {
+            Set-WorkItemClosed -WorkItemId $WorkItemId
+        }
+    }
+}

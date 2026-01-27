@@ -1,0 +1,123 @@
+# AI & Agent Collaboration Rules
+
+**Version:** 1.0.0
+**Last Updated:** {{CURRENT_DATE}}
+**Scope:** {{SOLUTION_NAME}} Solution
+
+---
+
+## Core Workflows
+
+### Pre-Task Checklist
+
+**MANDATORY for ALL coding tasks:**
+
+1. Check `git status`
+2. Ensure NOT on {{GIT_DEFAULT_BRANCH}} branch
+3. Load context from `.ai/memory/`
+4. Execute task
+5. Update documentation
+6. Verify & test
+
+### Git Branch Protection
+
+**NEVER modify code on {{GIT_DEFAULT_BRANCH}} branch - NO EXCEPTIONS**
+
+- **Check First:** `git status` before ANY file modification
+- **Branch Naming:** `feature/meaningful-description`
+- **Zero Bypass:** Even single-character changes need branches
+
+## Commit Requirements
+
+### Commit Message Format
+
+```bash
+git commit -m "{{WORK_ITEM_PREFIX}}[WORK_ITEM_ID] Brief description"
+```
+
+**Examples:**
+- `{{WORK_ITEM_PREFIX}}123 Add integration endpoint`
+- `{{WORK_ITEM_PREFIX}}456 Fix authentication flow`
+
+### "Finish Up" Automation
+
+**Trigger phrases:**
+- "Finish up" (prompts for work item ID)
+- "Finish up {{WORK_ITEM_PREFIX}}123" (work item provided)
+
+**Automated sequence:**
+1. Build verification
+2. Check/update memory bank
+3. Stage changes
+4. Commit with work item
+5. Push to remote
+6. Report completion
+
+## Memory Bank System
+
+### Location: `.ai/memory/`
+
+**Required Files:**
+- `architecture.md` - System architecture
+- `conventions.md` - Coding standards
+- `current-sprint.md` - Active work context
+
+### Update Triggers
+
+Memory bank updates when:
+1. Discovering new patterns
+2. After implementing significant changes
+3. User requests update
+4. Context needs clarification
+
+## Testing Strategies
+
+### Test Naming
+
+```csharp
+// Pattern: Method_Scenario_ExpectedResult
+[Fact]
+public async Task ProcessRequest_ValidInput_ReturnsSuccess()
+```
+
+### Test Structure (AAA)
+
+- **Arrange** - Set up test data
+- **Act** - Execute the operation
+- **Assert** - Verify the result
+
+## Security Patterns
+
+### Code Generation Security
+
+- Validate all inputs
+- Use parameterized queries
+- Respect existing authentication
+- Never expose sensitive data
+- Follow principle of least privilege
+
+### Never Commit
+
+- API keys, secrets, credentials
+- Connection strings with passwords
+- `.env` files with real values
+
+## AI-Specific Patterns
+
+### Prompt Effectiveness
+
+**What works well:**
+- Clear, specific task descriptions
+- Reference to existing patterns
+- Concrete examples
+- Success criteria defined upfront
+
+**What doesn't work:**
+- Vague requirements
+- Contradictory instructions
+- Missing context
+- Unclear acceptance criteria
+
+---
+
+**Remember:** After every memory reset, AI agents begin completely fresh. The Memory Bank and these rules are the only link to previous work.

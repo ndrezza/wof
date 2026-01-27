@@ -1,0 +1,21 @@
+# Credentials - NEVER commit
+credentials.local.ps1
+*.local.ps1
+
+# IDE
+.idea/
+.vscode/
+*.suo
+*.user
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Temp files
+*.tmp
+*.temp

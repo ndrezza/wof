@@ -1,0 +1,194 @@
+# Risk Classification Rules for Command Approval
+# Used by Primary to auto-classify approval requests
+
+version: "1.0"
+
+risk_levels:
+  low:
+    description: "Safe operations - auto-approve without consultation"
+    action: "auto_approve"
+
+    commands:
+      # Build & Test
+      - pattern: "^dotnet build"
+      - pattern: "^dotnet test"
+      - pattern: "^dotnet restore"
+      - pattern: "^dotnet clean"
+      - pattern: "^dotnet run"
+        note: "Only for test/dev scenarios"
+
+      # Git - Read only
+      - pattern: "^git status"
+      - pattern: "^git diff"
+      - pattern: "^git log"
+      - pattern: "^git branch$"
+      - pattern: "^git branch -a"
+      - pattern: "^git branch -l"
+      - pattern: "^git show"
+      - pattern: "^git blame"
+
+      # File inspection
+      - pattern: "^ls"
+      - pattern: "^dir"
+      - pattern: "^cat "
+      - pattern: "^head "
+      - pattern: "^tail "
+      - pattern: "^find "
+        note: "Read-only find"
+      - pattern: "^grep "
+      - pattern: "^rg "
+
+      # NPM - Read only
+      - pattern: "^npm list"
+      - pattern: "^npm outdated"
+      - pattern: "^npm audit$"
+
+    file_operations:
+      - type: "read"
+        scope: "project"
+      - type: "edit"
+        scope: "source_files"
+        patterns:
+          - "*.cs"
+          - "*.ts"
+          - "*.tsx"
+          - "*.js"
+          - "*.jsx"
+      - type: "edit"
+        scope: "test_files"
+        patterns:
+          - "*Tests.cs"
+          - "*.test.ts"
+          - "*.spec.ts"
+
+  medium:
+    description: "Potentially impactful - consult Validator before approving"
+    action: "consult_validator"
+    confidence_threshold: 0.7
+
+    commands:
+      # Git - Write operations
+      - pattern: "^git add"
+      - pattern: "^git commit"
+      - pattern: "^git checkout -b"
+        note: "Creating new branch is generally safe"
+      - pattern: "^git stash"
+      - pattern: "^git merge"
+        note: "Merging can have conflicts"
+
+      # Package management
+      - pattern: "^npm install"
+      - pattern: "^npm update"
+      - pattern: "^dotnet add package"
+      - pattern: "^dotnet remove package"
+
+      # File operations
+      - pattern: "^mkdir"
+      - pattern: "^touch"
+      - pattern: "^cp "
+      - pattern: "^copy "
+      - pattern: "^mv "
+      - pattern: "^move "
+
+      # Docker (non-destructive)
+      - pattern: "^docker build"
+      - pattern: "^docker run"
+
+    file_operations:
+      - type: "create"
+        scope: "project"
+      - type: "delete"
+        scope: "source_files"
+        note: "Deleting source requires validation"
+      - type: "edit"
+        scope: "config_files"
+        patterns:
+          - "*.json"
+          - "*.yaml"
+          - "*.yml"
+          - "*.config"
+          - "*.csproj"
+          - "appsettings*.json"
+
+  high:
+    description: "Dangerous operations - veto or escalate to user"
+    action: "veto_or_escalate"
+
+    commands:
+      # Git - Destructive
+      - pattern: "git push"
+        note: "Pushing to remote requires explicit approval"
+      - pattern: "git reset --hard"
+      - pattern: "git reset.*--hard"
+      - pattern: "git rebase"
+      - pattern: "git force"
+      - pattern: "--force"
+      - pattern: "-f$"
+        note: "Force flags on any command"
+
+      # Destructive file operations
+      - pattern: "^rm -rf"
+      - pattern: "^rm -r"
+      - pattern: "^rmdir"
+      - pattern: "^del /s"
+      - pattern: "^Remove-Item.*-Recurse"
+
+      # System operations
+      - pattern: "^sudo"
+      - pattern: "^chmod"
+      - pattern: "^chown"
+
+      # Database
+      - pattern: "DROP "
+      - pattern: "DELETE FROM"
+      - pattern: "TRUNCATE"
+      - pattern: "dotnet ef database drop"
+      - pattern: "dotnet ef migrations remove"
+
+      # Network/External
+      - pattern: "^curl.*-X POST"
+      - pattern: "^curl.*-X PUT"
+      - pattern: "^curl.*-X DELETE"
+      - pattern: "^wget"
+
+      # Docker - Destructive
+      - pattern: "^docker rm"
+      - pattern: "^docker rmi"
+      - pattern: "^docker system prune"
+
+    file_operations:
+      - type: "any"
+        scope: "outside_project"
+      - type: "edit"
+        scope: "credentials"
+        patterns:
+          - "*secret*"
+          - "*credential*"
+          - "*.env"
+          - "*password*"
+          - "*.pfx"
+          - "*.pem"
+          - "*.key"
+      - type: "edit"
+        scope: "system_files"
+        patterns:
+          - ".gitignore"
+          - ".dockerignore"
+          - "Dockerfile"
+
+# Special overrides
+overrides:
+  # Always allow these regardless of pattern
+  always_allow:
+    - "echo"
+    - "pwd"
+    - "whoami"
+    - "date"
+    - "claude --version"
+
+  # Always block these
+  always_block:
+    - "rm -rf /"
+    - "rm -rf ~"
+    - ":(){ :|:& };:"
+    - "> /dev/sda"

@@ -1,0 +1,138 @@
+# AI Model Tiering Configuration
+#
+# IMPORTANT: This is a MANUAL GUIDE for choosing which model to use.
+# Claude Code does NOT auto-route to different tiers. YOU decide.
+#
+# How to use:
+# 1. Look at your task
+# 2. Match to appropriate tier below
+# 3. Configure Claude Code to use that model/provider
+
+tiers:
+  t1_lightweight:
+    name: "Lightweight"
+    description: "Fast, cheap operations for simple tasks"
+    models:
+      - provider: local_deepseek
+        model: deepseek-coder-v2-lite-instruct
+        context: 32000
+        endpoint: "${LOCAL_WORKER_ENDPOINT}"
+        note: "Local model - Worker-Lite (preferred for T1)"
+      - provider: anthropic
+        model: claude-3-5-haiku-20241022
+        context: 200000
+      - provider: deepseek
+        model: deepseek-chat
+        context: 64000
+      - provider: openai
+        model: gpt-4o-mini
+        context: 128000
+    use_cases:
+      - File search and globbing
+      - Simple formatting and refactoring
+      - Code navigation queries
+      - Syntax validation
+      - Simple Q&A about codebase
+    worker: WorkerLite
+    fallback_worker: WorkerHeavy
+    cost_estimate: "$"
+
+  t2_standard:
+    name: "Standard"
+    description: "Balanced capability for typical development tasks"
+    models:
+      - provider: anthropic
+        model: claude-sonnet-4-20250514
+        context: 200000
+      - provider: openai
+        model: gpt-4o
+        context: 128000
+    use_cases:
+      - Feature implementation
+      - Bug fixes
+      - Unit test writing
+      - Code review
+      - Documentation generation
+      - Standard refactoring
+    cost_estimate: "$$"
+
+  t3_advanced:
+    name: "Advanced"
+    description: "High capability for complex tasks"
+    models:
+      - provider: anthropic
+        model: claude-opus-4-20250514
+        context: 200000
+    use_cases:
+      - Architecture design
+      - Complex debugging
+      - Security analysis
+      - Performance optimization
+      - Cross-cutting refactoring
+      - Integration design
+    cost_estimate: "$$$"
+
+  t4_critical:
+    name: "Critical"
+    description: "Maximum capability for mission-critical decisions"
+    models:
+      - provider: anthropic
+        model: claude-opus-4-20250514
+        context: 1000000
+    use_cases:
+      - Production deployment decisions
+      - Security vulnerability assessment
+      - Major architectural decisions
+      - Full codebase analysis
+      - Critical bug root cause analysis
+    cost_estimate: "$$$$"
+
+# Task routing rules
+routing:
+  default: t2_standard
+
+  keywords:
+    search: t1_lightweight
+    find: t1_lightweight
+    format: t1_lightweight
+    lint: t1_lightweight
+    glob: t1_lightweight
+    navigate: t1_lightweight
+
+    implement: t2_standard
+    fix: t2_standard
+    test: t2_standard
+    refactor: t2_standard
+
+    architect: t3_advanced
+    design: t3_advanced
+    debug_complex: t3_advanced
+    security: t3_advanced
+
+    deploy: t4_critical
+    production: t4_critical
+    critical: t4_critical
+
+# Worker routing (ACTIVE - Dual Worker Architecture)
+worker_routing:
+  t1_lightweight:
+    worker: WorkerLite
+    provider: local_deepseek_worker
+    mcp_server: tertiary-claude-lite
+    fallback: WorkerHeavy
+    script: ".ai/scripts/delegate-to-local-worker.ps1"
+
+  t2_standard:
+    worker: WorkerHeavy
+    provider: azure_worker
+    mcp_server: secondary-claude
+
+  t3_advanced:
+    worker: WorkerHeavy
+    provider: azure_worker
+    mcp_server: secondary-claude
+
+  t4_critical:
+    worker: WorkerHeavy
+    provider: azure_worker
+    mcp_server: secondary-claude

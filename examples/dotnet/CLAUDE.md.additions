@@ -1,0 +1,123 @@
+# .NET Project Additions for CLAUDE.md
+
+> Add these sections to your generated CLAUDE.md for .NET-specific behavior.
+
+## .NET Build & Test
+
+### Build Commands
+
+```bash
+# Build entire solution
+dotnet build
+
+# Build specific project
+dotnet build src/MyProject/MyProject.csproj
+
+# Build with release configuration
+dotnet build -c Release
+
+# Clean build
+dotnet clean && dotnet build
+```
+
+### Test Commands
+
+```bash
+# Run all tests
+dotnet test
+
+# Run with verbosity
+dotnet test -v normal
+
+# Run specific test project
+dotnet test tests/MyProject.Tests/MyProject.Tests.csproj
+
+# Run with coverage (requires coverlet)
+dotnet test --collect:"XPlat Code Coverage"
+```
+
+## .NET Coding Conventions
+
+### File Organization
+
+```
+src/
+├── MyProject.Api/           # Web API project
+│   ├── Controllers/
+│   ├── Models/
+│   └── Program.cs
+├── MyProject.Core/          # Business logic
+│   ├── Services/
+│   ├── Interfaces/
+│   └── Entities/
+└── MyProject.Infrastructure/ # Data access
+    ├── Data/
+    └── Repositories/
+
+tests/
+├── MyProject.Api.Tests/
+├── MyProject.Core.Tests/
+└── MyProject.Integration.Tests/
+```
+
+### Naming Conventions
+
+| Type | Convention | Example |
+|------|------------|---------|
+| Interface | `I` prefix | `IUserService` |
+| Async method | `Async` suffix | `GetUserAsync` |
+| Test class | `Tests` suffix | `UserServiceTests` |
+| Test method | `Method_Scenario_Expected` | `GetUser_ValidId_ReturnsUser` |
+
+### Preferred Patterns
+
+```csharp
+// File-scoped namespaces
+namespace MyProject.Api.Controllers;
+
+// Records for DTOs
+public record UserDto(int Id, string Name, string Email);
+
+// Primary constructors (C# 12+)
+public class UserService(IUserRepository repository, ILogger<UserService> logger)
+{
+    public async Task<User?> GetByIdAsync(int id) =>
+        await repository.FindByIdAsync(id);
+}
+
+// Pattern matching
+var result = response switch
+{
+    { IsSuccess: true } => Ok(response.Value),
+    { Error: var error } => BadRequest(error),
+    _ => StatusCode(500)
+};
+```
+
+## .NET-Specific Routing Rules
+
+Add to routing considerations:
+
+**T1 - Lightweight:**
+- NuGet package version checks
+- Finding interface implementations
+- Locating controller endpoints
+- Checking for `[Authorize]` attributes
+
+**T2+ - Complex:**
+- Adding new controllers with full CRUD
+- Implementing repository patterns
+- Writing integration tests
+- EF Core migrations
+- Dependency injection setup
+
+## Security Checks for .NET
+
+Before committing, verify:
+
+- [ ] No connection strings with passwords in appsettings.json
+- [ ] User secrets used for local development
+- [ ] `[Authorize]` on all non-public endpoints
+- [ ] `[AllowAnonymous]` explicitly documented
+- [ ] Input validation on all DTOs
+- [ ] No SQL concatenation (use parameterized queries)

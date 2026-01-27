@@ -1,0 +1,127 @@
+# Architecture Reference
+
+> Stable architectural knowledge. Update only when architecture changes.
+
+## Solution Overview
+
+**{{SOLUTION_NAME}}** - {{SOLUTION_DESCRIPTION}}
+
+### Core Components
+
+```
+[To be documented as the project develops]
+```
+
+## Technology Stack
+
+| Layer | Technology |
+|-------|------------|
+| Primary Language | {{PRIMARY_LANGUAGE}} |
+| Framework | {{TECH_STACK}} |
+
+## Multi-Agent AI Architecture
+
+> Last updated: {{CURRENT_DATE}}
+
+### Architecture Diagram
+
+```
+┌─────────────────────────────────────────────────┬─────────────┐
+│  PRIMARY (Opus 4.5) - ORCHESTRATOR              │   FRIEND    │
+│  Anthropic Direct API                           │   (GPT-4o)  │
+│                                                 │             │
+│  • Understand requirements                      │  Rules      │
+│  • Break down work                              │  Guardian   │
+│  • Route tasks to appropriate Worker            │► CLAUDE.md  │
+│  • Consult Validator for decisions              │             │
+│  • Synthesize and respond                       │             │
+│                                                 │             │
+│      PRIMARY DOES NOT CODE                      │             │
+└─────────────────────────────────────────────────┴─────────────┘
+            │                    │                    │
+            │         ┌─────────┴─────────┐          │
+            ▼         ▼                   ▼          ▼
+┌──────────────────┐  ┌─────────────┐  ┌─────────────┐  ┌──────────────────┐
+│ VALIDATOR        │  │ WORKER-HEAVY│  │ WORKER-LITE │  │ CRITIC           │
+│ (Azure Sonnet)   │  │ (Azure Opus)│  │ (Local DS)  │  │ (Codex Mini)     │
+│                  │  │             │  │             │  │                  │
+│ Decision valid.  │  │ T2+ Tasks:  │  │ T1 Tasks:   │  │ Skeptical        │
+│ >0.7 confidence  │  │ • Code gen  │  │ • Search    │  │ quality gate     │
+│                  │  │ • Tests     │  │ • Format    │  │ ≥80% viability   │
+│                  │  │ • Files     │  │ • Navigate  │  │                  │
+└──────────────────┘  └─────────────┘  └─────────────┘  └──────────────────┘
+                             │                │
+                      secondary-claude  tertiary-claude-lite
+                          (MCP)              (MCP)
+```
+
+### Component Details
+
+| Component | Backend | Model | Role |
+|-----------|---------|-------|------|
+| **Primary** | Anthropic Direct | `claude-opus-4-5-20251101` | Orchestrator (NO coding) |
+| **Worker-Heavy** | Azure AI Foundry | `claude-opus-4-5-20251101` | Complex tasks (T2+): code gen, tests, files |
+| **Worker-Lite** | Local | `deepseek-coder-v2-lite-instruct` | Simple tasks (T1): search, format, navigate |
+| **Validator** | Azure AI Foundry | `claude-sonnet-4-5` | Decision validation (>0.7 confidence) |
+| **Friend** | Azure OpenAI | `gpt-4o` | Rules/CLAUDE.md guardian |
+| **Critic** | Azure OpenAI | `gpt-5.1-codex-mini` | Quality gate (≥80% viability) |
+
+### Worker Routing
+
+| Task Type | Worker | Tier | MCP Server |
+|-----------|--------|------|------------|
+| Code generation | Worker-Heavy | T3 | `secondary-claude` |
+| Test execution | Worker-Heavy | T3 | `secondary-claude` |
+| File operations | Worker-Heavy | T3 | `secondary-claude` |
+| Research/exploration | Worker-Heavy | T3 | `secondary-claude` |
+| File search/glob | Worker-Lite | T1 | `tertiary-claude-lite` |
+| Simple formatting | Worker-Lite | T1 | `tertiary-claude-lite` |
+| Code navigation | Worker-Lite | T1 | `tertiary-claude-lite` |
+| Syntax validation | Worker-Lite | T1 | `tertiary-claude-lite` |
+
+**Fallback**: If Worker-Lite is unavailable (local model not running), tasks automatically route to Worker-Heavy.
+
+### Endpoints
+
+| Component | Endpoint |
+|-----------|----------|
+| **Worker-Heavy** | `{{AZURE_ANTHROPIC_ENDPOINT}}` |
+| **Worker-Lite** | `{{LOCAL_WORKER_ENDPOINT}}` |
+| **Validator** | `{{AZURE_ANTHROPIC_ENDPOINT}}` |
+| **Friend** | `{{AZURE_OPENAI_ENDPOINT}}` |
+| **Critic** | `{{AZURE_CODEX_ENDPOINT}}` |
+
+### Workflow
+
+1. **Primary** receives user request
+2. **Primary** consults **Friend** for CLAUDE.md compliance
+3. **Primary** classifies task complexity (T1 vs T2+)
+4. **Primary** routes to appropriate **Worker**:
+   - T1 simple tasks → **Worker-Lite** (local DeepSeek)
+   - T2+ complex tasks → **Worker-Heavy** (Azure Opus)
+5. **Worker** executes the task
+6. **Critic** validates Worker output (≥80% viability required)
+7. **Primary** consults **Validator** for key decisions (>0.7 confidence)
+8. **Primary** synthesizes results and responds to user
+
+### Key Rules
+
+- **Primary NEVER codes** - All coding delegated to Workers
+- **Primary NEVER edits files** - All file operations via Workers
+- Worker-Heavy accessed via `mcp__secondary-claude__*` tools
+- Worker-Lite accessed via `mcp__tertiary-claude-lite__*` tools (when available)
+- Credentials stored in `.ai/config/credentials.local.ps1` (gitignored)
+- Full provider config in `.ai/config/providers.yaml`
+
+## Environment Notes
+
+- **Region**: {{AZURE_REGION}}
+- **MCP Servers**:
+  - `secondary-claude` - Worker-Heavy (Azure Opus)
+  - `tertiary-claude-lite` - Worker-Lite (Local DeepSeek)
+- **Local Model Server**: See credentials.local.ps1 (LM Studio / Ollama)
+- **API Versions**:
+  - Anthropic: `2023-06-01`
+  - Azure OpenAI: `2025-01-01-preview`
+  - Codex: `2025-04-01-preview`
+  - Local DeepSeek: OpenAI-compatible API

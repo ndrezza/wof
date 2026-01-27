@@ -1,0 +1,45 @@
+# Current Sprint Context
+
+> Active work context. Update frequently during work sessions.
+
+## Sprint Focus
+
+**Current Priority:** [To be filled in]
+
+## Active Work Items
+
+| ID | Title | Status | Notes |
+|----|-------|--------|-------|
+| - | Initial setup | In Progress | Setting up project |
+
+## Recent Accomplishments
+
+### [Date]
+
+- [Accomplishment 1]
+- [Accomplishment 2]
+
+## Blocking Issues
+
+| Issue | Owner | Status |
+|-------|-------|--------|
+| None | - | - |
+
+## Architecture Summary
+
+```
+[To be documented as project develops]
+```
+
+## Key Documentation
+
+| Document | Location |
+|----------|----------|
+| Architecture | `.ai/memory/architecture.md` |
+| Conventions | `.ai/memory/conventions.md` |
+| AI Credentials | `.ai/config/credentials.local.ps1` |
+| Routing Rules | `.ai/config/routing-rules.md` |
+
+---
+
+*Updated: [Date] - Initial setup*

@@ -1,0 +1,81 @@
+# Coding Conventions
+
+> Standards and patterns for {{SOLUTION_NAME}}. Update when conventions change.
+
+## Language: {{PRIMARY_LANGUAGE}}
+
+## Technology Stack
+
+{{TECH_STACK}}
+
+## General Principles
+
+1. **Consistency** - Follow existing patterns in the codebase
+2. **Clarity** - Write self-documenting code
+3. **Simplicity** - Prefer simple solutions over clever ones
+4. **Testability** - Write code that can be easily tested
+
+## Naming Conventions
+
+| Element | Convention | Example |
+|---------|------------|---------|
+| Classes | PascalCase | `UserService` |
+| Methods | PascalCase | `GetUserById` |
+| Variables | camelCase | `userName` |
+| Constants | UPPER_SNAKE_CASE | `MAX_RETRY_COUNT` |
+| Files | Match class name | `UserService.cs` |
+
+## Code Organization
+
+```
+[Project-specific structure to be documented]
+```
+
+## Error Handling
+
+- Use structured exception handling
+- Log errors with appropriate context
+- Fail fast for unrecoverable errors
+- Return meaningful error messages
+
+## Testing
+
+- Write unit tests for business logic
+- Use descriptive test names
+- Follow Arrange-Act-Assert pattern
+- Aim for meaningful coverage, not 100%
+
+## Git Conventions
+
+### Branch Naming
+
+```
+feature/[description]    # New features
+bugfix/[description]     # Bug fixes
+hotfix/[description]     # Urgent production fixes
+refactor/[description]   # Code refactoring
+```
+
+### Commit Messages
+
+```
+[type]: Brief description
+
+- Detail 1
+- Detail 2
+
+{{WORK_ITEM_PREFIX}}XXXX
+```
+
+Types: `feat`, `fix`, `refactor`, `docs`, `test`, `chore`
+
+## Documentation
+
+- Document public APIs
+- Keep README up to date
+- Use inline comments sparingly (code should be self-explanatory)
+- Update `.ai/memory/` files for AI context
+
+---
+
+*Update this document when coding standards change.*

@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "Defines sync behavior for Workload-Orchestration framework updates",
+  "version": "1.0.0",
+  
+  "overwrite": {
+    "description": "Files that are always overwritten on sync (framework core)",
+    "patterns": [
+      "scripts/*.ps1",
+      "config/routing-rules.md",
+      "config/risk-rules.yaml"
+    ]
+  },
+
+  "skip_if_customized": {
+    "description": "Files that are skipped if they've been modified locally",
+    "patterns": [
+      "agents/*.md",
+      "workflows/*.md"
+    ]
+  },
+  
+  "always_preserve": {
+    "description": "Files that are never touched by sync",
+    "patterns": [
+      ".ai/memory/current-sprint.md",
+      ".ai/config/credentials.local.ps1",
+      ".ai/memory/local-dev-setup.md"
+    ]
+  },
+  
+  "template_only": {
+    "description": "Files created from templates only during setup, not updated on sync",
+    "patterns": [
+      "CLAUDE.md",
+      ".claude/settings.json",
+      ".ai/memory/architecture.md",
+      ".ai/memory/conventions.md",
+      ".ai/config/providers.yaml",
+      ".ai/config/models.yaml"
+    ]
+  }
+}
