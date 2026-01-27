@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "description": "Defines sync behavior for Workload-Orchestration framework updates",
-  "version": "1.0.0",
+  "version": "1.1.2",
   
   "overwrite": {
     "description": "Files that are always overwritten on sync (framework core)",
