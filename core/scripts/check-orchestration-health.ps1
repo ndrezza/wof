@@ -268,11 +268,11 @@ $workerLiteInd = Get-StatusIndicator $healthStatus["worker-lite"].Status
 $validatorInd = Get-StatusIndicator $healthStatus["validator"].Status
 $criticInd = Get-StatusIndicator $healthStatus["critic"].Status
 
-# Get connection IDs for display
-$workerHeavyConn = if ($roleConfig.ContainsKey("worker-heavy")) { $roleConfig["worker-heavy"].Connection.ToUpper() } else { "N/C" }
-$workerLiteConn = if ($roleConfig.ContainsKey("worker-lite")) { $roleConfig["worker-lite"].Connection.ToUpper() } else { "N/C" }
-$validatorConn = if ($roleConfig.ContainsKey("validator")) { $roleConfig["validator"].Connection.ToUpper() } else { "N/C" }
-$criticConn = if ($roleConfig.ContainsKey("critic")) { $roleConfig["critic"].Connection.ToUpper() } else { "N/C" }
+# Get connection IDs for display (used in mapping table)
+$workerHeavyConn = if ($roleConfig.ContainsKey("worker-heavy")) { $roleConfig["worker-heavy"].Connection.ToUpper() } else { $null }
+$workerLiteConn = if ($roleConfig.ContainsKey("worker-lite")) { $roleConfig["worker-lite"].Connection.ToUpper() } else { $null }
+$validatorConn = if ($roleConfig.ContainsKey("validator")) { $roleConfig["validator"].Connection.ToUpper() } else { $null }
+$criticConn = if ($roleConfig.ContainsKey("critic")) { $roleConfig["critic"].Connection.ToUpper() } else { $null }
 
 # Render the architecture diagram
 Write-Host "`n" -NoNewline
@@ -306,8 +306,7 @@ $diagram = @"
             v             v             v             v
 +------------------+  +-------------+  +-------------+  +------------------+
 | $validatorInd VALIDATOR  |  |$workerHeavyInd WORKER- |  |$workerLiteInd WORKER- |  | $criticInd CRITIC      |
-|   ($validatorConn)       |  |    HEAVY    |  |    LITE     |  |   ($criticConn)       |
-|                  |  |  ($workerHeavyConn)    |  |  ($workerLiteConn)    |  |                  |
+|                  |  |    HEAVY    |  |    LITE     |  |                  |
 | Decision valid.  |  |             |  |             |  | Skeptical        |
 | >0.7 confidence  |  | T2+ Tasks:  |  | T1 Tasks:   |  | quality gate     |
 |                  |  | * Code gen  |  | * Search    |  | >=80% viability  |
@@ -332,6 +331,45 @@ Write-Host " No Credentials  " -NoNewline
 Write-Host "[AUT]" -ForegroundColor Yellow -NoNewline
 Write-Host " Auth Error"
 Write-Host "--------------------------------------------------------------------------------" -ForegroundColor Gray
+
+# Role Mapping Table
+Write-Host ""
+Write-Host "  Role Mapping:" -ForegroundColor Cyan
+Write-Host "  +-----------------+------------+--------+" -ForegroundColor Gray
+Write-Host "  | Role            | Connection | Status |" -ForegroundColor Gray
+Write-Host "  +-----------------+------------+--------+" -ForegroundColor Gray
+
+# Helper to format table row
+function Write-TableRow {
+    param([string]$Role, [string]$Conn, [string]$Status)
+    $connDisplay = if ($Conn) { $Conn.PadRight(10) } else { "(none)".PadRight(10) }
+    $statusColor = switch ($Status) {
+        "ONLINE" { "Green" }
+        "OFFLINE" { "Red" }
+        "NO_CREDS" { "Yellow" }
+        "AUTH_ERROR" { "Yellow" }
+        default { "Gray" }
+    }
+    $statusDisplay = switch ($Status) {
+        "ONLINE" { "ON " }
+        "OFFLINE" { "OFF" }
+        "NO_CREDS" { "N/C" }
+        "AUTH_ERROR" { "AUT" }
+        default { "???" }
+    }
+    Write-Host "  | $($Role.PadRight(15)) | " -NoNewline -ForegroundColor Gray
+    Write-Host "$connDisplay" -NoNewline -ForegroundColor $(if ($Conn) { "White" } else { "DarkGray" })
+    Write-Host " | " -NoNewline -ForegroundColor Gray
+    Write-Host "$statusDisplay" -NoNewline -ForegroundColor $statusColor
+    Write-Host "    |" -ForegroundColor Gray
+}
+
+Write-TableRow "Worker-Heavy" $workerHeavyConn $healthStatus["worker-heavy"].Status
+Write-TableRow "Worker-Lite" $workerLiteConn $healthStatus["worker-lite"].Status
+Write-TableRow "Validator" $validatorConn $healthStatus["validator"].Status
+Write-TableRow "Critic" $criticConn $healthStatus["critic"].Status
+
+Write-Host "  +-----------------+------------+--------+" -ForegroundColor Gray
 
 # Summary
 $onlineCount = ($healthStatus.Values | Where-Object { $_.Status -eq "ONLINE" }).Count
