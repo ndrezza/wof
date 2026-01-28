@@ -1,16 +1,10 @@
-# Architecture Reference (WOF)
+# Architecture Reference
 
-> Stable architectural knowledge for the Workload Orchestration Framework. Update only when architecture changes.
+> Project architecture documentation. Update when architecture changes.
 
 ## Solution Overview
 
 **{{SOLUTION_NAME}}** - {{SOLUTION_DESCRIPTION}}
-
-### Core Components
-
-```
-[To be documented as the project develops]
-```
 
 ## Technology Stack
 
@@ -19,107 +13,29 @@
 | Primary Language | {{PRIMARY_LANGUAGE}} |
 | Framework | {{TECH_STACK}} |
 
-## Multi-Agent AI Architecture
-
-> Last updated: {{CURRENT_DATE}}
-
-### Architecture Diagram
+## Core Components
 
 ```
-┌───────────────────────────────────────────────────────────────┐
-│  PRIMARY (Opus 4.5) - ORCHESTRATOR                            │
-│  Anthropic Direct API                                         │
-│                                                               │
-│  • Understand requirements                                    │
-│  • Break down work                                            │
-│  • Route tasks to appropriate Worker                          │
-│  • Consult Validator for decisions                            │
-│  • Synthesize and respond                                     │
-│                                                               │
-│      PRIMARY DOES NOT CODE                                    │
-└───────────────────────────────────────────────────────────────┘
-            │                    │                    │
-            │         ┌─────────┴─────────┐          │
-            ▼         ▼                   ▼          ▼
-┌──────────────────┐  ┌─────────────┐  ┌─────────────┐  ┌──────────────────┐
-│ VALIDATOR        │  │ WORKER-HEAVY│  │ WORKER-LITE │  │ CRITIC           │
-│                  │  │             │  │             │  │                  │
-│ Decision valid.  │  │ T2+ Tasks:  │  │ T1 Tasks:   │  │ Skeptical        │
-│ >0.7 confidence  │  │ • Code gen  │  │ • Search    │  │ quality gate     │
-│                  │  │ • Tests     │  │ • Format    │  │ ≥80% viability   │
-│                  │  │ • Files     │  │ • Navigate  │  │                  │
-└──────────────────┘  └─────────────┘  └─────────────┘  └──────────────────┘
-                             │                │
-                      secondary-claude  tertiary-claude-lite
-                          (MCP)              (MCP)
+[Document your project's components here]
 ```
 
-### Component Details
+## Key Integrations
 
-| Component | Role | Config |
-|-----------|------|--------|
-| **Primary** | Orchestrator (NO coding) | Native Claude Code |
-| **Worker-Heavy** | Complex tasks (T2+): code gen, tests, files | See `roles.json` |
-| **Worker-Lite** | Simple tasks (T1): search, format, navigate | See `roles.json` |
-| **Validator** | Decision validation (>0.7 confidence) | See `roles.json` |
-| **Critic** | Quality gate (≥80% viability) | See `roles.json` |
+| System | Purpose |
+|--------|---------|
+| [External System] | [Integration purpose] |
 
-### Worker Routing
+## Data Flow
 
-| Task Type | Worker | Tier | MCP Server |
-|-----------|--------|------|------------|
-| Code generation | Worker-Heavy | T3 | `secondary-claude` |
-| Test execution | Worker-Heavy | T3 | `secondary-claude` |
-| File operations | Worker-Heavy | T3 | `secondary-claude` |
-| Research/exploration | Worker-Heavy | T3 | `secondary-claude` |
-| File search/glob | Worker-Lite | T1 | `tertiary-claude-lite` |
-| Simple formatting | Worker-Lite | T1 | `tertiary-claude-lite` |
-| Code navigation | Worker-Lite | T1 | `tertiary-claude-lite` |
-| Syntax validation | Worker-Lite | T1 | `tertiary-claude-lite` |
+```
+[Document data flow as needed]
+```
 
-**Fallback**: If Worker-Lite is unavailable (local model not running), tasks automatically route to Worker-Heavy.
+## Environment Configuration
 
-### Endpoints
+| Environment | Notes |
+|-------------|-------|
+| Development | Local setup |
+| Production | [Deployment target] |
 
-Endpoints are configured in `.ai/config/credentials.local.json` with generic connection IDs:
-
-| Role | Connection ID | Description |
-|------|---------------|-------------|
-| **Worker-Heavy** | AI1 | Azure AI Foundry (Claude) |
-| **Worker-Lite** | AI4 | Local model server or cloud |
-| **Validator** | AI1 | Azure AI Foundry (Claude) |
-| **Critic** | AI3 | Azure OpenAI (Codex) |
-
-> Role-to-connection mappings are defined in `.ai/config/roles.json`.
-
-### Workflow
-
-1. **Primary** receives user request
-2. **Primary** classifies task complexity (T1 vs T2+)
-3. **Primary** routes to appropriate **Worker**:
-   - T1 simple tasks → **Worker-Lite**
-   - T2+ complex tasks → **Worker-Heavy**
-4. **Worker** executes the task
-5. **Critic** validates Worker output (≥80% viability required)
-6. **Primary** consults **Validator** for key decisions (>0.7 confidence)
-7. **Primary** synthesizes results and responds to user
-
-### Key Rules
-
-- **Primary NEVER codes** - All coding delegated to Workers
-- **Primary NEVER edits files** - All file operations via Workers
-- Worker-Heavy accessed via `mcp__secondary-claude__*` tools
-- Worker-Lite accessed via `mcp__tertiary-claude-lite__*` tools (when available)
-- Credentials stored in `.ai/config/credentials.local.json` (gitignored)
-- Connection config in `.ai/config/connections.json`
-- Role mappings in `.ai/config/roles.json`
-
-## Environment Notes
-
-- **MCP Servers**:
-  - `secondary-claude` - Worker-Heavy
-  - `tertiary-claude-lite` - Worker-Lite (optional)
-- **Configuration**:
-  - Credentials: `.ai/config/credentials.local.json`
-  - Connections: `.ai/config/connections.json`
-  - Role mappings: `.ai/config/roles.json`
+---

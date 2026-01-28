@@ -42,3 +42,34 @@ logs/
 /.ai/memory/current-sprint.md
 /.ai/state/
 # <!-- WOI-USERDATA-END -->
+
+# <!-- WOI-SECTION-START - Managed by WOF, do not edit manually -->
+# Workload Orchestration Instance (WOI)
+/.ai/.framework-version
+/.ai/.installed-files.json
+/.ai/agents/orchestrator.md
+/.ai/config/connections.json
+/.ai/config/credentials.local.json
+/.ai/config/risk-rules.yaml
+/.ai/config/roles.json
+/.ai/config/routing-rules.md
+/.ai/logs/
+/.ai/scripts/approve-command.ps1
+/.ai/scripts/approve-write.ps1
+/.ai/scripts/bias-control.ps1
+/.ai/scripts/check-orchestration-health.ps1
+/.ai/scripts/configure-wizard.ps1
+/.ai/scripts/delegate-to-local-worker.ps1
+/.ai/scripts/get-worker-routing.ps1
+/.ai/scripts/log-worker-operation.ps1
+/.ai/scripts/migrate-config.ps1
+/.ai/scripts/phase-gate.ps1
+/.ai/scripts/remove.ps1
+/.ai/scripts/resolve-role.ps1
+/.ai/scripts/update-framework.ps1
+/.ai/scripts/validate-autonomy.ps1
+/.ai/state/
+/.claude/settings.json
+/.claude/skills/wof/SKILL.md
+/CLAUDE.md
+# <!-- WOI-SECTION-END -->

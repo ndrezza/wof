@@ -5,6 +5,15 @@ All notable changes to the Workload Orchestration Framework (WOF) will be docume
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.9] - 2026-01-28
+
+### Changed
+
+- **Slimmed Memory Templates (#2958)** - Reduced footprint of fresh WOI installations
+  - `architecture.md.template`: 126 → 44 lines (-65%) - removed WOF-specific content already in WOI-SECTION
+  - `conventions.md.template`: Removed "(WOF)" from header - now project-agnostic
+  - Total memory template reduction: 266 → 182 lines (-31%)
+
 ## [2.3.8] - 2026-01-28
 
 ### Fixed
