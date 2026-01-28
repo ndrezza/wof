@@ -5,6 +5,22 @@ All notable changes to the Workload Orchestration Framework (WOF) will be docume
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.6] - 2026-01-28
+
+### Changed
+
+- **CLAUDE.md Refactored** - Split into base framework docs + injectable WOI section
+  - Base CLAUDE.md now contains only WOF framework documentation
+  - WOI-SECTION injected with markers on setup, removed cleanly on remove
+  - Consistent with sync.ps1 and remove.ps1 marker-based approach
+
+- **Renamed** - `remove-framework.ps1` → `remove.ps1` for consistency with `setup.ps1`
+
+### Added
+
+- **Version Bumping Guideline** - Added to CLAUDE.md development guidelines
+  - Reminder to bump VERSION and update CHANGELOG before pushing to main
+
 ## [2.3.5] - 2026-01-27
 
 ### Fixed

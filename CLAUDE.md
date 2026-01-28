@@ -182,6 +182,18 @@ git checkout -b feature/[meaningful-name]
 
 **Zero tolerance for main branch modifications.**
 
+### Version Bumping
+
+Before committing and pushing to main, bump the version:
+
+1. Update `VERSION` file (semantic versioning: MAJOR.MINOR.PATCH)
+2. Add entry to `CHANGELOG.md` describing the changes
+
+```powershell
+# Example: bump patch version
+$v = [version](Get-Content VERSION); "$($v.Major).$($v.Minor).$($v.Build + 1)" | Set-Content VERSION
+```
+
 ### Quality Gates
 
 Every deliverable must pass:
