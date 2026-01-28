@@ -15,6 +15,16 @@
     "iterationPath": ""
   },
 
+  "tags": {
+    "blocked": "Blocked",
+    "phases": ["Analysis", "Design", "Implementation", "Validation", "QA"]
+  },
+
+  "behavior": {
+    "setActiveOnStart": true,
+    "skipBlockedItems": true
+  },
+
   "wiqlDefaults": {
     "maxResults": 50,
     "orderBy": "System.ChangedDate DESC"

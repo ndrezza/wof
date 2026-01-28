@@ -456,9 +456,74 @@ Display the available commands table above and explain each option.
 | `.ai/config/ado.json` | Azure DevOps connection & filters (gitignored) |
 | `.mcp.json` | MCP server configuration (gitignored) |
 
+## ADO Work Item Query Behavior
+
+**CRITICAL: Always apply filters from `.ai/config/ado.json` when querying work items.**
+
+### Before Querying Work Items
+
+1. **Read the ado.json configuration:**
+   ```
+   Read .ai/config/ado.json to get project name, filters, and behavior settings
+   ```
+
+2. **Build WIQL query with ALL configured filters:**
+   ```sql
+   SELECT [System.Id], [System.Title], [System.State], [Microsoft.VSTS.Common.Priority]
+   FROM WorkItems
+   WHERE [System.TeamProject] = '<project.name>'
+     AND [Microsoft.VSTS.Common.ValueArea] = '<filters.valueArea>'
+     AND [System.State] IN ('<filters.states>')
+     AND [System.WorkItemType] IN ('<filters.workItemTypes>')
+   ORDER BY [Microsoft.VSTS.Common.Priority] ASC, [System.ChangedDate] DESC
+   ```
+
+3. **Skip items with "Blocked" tag** (if `behavior.skipBlockedItems` is true):
+   - Items tagged with the configured `tags.blocked` value should be deprioritized
+   - Inform user: "Skipping blocked items. Use 'show blocked' to include them."
+
+### When Starting a Work Item
+
+If `behavior.setActiveOnStart` is true (default):
+1. **Set work item state to "Active"** using `mcp__azure-devops__update_work_item`
+2. **Create feature branch** with pattern: `feature/<id>-<short-title>`
+3. **Add phase tag** if configured: Start with "Implementation" phase by default
+
+### Tag Conventions
+
+| Tag | Purpose | When Applied |
+|-----|---------|--------------|
+| `Blocked` | Work item has questions pending user response | When questions are asked in comments |
+| `Analysis` | Understanding requirements phase | Initial work item review |
+| `Design` | Planning implementation approach | After analysis, before coding |
+| `Implementation` | Active development | When coding starts |
+| `Validation` | Testing and verification | After implementation |
+| `QA` | Quality assurance review | Before completion |
+
+### Updating Work Item Phase
+
+When transitioning between phases:
+1. **Remove previous phase tag** (if any)
+2. **Add new phase tag**
+3. Use `mcp__azure-devops__update_work_item` with appropriate tag changes
+
+### Marking Work Item as Blocked
+
+When you need user input and cannot proceed:
+1. **Add "Blocked" tag** to the work item
+2. **Add a comment** explaining what information is needed
+3. Inform user: "Work item #<id> marked as Blocked pending your response"
+
+### Unblocking Work Items
+
+When user provides requested information:
+1. **Remove "Blocked" tag**
+2. **Resume work** on the item
+
 ## Important Notes
 
 - Use AskUserQuestion for all user input during configure - don't rely on PowerShell prompts
 - The configure flow should be conversational and guide the user through options
 - Always show current status before asking for changes
 - After any config change, offer to run the health check
+- **Always apply ado.json filters** - never query without project and valueArea filters
