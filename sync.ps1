@@ -414,6 +414,26 @@ if (Test-Path $claudeMdPath) {
     Write-Info "CLAUDE.md not found, skipping WOI section injection"
 }
 
+# Sync .gitattributes (line ending normalization)
+Write-Step "Syncing .gitattributes..."
+$gitattributesTemplate = Join-Path $scriptRoot "templates\.gitattributes.template"
+$gitattributesTarget = Join-Path $TargetPath ".gitattributes"
+
+if (Test-Path $gitattributesTemplate) {
+    if (-not (Test-Path $gitattributesTarget)) {
+        if ($DryRun) {
+            Write-Info "Would create .gitattributes (LF normalization)"
+        } else {
+            Copy-Item $gitattributesTemplate $gitattributesTarget
+            Write-Info "Created .gitattributes (LF normalization)"
+        }
+    } else {
+        Write-Info ".gitattributes already exists, skipping"
+    }
+} else {
+    Write-Info ".gitattributes template not found"
+}
+
 # Sync WOI section in .gitignore
 Write-Step "Syncing WOI section in .gitignore..."
 $gitignoreFile = Join-Path $TargetPath ".gitignore"
@@ -469,6 +489,11 @@ if (Test-Path $claudeDir) {
 
 # CLAUDE.md
 $woiGitignoreFiles += "/CLAUDE.md"
+
+# .gitattributes
+if (Test-Path (Join-Path $TargetPath ".gitattributes")) {
+    $woiGitignoreFiles += "/.gitattributes"
+}
 
 # Sort the list
 $woiGitignoreFiles = $woiGitignoreFiles | Sort-Object | Select-Object -Unique

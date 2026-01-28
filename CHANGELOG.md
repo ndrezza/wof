@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Line Ending Normalization (#2954)** - Added `.gitattributes` for consistent LF line endings
+  - Prevents "LF will be replaced by CRLF" warnings
+  - Auto-normalizes all text files to LF in the repository
+  - Keeps Windows batch files as CRLF (if any are added)
+  - Template included for new WOI installations
+  - `setup.ps1` and `sync.ps1` now install/sync `.gitattributes`
+
 - **Improved ADO Tool Behavior (#2955)** - Enhanced Azure DevOps work item handling
   - Added `tags` config to ado.json for blocked status and phase tracking (Analysis, Design, Implementation, Validation, QA)
   - Added `behavior` config with `setActiveOnStart` and `skipBlockedItems` options

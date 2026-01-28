@@ -316,6 +316,18 @@ if (-not $SkipTemplates) {
         }
     }
 
+    # .gitattributes (line ending normalization)
+    $gitattributesTemplate = Join-Path $templatesDir ".gitattributes.template"
+    $gitattributesTarget = Join-Path $TargetPath ".gitattributes"
+    if (Test-Path $gitattributesTemplate) {
+        if ((Test-Path $gitattributesTarget) -and -not $Force) {
+            Write-Warn "    Skipping (exists): .gitattributes"
+        } else {
+            Copy-WithPlaceholders -SourceFile $gitattributesTemplate -DestFile $gitattributesTarget -Values $placeholders
+            Write-Host "    Created: .gitattributes (LF normalization)" -ForegroundColor Gray
+        }
+    }
+
     # .claude/settings.json (source from dot-claude to avoid Claude Code detecting templates)
     $settingsTemplate = Join-Path $templatesDir "dot-claude\settings.json.template"
     $settingsTarget = Join-Path $TargetPath ".claude\settings.json"
@@ -552,6 +564,12 @@ $frameworkFiles += "/CLAUDE.md"
 $mcpJson = Join-Path $TargetPath ".mcp.json"
 if (Test-Path $mcpJson) {
     $frameworkFiles += "/.mcp.json"
+}
+
+# .gitattributes (line ending normalization - framework)
+$gitattributes = Join-Path $TargetPath ".gitattributes"
+if (Test-Path $gitattributes) {
+    $frameworkFiles += "/.gitattributes"
 }
 
 # Sort framework files
