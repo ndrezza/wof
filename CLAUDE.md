@@ -53,6 +53,12 @@ User: "get work items"
 → Route to: Task tool with subagent_type="ado"
 ```
 
+**IMPORTANT - Handling Subagent Responses:**
+When a subagent (like `ado`) returns a formatted response, do NOT re-echo or re-summarize the same information. The subagent's output is already displayed to the user. Instead:
+- Simply acknowledge completion (e.g., "Done." or move to next step)
+- Only add commentary if there's genuinely new insight or action needed
+- Avoid duplicating tables, lists, or summaries the subagent already provided
+
 ### Multi-Agent Architecture
 
 ```

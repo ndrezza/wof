@@ -5,6 +5,18 @@ All notable changes to the Workload Orchestration Framework (WOF) will be docume
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.4.6] - 2026-01-28
+
+### Fixed
+
+- **Eliminate duplicate subagent output (#2967)** - Primary no longer re-echoes formatted subagent responses
+  - Added "Handling Subagent Responses" guidance to WOI-SECTION.md template
+  - Instructs Primary to acknowledge completion without duplicating tables/summaries
+
+- **Prevent ADO subagent hallucination (#2967)** - Subagent now reports failures instead of fabricating data
+  - Added rule #6 to ado.md: "NEVER fabricate data"
+  - If MCP tool calls fail, subagent must report error clearly
+
 ## [2.4.5] - 2026-01-28
 
 ### Added
