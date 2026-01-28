@@ -74,7 +74,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- **Preserve v2 Config on Remove** - `credentials.local.json`, `connections.json`, and `roles.json` now preserved when running remove-framework.ps1
+- **Preserve v2 Config on Remove** - `credentials.local.json`, `connections.json`, and `roles.json` now preserved when running remove.ps1
 - **Skill Path Fix** - Changed backslash paths to forward slashes in `/wof` skill for cross-platform compatibility
 
 ## [2.2.2] - 2026-01-27
@@ -184,7 +184,7 @@ When upgrading from v1.x:
 
 - **WOI Section in CLAUDE.md** - New managed section for WOI configuration
   - `sync.ps1` injects/updates `<!-- WOI-SECTION-START -->` ... `<!-- WOI-SECTION-END -->` markers
-  - `remove-framework.ps1` removes only the WOI section, preserving project-specific content
+  - `remove.ps1` removes only the WOI section, preserving project-specific content
   - Includes version, mode, quick reference, and architecture diagram
   - Template: `templates/WOI-SECTION.md`
 

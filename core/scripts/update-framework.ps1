@@ -169,7 +169,7 @@ if ($CurrentMajor -ge 0 -and $RemoteMajor -ge 0 -and $RemoteMajor -gt $CurrentMa
     Write-Host "  1. Remove the current WOF installation:" -ForegroundColor White
     Write-Host "       /wof remove" -ForegroundColor Gray
     Write-Host "       - or -" -ForegroundColor DarkGray
-    Write-Host "       .\.ai\scripts\remove-framework.ps1" -ForegroundColor Gray
+    Write-Host "       .\.ai\scripts\remove.ps1" -ForegroundColor Gray
     Write-Host ""
     Write-Host "  2. Restart your Claude Code / AI session" -ForegroundColor White
     Write-Host "       (This ensures a clean slate without cached WOI context)" -ForegroundColor DarkGray

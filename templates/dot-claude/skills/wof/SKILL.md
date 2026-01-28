@@ -174,9 +174,9 @@ powershell -ExecutionPolicy Bypass -File "./.ai/scripts/get-worker-routing.ps1" 
 
 ### If arguments contain "remove"
 
-Run the remove-framework script:
+Run the remove script:
 ```bash
-powershell -ExecutionPolicy Bypass -File "./.ai/scripts/remove-framework.ps1"
+powershell -ExecutionPolicy Bypass -File "./.ai/scripts/remove.ps1"
 ```
 Add flags as needed: -DryRun, -Force, -IncludeConfig, -RemoveAll
 

@@ -40,19 +40,19 @@
     Use with extreme caution - this ignores the manifest completely.
 
 .EXAMPLE
-    .\remove-framework.ps1
+    .\remove.ps1
     # Removes WOF scripts, preserves config and memory files
 
 .EXAMPLE
-    .\remove-framework.ps1 -DryRun
+    .\remove.ps1 -DryRun
     # Preview what would be removed
 
 .EXAMPLE
-    .\remove-framework.ps1 -IncludeConfig
+    .\remove.ps1 -IncludeConfig
     # Also remove config files (credentials, providers, etc.)
 
 .EXAMPLE
-    .\remove-framework.ps1 -RemoveAll -Force
+    .\remove.ps1 -RemoveAll -Force
     # Nuclear option: remove everything, no confirmation
 
 .NOTES
@@ -83,7 +83,7 @@ $ProjectRoot = Split-Path $AiDir -Parent
 # Validate we're in the right location
 if (-not (Test-Path (Join-Path $AiDir ".framework-version")) -and -not (Test-Path (Join-Path $AiDir "config"))) {
     Write-Host "[-] ERROR: This script must be run from within a project's .ai/scripts directory" -ForegroundColor Red
-    Write-Host "    Expected path: <project>/.ai/scripts/remove-framework.ps1" -ForegroundColor Gray
+    Write-Host "    Expected path: <project>/.ai/scripts/remove.ps1" -ForegroundColor Gray
     exit 1
 }
 
