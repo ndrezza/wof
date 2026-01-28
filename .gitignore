@@ -27,35 +27,6 @@ logs/
 /.claude/
 /.mcp.json
 
-# <!-- WOI-FRAMEWORK-START - Managed by WOF, removed with framework -->
-# WOF Framework Files (deleted when WOF is removed)
-/.ai/.framework-version
-/.ai/.installed-files.json
-/.ai/agents/orchestrator.md
-/.ai/config/risk-rules.yaml
-/.ai/config/routing-rules.md
-/.ai/scripts/ado-utils.ps1
-/.ai/scripts/approve-command.ps1
-/.ai/scripts/approve-write.ps1
-/.ai/scripts/bias-control.ps1
-/.ai/scripts/check-orchestration-health.ps1
-/.ai/scripts/configure-wizard.ps1
-/.ai/scripts/delegate-to-local-worker.ps1
-/.ai/scripts/get-worker-routing.ps1
-/.ai/scripts/log-worker-operation.ps1
-/.ai/scripts/migrate-config.ps1
-/.ai/scripts/phase-gate.ps1
-/.ai/scripts/remove-framework.ps1
-/.ai/scripts/resolve-role.ps1
-/.ai/scripts/scan-workitems.ps1
-/.ai/scripts/update-framework.ps1
-/.ai/scripts/validate-autonomy.ps1
-/.claude/settings.json
-/.claude/skills/wof/SKILL.md
-/.mcp.json
-/CLAUDE.md
-# <!-- WOI-FRAMEWORK-END -->
-
 # <!-- WOI-USERDATA-START - Managed by WOF, preserved after removal -->
 # WOI User Data (kept after WOF removal - contains secrets/customizations)
 /.ai/config/ado.json

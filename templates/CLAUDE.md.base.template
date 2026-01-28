@@ -1,0 +1,51 @@
+# {{SOLUTION_NAME}} AI Development Instructions
+
+> Auto-loaded by Claude Code.
+
+## Critical Behavioral Rules
+
+**DO, don't suggest:**
+- NEVER say "you might want to run tests" - RUN the tests
+- NEVER leave work half-done - COMPLETE the workflow
+- ALWAYS run builds and report results
+- ALWAYS finish what you start
+- ASK before committing or pushing - user controls git operations
+
+**No AI attribution:**
+- NEVER add `Co-Authored-By: Claude...` to commits
+- NEVER add "Generated with Claude Code" or similar to PRs
+- Keep commits and PRs clean - no AI branding
+
+## Pre-Work Checklist
+
+Before ANY code changes:
+
+```bash
+# 1. Check branch status
+git status
+
+# 2. If on {{GIT_DEFAULT_BRANCH}}, create feature branch
+git checkout -b feature/[meaningful-name]
+
+# 3. Never commit directly to {{GIT_DEFAULT_BRANCH}}
+```
+
+**Zero tolerance for {{GIT_DEFAULT_BRANCH}} branch modifications.**
+
+## Quality Gates
+
+Every deliverable must pass:
+
+1. **Build** - `{{BUILD_COMMAND}}` completes without errors
+2. **Tests** - Relevant tests pass
+3. **Security** - No exposed secrets
+4. **Git** - Proper branch, proper commit format
+
+## Error Recovery
+
+If something fails:
+
+1. **Build fails** → Fix errors, don't proceed until green
+2. **Tests fail** → Investigate, fix, re-run
+3. **Security issue** → Block commit, report to user
+4. **Unclear requirement** → Ask user, don't assume

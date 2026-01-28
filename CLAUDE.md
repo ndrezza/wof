@@ -1,8 +1,66 @@
-# WOF AI Development Instructions
+# WOF - Workload Orchestration Framework
 
-> Auto-loaded by Claude Code. This is the primary orchestration document for the Workload Orchestration Framework (WOF).
+> Auto-loaded by Claude Code. This document describes the WOF framework itself.
 
-## Critical Behavioral Rules
+## What is WOF?
+
+**WOF** (Workload Orchestration Framework) is a framework for AI-assisted software development. It provides:
+
+- Multi-agent orchestration (Primary, Worker, Validator, Critic)
+- Task routing (T1 lightweight vs T2+ complex)
+- Memory management (architecture, conventions, current-sprint)
+- Azure DevOps integration
+- Configurable AI connections and role mappings
+
+When WOF is installed in a project, it creates a **WOI** (Workload Orchestration Instance) - a local installation with `.ai/` and `.claude/` directories.
+
+## Terminology
+
+| Term | Full Name | Description |
+|------|-----------|-------------|
+| **WOF** | Workload Orchestration **Framework** | This repository - the source code and product |
+| **WOI** | Workload Orchestration **Instance** | A local installation of WOF in a target project |
+
+## Repository Structure
+
+```
+wof/
+├── core/                    # Framework core (agents, scripts, config)
+├── templates/               # Templates copied to WOI installations
+├── extensions/              # Optional extensions (Azure DevOps, etc.)
+├── examples/                # Example projects
+├── setup.ps1                # Installation script
+├── sync.ps1                 # Framework sync/update script
+├── validate.ps1             # Validation script
+├── CLAUDE.md                # This file (framework docs)
+├── README.md                # Project documentation
+├── CHANGELOG.md             # Version history
+└── VERSION                  # Current version
+```
+
+## Inception Mode
+
+This repository is special - it's **both WOF and a WOI**:
+
+1. **WOF** - The framework source code lives here
+2. **WOI** - An instance can be installed here for self-orchestration
+
+This allows using AI orchestration to develop WOF itself.
+
+| Path | Is WOF? | Is WOI? | Git Status |
+|------|---------|---------|------------|
+| `core/`, `templates/`, `setup.ps1`, `sync.ps1` | Yes | No | Tracked |
+| `CLAUDE.md`, `README.md`, `VERSION` | Yes | No | Tracked |
+| `.ai/` (when installed) | No | Yes | Gitignored |
+| `.claude/` (when installed) | No | Yes | Gitignored |
+
+**When editing this repo:**
+- Changes to `core/`, `templates/`, scripts → You're improving **WOF**
+- Changes to `.ai/`, `.claude/` → You're configuring the local **WOI**
+
+## Development Guidelines
+
+### Critical Behavioral Rules
 
 **DO, don't suggest:**
 - NEVER say "you might want to run tests" - RUN the tests
@@ -14,67 +72,9 @@
 **No AI attribution:**
 - NEVER add `Co-Authored-By: Claude...` to commits
 - NEVER add "Generated with Claude Code" or similar to PRs
-- Keep commits and PRs clean - no AI branding or attribution
+- Keep commits and PRs clean - no AI branding
 
-## Terminology: WOF vs WOI
-
-| Term | Full Name | Description |
-|------|-----------|-------------|
-| **WOF** | Workload Orchestration **Framework** | The source repository, codebase, and product |
-| **WOI** | Workload Orchestration **Instance** | A local installation of WOF in a target project |
-
-WOI files are always gitignored at the individual file level (not folder-level), allowing user-created files in `.ai/` to be tracked if desired.
-
-### This Repo: Inception Mode
-
-This repo is unique - it's **both WOF and a WOI**:
-
-1. **WOF** - The framework source code lives here (`core/`, `templates/`, `setup.ps1`, etc.)
-2. **WOI** - An instance is installed here (`.ai/`, `.claude/`) for self-orchestration
-
-**Why inception?** This allows using AI orchestration to develop WOF itself. WOI files are gitignored so instance files don't pollute the framework source.
-
-| Path | Is WOF? | Is WOI? | Git Status |
-|------|---------|---------|------------|
-| `core/`, `templates/`, `setup.ps1`, `sync.ps1` | Yes | No | Tracked |
-| `CLAUDE.md`, `README.md`, `VERSION` | Yes | No | Tracked |
-| `.ai/` (scripts, config, memory) | No | Yes | Gitignored (file-level) |
-| `.claude/` (settings, skills) | No | Yes | Gitignored (file-level) |
-
-**When editing this repo:**
-- Changes to `core/`, `templates/`, scripts → You're improving **WOF**
-- Changes to `.ai/memory/`, `.ai/config/` → You're configuring the local **WOI**
-
-## Identity
-
-You are the **Primary AI Orchestrator** for the WOF solution.
-
-**PRIMARY DOES NOT CODE** - All coding is delegated to Worker.
-
-Your role is to:
-1. Understand incoming requests
-2. Plan work breakdown
-3. **Classify** task complexity (T1 lightweight vs T2+ complex)
-4. **Route** to appropriate Worker (Lite for T1, Heavy for T2+)
-5. Consult Validator for decisions (>0.7 confidence)
-6. Pass Worker output through Critic quality gate (≥80%)
-7. Synthesize results and respond to user
-
-## Quick Reference
-
-| Resource | Location |
-|----------|----------|
-| Architecture | `.ai/memory/architecture.md` |
-| Conventions | `.ai/memory/conventions.md` |
-| Current Sprint | `.ai/memory/current-sprint.md` |
-| Routing Rules | `.ai/config/routing-rules.md` |
-| Routing Script | `.ai/scripts/get-worker-routing.ps1` |
-| Agent Definitions | `.ai/agents/` |
-| Workflows | `.ai/workflows/` |
-| Model Tiers | `.ai/config/models.yaml` |
-| Providers | `.ai/config/providers.yaml` |
-
-## Mandatory Pre-Work Checklist
+### Pre-Work Checklist
 
 Before ANY code changes:
 
@@ -90,128 +90,17 @@ git checkout -b feature/[meaningful-name]
 
 **Zero tolerance for main branch modifications.**
 
-## The "Finish Up" Protocol
-
-When user says "Finish up" or "Finish up #XXXX":
-
-1. Extract/Ask Work Item ID
-2. Build (`dotnet build`) - must pass
-3. Update `.ai/memory/current-sprint.md`
-4. Report status and ask user if they want to commit/push
-
-## Multi-Agent Architecture
-
-```
-┌───────────────────────────────────────────────────────────────┐
-│  PRIMARY (Opus 4.5) - ORCHESTRATOR                            │
-│  Anthropic Direct API                                         │
-│                                                               │
-│  • Understand requirements                                    │
-│  • Break down work                                            │
-│  • Classify task complexity (T1/T2+)                          │
-│  • Route to appropriate Worker                                │
-│  • Consult Validator for decisions                            │
-│  • Synthesize and respond                                     │
-│                                                               │
-│      PRIMARY DOES NOT CODE                                    │
-└───────────────────────────────────────────────────────────────┘
-            │                         │                    │
-            ▼                         ▼                    ▼
-┌──────────────────┐  ┌───────────────────────────────────────────┐
-│ VALIDATOR        │  │           DUAL-WORKER SYSTEM              │
-│                  │  │  ┌─────────────────┬─────────────────┐    │
-│ Decision valid.  │  │  │ WORKER-HEAVY    │ WORKER-LITE     │    │
-│ >0.7 confidence  │  │  │                 │                 │    │
-│                  │  │  │ T2+ Complex:    │ T1 Lightweight: │    │
-│                  │  │  │ • Code gen      │ • File search   │    │
-│                  │  │  │ • Testing       │ • Formatting    │    │
-│                  │  │  │ • Refactoring   │ • Navigation    │    │
-│                  │  │  │ • Architecture  │ • Simple edits  │    │
-│                  │  │  └─────────────────┴─────────────────┘    │
-└──────────────────┘  └───────────────────────────────────────────┘
-                                          │
-                                          ▼
-                              ┌──────────────────┐
-                              │ CRITIC           │
-                              │                  │
-                              │ Skeptical        │
-                              │ quality gate     │
-                              │ ≥80% viability   │
-                              └──────────────────┘
-```
-
-| Component | Role |
-|-----------|------|
-| **Primary** | Orchestrator (NO coding) |
-| **Validator** | Decision validation (>0.7 confidence) |
-| **Worker-Heavy** | T2+ complex tasks (code gen, testing, refactoring) |
-| **Worker-Lite** | T1 lightweight tasks (search, format, navigate) |
-| **Critic** | Quality gate (≥80% viability) |
-
-## Task Routing
-
-Primary classifies tasks and routes to the appropriate worker:
-
-**T1 - Lightweight (→ Worker-Lite):**
-- File search, glob, grep operations
-- Simple formatting and linting
-- Code navigation and location
-- Syntax validation
-- Single-line or trivial edits
-- Context requirement < 16K tokens
-
-**T2+ - Complex (→ Worker-Heavy):**
-- Code generation (> 20 lines)
-- Test writing and execution
-- Refactoring with semantic preservation
-- Architectural work
-- Security analysis
-- Debug and optimization
-
-**Always-Heavy Keywords:** deploy, production, critical, security, comprehensive, thorough, unit test, integration test
-
-**Routing Decision:** See `.ai/config/routing-rules.md` and `.ai/scripts/get-worker-routing.ps1`
-
-**Fallback:** If Worker-Lite unavailable, all tasks route to Worker-Heavy
-
-## Delegation Protocol
-
-**For ANY code/file operation:**
-1. Use `mcp__secondary-claude__*` tools to delegate to Worker
-2. Worker executes via configured AI connection
-3. Pass output through Critic for quality gate
-4. Synthesize and present to user
-
-**Example delegation:**
-```
-# Primary delegates code generation to Worker
-mcp__secondary-claude__Edit or mcp__secondary-claude__Write
-# NOT direct Edit/Write tools
-```
-
-## Work Item Integration
-
-Work items follow format: `#XXXX`
-
-- Always ask for work item ID before commits
-- Reference in commit messages
-- Update work item status when appropriate
-
-**Configuration:**
-- Organization: `{{ADO_ORGANIZATION}}`
-- Project: `{{ADO_PROJECT}}`
-
-## Quality Gates
+### Quality Gates
 
 Every deliverable must pass:
 
 1. **Build** - Solution compiles without errors
 2. **Tests** - Relevant tests pass
-3. **Security** - No exposed secrets, reviewed [AllowAnonymous]
-4. **Documentation** - Memory bank updated
+3. **Security** - No exposed secrets
+4. **Documentation** - Memory bank updated (if WOI installed)
 5. **Git** - Proper branch, proper commit format
 
-## Error Recovery
+### Error Recovery
 
 If something fails:
 
@@ -220,31 +109,28 @@ If something fails:
 3. **Security issue** → Block commit, report to user
 4. **Unclear requirement** → Ask user, don't assume
 
-## Memory Structure
+## Installing WOI in This Repo
 
-All AI context is centralized in `.ai/`:
+To enable AI orchestration for WOF development itself:
 
-```
-.ai/
-├── memory/
-│   ├── architecture.md      # Stable system knowledge
-│   ├── conventions.md       # Coding standards
-│   └── current-sprint.md    # Active work (UPDATE FREQUENTLY)
-├── config/
-│   ├── models.yaml          # Tiered model definitions
-│   ├── providers.yaml       # Provider configuration
-│   └── credentials.local.ps1 # Local credentials (gitignored)
-├── agents/                  # Agent personas
-├── workflows/               # Process definitions
-└── scripts/                 # Automation scripts
+```powershell
+# From the wof directory
+.\setup.ps1 -TargetPath . -SolutionName "WOF" -Force
 ```
 
-### Update Triggers
+This will:
+- Create `.ai/` with memory, config, scripts
+- Create `.claude/` with settings and skills
+- Inject a WOI-SECTION into this CLAUDE.md with orchestration instructions
 
-- **current-sprint.md** → After every significant action
-- **architecture.md** → Only on architectural changes
-- **conventions.md** → Only when standards change
+To remove the WOI:
+
+```powershell
+.\.ai\scripts\remove-framework.ps1
+```
+
+This removes the WOI files and the WOI-SECTION, leaving this base CLAUDE.md intact.
 
 ---
 
-*This document is the source of truth for AI behavior in this repository.*
+*This document describes the WOF framework. When a WOI is installed, additional orchestration instructions appear below.*

@@ -121,6 +121,10 @@ if ($AdoOrganization -and $AdoProject) {
 Write-Host "  Config Format: $ConfigFormat"
 Write-Host ""
 
+# Read version from source (needed for placeholders)
+$versionFile = Join-Path $scriptRoot "VERSION"
+$frameworkVersion = if (Test-Path $versionFile) { (Get-Content $versionFile).Trim() } else { "unknown" }
+
 # Placeholder values
 $placeholders = @{
     "{{SOLUTION_NAME}}" = $SolutionName
@@ -130,6 +134,7 @@ $placeholders = @{
     "{{CURRENT_DATE}}" = (Get-Date -Format "yyyy-MM-dd")
     "{{ADO_ORGANIZATION}}" = $AdoOrganization
     "{{ADO_PROJECT}}" = $AdoProject
+    "{{WOI_VERSION}}" = $frameworkVersion
 }
 
 function Replace-Placeholders {
@@ -254,15 +259,48 @@ if (Test-Path $agentsSource) {
 if (-not $SkipTemplates) {
     Write-Step "Processing templates..."
 
-    # CLAUDE.md
-    $claudeTemplate = Join-Path $templatesDir "CLAUDE.md.template"
+    # CLAUDE.md - Create base if needed, then inject/update WOI-SECTION
+    $claudeBaseTemplate = Join-Path $templatesDir "CLAUDE.md.base.template"
     $claudeTarget = Join-Path $TargetPath "CLAUDE.md"
-    if (Test-Path $claudeTemplate) {
-        if ((Test-Path $claudeTarget) -and -not $Force) {
-            Write-Warn "    Skipping (exists): CLAUDE.md"
+    $woiSectionTemplate = Join-Path $templatesDir "WOI-SECTION.md"
+
+    # Step 1: Create base CLAUDE.md if it doesn't exist
+    if (-not (Test-Path $claudeTarget)) {
+        if (Test-Path $claudeBaseTemplate) {
+            Copy-WithPlaceholders -SourceFile $claudeBaseTemplate -DestFile $claudeTarget -Values $placeholders
+            Write-Host "    Created: CLAUDE.md (base)" -ForegroundColor Gray
         } else {
-            Copy-WithPlaceholders -SourceFile $claudeTemplate -DestFile $claudeTarget -Values $placeholders
-            Write-Host "    Created: CLAUDE.md" -ForegroundColor Gray
+            Write-Warn "    CLAUDE.md base template not found"
+        }
+    }
+
+    # Step 2: Inject/update WOI-SECTION
+    if ((Test-Path $claudeTarget) -and (Test-Path $woiSectionTemplate)) {
+        $claudeContent = Get-Content $claudeTarget -Raw
+        $woiSection = Get-Content $woiSectionTemplate -Raw
+        $woiSection = Replace-Placeholders -Content $woiSection -Values $placeholders
+
+        $startMarker = "<!-- WOI-SECTION-START"
+        $endMarker = "<!-- WOI-SECTION-END -->"
+
+        if ($claudeContent -match [regex]::Escape($startMarker)) {
+            # Update existing WOI section
+            $pattern = "(?s)$([regex]::Escape($startMarker)).*?$([regex]::Escape($endMarker))"
+            $newContent = $claudeContent -replace $pattern, $woiSection.Trim()
+            Set-Content -Path $claudeTarget -Value $newContent -NoNewline
+            Write-Host "    Updated: CLAUDE.md (WOI section)" -ForegroundColor Gray
+        } else {
+            # Inject new WOI section after first heading or at the end
+            if ($claudeContent -match "(?m)^#[^#].*$") {
+                $firstHeadingMatch = [regex]::Match($claudeContent, "(?m)^#[^#].*$")
+                $insertPos = $firstHeadingMatch.Index + $firstHeadingMatch.Length
+                $newContent = $claudeContent.Insert($insertPos, "`n`n" + $woiSection.Trim() + "`n")
+            } else {
+                # No heading found, add at end
+                $newContent = $claudeContent.TrimEnd() + "`n`n" + $woiSection.Trim() + "`n"
+            }
+            Set-Content -Path $claudeTarget -Value $newContent -NoNewline
+            Write-Host "    Injected: CLAUDE.md (WOI section)" -ForegroundColor Gray
         }
     }
 
@@ -423,11 +461,7 @@ if (Test-Path $memoryTarget) {
     }
 }
 
-# Read version from source
-$versionFile = Join-Path $scriptRoot "VERSION"
-$frameworkVersion = if (Test-Path $versionFile) { (Get-Content $versionFile).Trim() } else { "unknown" }
-
-# Create manifest object
+# Create manifest object (version already read at top of script)
 $manifest = @{
     version = $frameworkVersion
     installedAt = (Get-Date -Format "yyyy-MM-ddTHH:mm:ssZ")
