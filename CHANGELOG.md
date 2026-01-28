@@ -5,6 +5,16 @@ All notable changes to the Workload Orchestration Framework (WOF) will be docume
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.4.9] - 2026-01-28
+
+### Changed
+
+- **ADO subagent relay pattern** - Subagents cannot access MCP tools, so changed approach:
+  - Primary now calls `mcp__azure-devops__*` tools directly
+  - ADO subagent is now a **formatter** only - receives raw JSON, returns human-readable summary
+  - Switched back to Haiku (formatting doesn't need Sonnet's capabilities)
+  - Removed false claims about subagent having MCP tool access
+
 ## [2.4.8] - 2026-01-28
 
 ### Changed

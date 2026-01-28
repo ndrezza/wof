@@ -36,27 +36,28 @@ This project has the Workload Orchestration Framework installed as a local insta
 
 | Agent | Purpose | Model |
 |-------|---------|-------|
-| `ado` | Azure DevOps operations | Sonnet |
+| `ado` | Formats ADO JSON into human-readable summaries | Haiku |
 
-**ADO Subagent Usage:**
-- Route ALL Azure DevOps operations through the `ado` subagent
-- Returns concise, human-readable summaries (not verbose JSON)
-- Handles: work items, PRs, pipelines, code search, wikis
+**ADO Subagent Usage (Relay Pattern):**
 
-**⚠️ NEVER call `mcp__azure-devops__*` tools directly. ALWAYS route through the subagent:**
+The `ado` subagent is a **formatter**, not a tool-caller. Subagents cannot access MCP tools directly.
+
+**Workflow:**
+1. Primary calls `mcp__azure-devops__*` tools directly
+2. Primary passes raw JSON to `ado` subagent for formatting
+3. Subagent returns concise, human-readable summary
+
+**Example:**
 ```
-Task tool → subagent_type="ado" → "your ADO request"
+1. Primary: Call mcp__azure-devops__list_work_items
+2. Primary: Task tool → subagent_type="ado" → "Format this: <raw JSON>"
+3. Subagent: Returns formatted table
 ```
 
-This applies to ALL ADO operations: listing, getting, creating, updating work items, PRs, pipelines, etc.
-
-**When to use:** Any query involving work items, pull requests, pipelines, or ADO search.
+**When to use:** After any ADO MCP tool call, to format verbose JSON into clean output.
 
 **IMPORTANT - Handling Subagent Responses:**
-When a subagent (like `ado`) returns a formatted response, do NOT re-echo or re-summarize the same information. The subagent's output is already displayed to the user. Instead:
-- Simply acknowledge completion (e.g., "Done." or move to next step)
-- Only add commentary if there's genuinely new insight or action needed
-- Avoid duplicating tables, lists, or summaries the subagent already provided
+When the subagent returns a formatted response, do NOT re-echo it. The output is already displayed to the user. Just acknowledge completion or move to the next step.
 
 ### Multi-Agent Architecture
 
@@ -78,7 +79,7 @@ When a subagent (like `ado`) returns a formatted response, do NOT re-echo or re-
 ┌───────────┐  ┌─────────────────────────────────────┐  ┌───────────┐
 │ VALIDATOR │  │       DUAL-WORKER SYSTEM            │  │ ADO       │
 │           │  │  ┌───────────────┬───────────────┐  │  │ SUBAGENT  │
-│ Decision  │  │  │ WORKER-HEAVY  │ WORKER-LITE   │  │  │ (Sonnet)   │
+│ Decision  │  │  │ WORKER-HEAVY  │ WORKER-LITE   │  │  │ (Haiku)   │
 │ validation│  │  │               │               │  │  │           │
 │ >0.7 conf │  │  │ T2+ Complex:  │ T1 Light:     │  │  │ • Work    │
 │           │  │  │ • Code gen    │ • File search │  │  │   Items   │
