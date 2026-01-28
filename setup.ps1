@@ -266,6 +266,18 @@ if (-not $SkipTemplates) {
         }
     }
 
+    # .mcp.json (MCP server configuration for Claude Code)
+    $mcpTemplate = Join-Path $templatesDir "mcp.json.template"
+    $mcpTarget = Join-Path $TargetPath ".mcp.json"
+    if ((Test-Path $mcpTemplate) -and $AdoOrganization) {
+        if ((Test-Path $mcpTarget) -and -not $Force) {
+            Write-Warn "    Skipping (exists): .mcp.json"
+        } else {
+            Copy-WithPlaceholders -SourceFile $mcpTemplate -DestFile $mcpTarget -Values $placeholders
+            Write-Host "    Created: .mcp.json (Azure DevOps MCP)" -ForegroundColor Gray
+        }
+    }
+
     # .claude/settings.json (source from dot-claude to avoid Claude Code detecting templates)
     $settingsTemplate = Join-Path $templatesDir "dot-claude\settings.json.template"
     $settingsTarget = Join-Path $TargetPath ".claude\settings.json"
@@ -331,6 +343,7 @@ if (-not $SkipTemplates) {
             "config\connections.json.template",
             "config\roles.json.template",
             "config\credentials.local.json.template",
+            "config\ado.json.template",
             "config\models.yaml.template",
             "config\ai-rules.md.template"
         )
@@ -341,6 +354,7 @@ if (-not $SkipTemplates) {
             "config\providers.yaml.template",
             "config\models.yaml.template",
             "config\credentials.local.ps1.template",
+            "config\ado.json.template",
             "config\ai-rules.md.template"
         )
         Write-Host "    Using legacy config format (YAML/PS1)" -ForegroundColor Yellow
@@ -351,7 +365,8 @@ if (-not $SkipTemplates) {
         "config/credentials.local.json",
         "config/credentials.local.ps1",
         "config/connections.json",
-        "config/roles.json"
+        "config/roles.json",
+        "config/ado.json"
     )
 
     foreach ($template in $configTemplates) {
@@ -441,6 +456,7 @@ $userdataPatterns = @(
     "config/credentials.local.json",  # API keys, connection strings - CRITICAL (v2)
     "config/connections.json",        # Customized AI connections (v2)
     "config/roles.json",              # Customized role mappings (v2)
+    "config/ado.json",                # Azure DevOps PAT, org, project, filters (v2)
     # Legacy config format (YAML/PS1)
     "config/credentials.local.ps1",   # API keys, connection strings - CRITICAL (legacy)
     "config/providers.yaml",          # Customized provider settings (legacy)
@@ -495,6 +511,12 @@ if (Test-Path $claudeDir) {
 
 # CLAUDE.md (framework - deleted on remove)
 $frameworkFiles += "/CLAUDE.md"
+
+# .mcp.json (MCP server config - framework)
+$mcpJson = Join-Path $TargetPath ".mcp.json"
+if (Test-Path $mcpJson) {
+    $frameworkFiles += "/.mcp.json"
+}
 
 # Sort framework files
 $frameworkFiles = $frameworkFiles | Sort-Object

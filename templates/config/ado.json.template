@@ -1,0 +1,29 @@
+{
+  "$schema": "./ado.schema.json",
+  "description": "Azure DevOps MCP configuration - preserved after WOF removal. Run /wof configure-ado to set up.",
+
+  "connection": {
+    "organizationUrl": "",
+    "project": "",
+    "pat": ""
+  },
+
+  "filters": {
+    "valueArea": "",
+    "workItemTypes": ["User Story", "Task", "Bug", "Feature"],
+    "states": ["New", "Active", "Resolved"],
+    "areaPath": "",
+    "iterationPath": ""
+  },
+
+  "wiqlDefaults": {
+    "maxResults": 50,
+    "orderBy": "System.ChangedDate DESC"
+  },
+
+  "mcp": {
+    "domains": ["core", "work", "work-items"],
+    "serverCommand": "npx",
+    "serverArgs": ["-y", "@azure-devops/mcp"]
+  }
+}

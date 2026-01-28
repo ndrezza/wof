@@ -24,6 +24,7 @@ Parse the arguments to determine which WOF command to run.
 | `status` | Check orchestration health and component status |
 | `configure` | Interactive AI configuration (add connections, map roles) |
 | `configure --test-only` | Only test existing connections |
+| `configure-ado` | Configure Azure DevOps integration (MCP server, filters) |
 | `route <task>` | Classify a task and show routing decision |
 | `remove` | Remove WOF scripts (preserves config & memory) |
 | `help` | Show this help information |
@@ -181,6 +182,128 @@ Add flags as needed: -DryRun, -Force, -IncludeConfig, -RemoveAll
 
 ---
 
+### If arguments contain "configure-ado"
+
+Configure Azure DevOps integration with MCP server.
+
+#### Step 1: Check Current Configuration
+
+Read `.ai/config/ado.json` to see current settings:
+```bash
+cat .ai/config/ado.json 2>/dev/null || echo "No ADO config found"
+```
+
+#### Step 2: Ask for Connection Info
+
+Use AskUserQuestion to gather connection details:
+
+**Question 1: Organization URL**
+- Question: "What is your Azure DevOps organization URL?"
+- Header: "ADO Org"
+- Options:
+  1. "https://dev.azure.com/myorg" (example format)
+  2. "Other" (let user type)
+- Note: User should provide full URL or just org name
+
+**Question 2: Project Name**
+- Question: "What is your Azure DevOps project name?"
+- Header: "Project"
+- Let user type the project name
+
+**Question 3: Authentication Method**
+- Question: "How do you want to authenticate?"
+- Header: "Auth"
+- Options:
+  1. "Browser login (Recommended)" - Uses Microsoft account via browser
+  2. "Personal Access Token (PAT)" - For automation/CI scenarios
+  3. "Azure CLI" - Use existing `az login` session
+
+If PAT selected, ask for the PAT value (will be stored in ado.json).
+
+#### Step 3: Configure Filters
+
+Use AskUserQuestion with proposed defaults:
+
+**Question 4: Value Area Filter**
+- Question: "Filter work items by Value Area?"
+- Header: "Value Area"
+- Options:
+  1. "Architectural (Recommended)" - Focus on architectural work items
+  2. "Business" - Business value items
+  3. "No filter" - Show all value areas
+  4. "Other" - Custom value area
+
+**Question 5: Work Item Types**
+- Question: "Which work item types to include?"
+- Header: "Types"
+- MultiSelect: true
+- Options:
+  1. "User Story"
+  2. "Task"
+  3. "Bug"
+  4. "Feature"
+- Default: All selected
+
+**Question 6: Work Item States**
+- Question: "Which states to include?"
+- Header: "States"
+- MultiSelect: true
+- Options:
+  1. "New"
+  2. "Active"
+  3. "Resolved"
+  4. "Closed"
+- Default: New, Active, Resolved
+
+#### Step 4: Update Configuration Files
+
+**Update `.ai/config/ado.json`:**
+```json
+{
+  "connection": {
+    "organizationUrl": "<user-provided>",
+    "project": "<user-provided>",
+    "pat": "<if-provided-or-empty>"
+  },
+  "filters": {
+    "valueArea": "<selected>",
+    "workItemTypes": ["<selected-types>"],
+    "states": ["<selected-states>"]
+  }
+}
+```
+
+#### Step 5: Configure MCP Server
+
+Extract organization name from URL (e.g., `https://dev.azure.com/myorg` -> `myorg`).
+
+Add/update the MCP server using Claude CLI:
+```bash
+claude mcp add --scope project azure-devops -- npx -y @azure-devops/mcp <org-name> -d core work work-items
+```
+
+Or update `.mcp.json` directly:
+```json
+{
+  "mcpServers": {
+    "azure-devops": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@azure-devops/mcp", "<org-name>", "-d", "core", "work", "work-items"]
+    }
+  }
+}
+```
+
+#### Step 6: Test Connection
+
+Inform user:
+- "MCP server configured. Restart Claude Code to activate."
+- "First use will prompt for Microsoft account login in browser."
+- If PAT was provided: "PAT authentication configured for non-interactive use."
+
+---
+
 ### If arguments are empty or contain "help"
 
 Display the available commands table above and explain each option.
@@ -192,6 +315,8 @@ Display the available commands table above and explain each option.
 | `.ai/config/credentials.local.json` | API keys and endpoints (gitignored) |
 | `.ai/config/connections.json` | AI connection definitions |
 | `.ai/config/roles.json` | Role-to-connection mappings |
+| `.ai/config/ado.json` | Azure DevOps connection & filters (gitignored) |
+| `.mcp.json` | MCP server configuration (gitignored) |
 
 ## Important Notes
 
