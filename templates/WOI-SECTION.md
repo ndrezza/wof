@@ -43,13 +43,14 @@ This project has the Workload Orchestration Framework installed as a local insta
 - Returns concise, human-readable summaries (not verbose JSON)
 - Handles: work items, PRs, pipelines, code search, wikis
 
-**When to use:** Any query involving work items, pull requests, pipelines, or ADO search.
+**⚠️ NEVER call `mcp__azure-devops__*` tools directly. ALWAYS route through the subagent:**
+```
+Task tool → subagent_type="ado" → "your ADO request"
+```
 
-**Example routing:**
-```
-User: "get work items"
-→ Route to: Task tool with subagent_type="ado"
-```
+This applies to ALL ADO operations: listing, getting, creating, updating work items, PRs, pipelines, etc.
+
+**When to use:** Any query involving work items, pull requests, pipelines, or ADO search.
 
 **IMPORTANT - Handling Subagent Responses:**
 When a subagent (like `ado`) returns a formatted response, do NOT re-echo or re-summarize the same information. The subagent's output is already displayed to the user. Instead:
