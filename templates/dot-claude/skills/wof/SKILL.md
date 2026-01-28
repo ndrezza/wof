@@ -394,6 +394,27 @@ Use AskUserQuestion with proposed defaults:
 #### Step 5: Update MCP Server Config
 
 **Update `.mcp.json`** (credentials stored here only):
+
+On **Windows**, use `cmd /c` wrapper:
+```json
+{
+  "mcpServers": {
+    "azure-devops": {
+      "type": "stdio",
+      "command": "cmd",
+      "args": ["/c", "npx", "-y", "@tiberriver256/mcp-server-azure-devops"],
+      "env": {
+        "AZURE_DEVOPS_ORG_URL": "<organization-url>",
+        "AZURE_DEVOPS_AUTH_METHOD": "pat",
+        "AZURE_DEVOPS_PAT": "<pat-value>",
+        "AZURE_DEVOPS_DEFAULT_PROJECT": "<project-name>"
+      }
+    }
+  }
+}
+```
+
+On **Linux/macOS**, use `npx` directly:
 ```json
 {
   "mcpServers": {
