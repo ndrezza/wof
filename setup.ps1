@@ -364,6 +364,26 @@ if (-not $SkipTemplates) {
         }
     }
 
+    # .claude/agents (Claude Code subagents) - source from dot-claude
+    $agentsClaudeSource = Join-Path $templatesDir "dot-claude\agents"
+    $agentsClaudeTarget = Join-Path $TargetPath ".claude\agents"
+    if (Test-Path $agentsClaudeSource) {
+        Get-ChildItem $agentsClaudeSource -Filter "*.md" | ForEach-Object {
+            $agentName = $_.BaseName
+            $destFile = Join-Path $agentsClaudeTarget $_.Name
+
+            if ((Test-Path $destFile) -and -not $Force) {
+                Write-Warn "    Skipping (exists): .claude/agents/$($_.Name)"
+            } else {
+                if (-not (Test-Path $agentsClaudeTarget)) {
+                    New-Item -ItemType Directory -Path $agentsClaudeTarget -Force | Out-Null
+                }
+                Copy-WithPlaceholders -SourceFile $_.FullName -DestFile $destFile -Values $placeholders
+                Write-Host "    Created: .claude/agents/$($_.Name)" -ForegroundColor Gray
+            }
+        }
+    }
+
     # Memory templates
     $memoryTemplates = @(
         "memory\architecture.md.template",
@@ -553,6 +573,12 @@ if (Test-Path $claudeDir) {
             if (Test-Path $skillFile) {
                 $frameworkFiles += "/.claude/skills/$skillName/SKILL.md"
             }
+        }
+    }
+    $agentsDir = Join-Path $claudeDir "agents"
+    if (Test-Path $agentsDir) {
+        Get-ChildItem $agentsDir -Filter "*.md" | ForEach-Object {
+            $frameworkFiles += "/.claude/agents/$($_.Name)"
         }
     }
 }

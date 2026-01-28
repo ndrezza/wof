@@ -10,7 +10,7 @@
     Components removed:
     - Framework scripts (.ai/scripts/*.ps1)
     - WOF metadata files (.framework-version, .mode, .installed-files.json)
-    - .claude/settings.json and .claude/skills/wof/ (WOF IDE integration)
+    - .claude/settings.json, .claude/skills/wof/, .claude/agents/*.md (WOF IDE integration)
     - CLAUDE.md in the project root
     - WOF-related entries from .gitignore (optional)
 
@@ -183,8 +183,15 @@ else {
         $PreservePatterns = @()  # Clear preservation list
     }
 
-    # 1. Files from manifest (relative to .ai/), excluding preserved files
+    # 1. Files from manifest, excluding preserved files
+    # Manifest contains paths relative to .ai/ OR .claude/ paths
     foreach ($relPath in $ManifestFiles) {
+        # Check if this is a .claude/ path (not relative to .ai/)
+        if ($relPath -like ".claude/*" -or $relPath -like ".claude\*") {
+            # .claude/ files are handled separately below
+            continue
+        }
+
         # Check if this file should be preserved
         $shouldPreserve = $false
         foreach ($pattern in $PreservePatterns) {
@@ -200,6 +207,15 @@ else {
             if (Test-Path $fullPath) {
                 $FilesToRemove += @{ Path = $fullPath; Type = "File"; Description = ".ai/$relPath" }
             }
+        }
+    }
+
+    # 1b. .claude/ files from manifest (skills, agents, etc.)
+    $ClaudeFilesFromManifest = $ManifestFiles | Where-Object { $_ -like ".claude/*" -or $_ -like ".claude\*" }
+    foreach ($relPath in $ClaudeFilesFromManifest) {
+        $fullPath = Join-Path $ProjectRoot $relPath
+        if (Test-Path $fullPath) {
+            $FilesToRemove += @{ Path = $fullPath; Type = "File"; Description = $relPath }
         }
     }
 
@@ -261,14 +277,22 @@ else {
         }
     }
 
-    # Check for user files in .claude/ (other skills, custom settings)
+    # Check for user files in .claude/ (other skills, agents, custom settings)
     $ClaudeDir = Join-Path $ProjectRoot ".claude"
     if (Test-Path $ClaudeDir) {
         $allClaudeFiles = Get-ChildItem $ClaudeDir -Recurse -File -ErrorAction SilentlyContinue
         foreach ($file in $allClaudeFiles) {
             $relPath = $file.FullName.Substring($ClaudeDir.Length + 1)
-            # Check if it's a WOF file
-            $isWofFile = ($relPath -eq "settings.json") -or ($relPath -like "skills\wof\*") -or ($relPath -like "skills/wof/*")
+            $manifestPath = ".claude/$($relPath.Replace('\', '/'))"
+            $manifestPathAlt = ".claude\$relPath"
+
+            # Check if it's a WOF file (in manifest or known WOF paths)
+            $isWofFile = ($relPath -eq "settings.json") -or
+                         ($relPath -like "skills\wof\*") -or
+                         ($relPath -like "skills/wof/*") -or
+                         ($ManifestFiles -contains $manifestPath) -or
+                         ($ManifestFiles -contains $manifestPathAlt)
+
             if (-not $isWofFile) {
                 $UserFilesPreserved += ".claude\$relPath"
             }

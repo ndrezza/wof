@@ -260,6 +260,39 @@ if (Test-Path $skillsSource) {
     Write-Info "No skills found in framework"
 }
 
+# Process agents (Claude Code subagents)
+Write-Step "Processing agents (Claude Code subagents)..."
+$agentsSource = Join-Path $templatesDir "dot-claude\agents"
+$agentsTarget = Join-Path $TargetPath ".claude\agents"
+
+if (Test-Path $agentsSource) {
+    Get-ChildItem $agentsSource -Filter "*.md" | ForEach-Object {
+        $agentName = $_.BaseName
+        $destFile = Join-Path $agentsTarget $_.Name
+        $relativePath = ".claude/agents/$($_.Name)"
+
+        # Track for manifest
+        $newInstalledFiles += $relativePath
+
+        if ((Test-Path $destFile) -and (Test-FileCustomized $destFile) -and -not $Force) {
+            Write-Info "Skipped (customized): $relativePath"
+            $skipped += $relativePath
+        } elseif ($DryRun) {
+            Write-Info "Would update: $relativePath"
+            $updated += $relativePath
+        } else {
+            if (-not (Test-Path $agentsTarget)) {
+                New-Item -ItemType Directory -Path $agentsTarget -Force | Out-Null
+            }
+            Copy-Item $_.FullName $destFile -Force
+            Write-Info "Updated: $relativePath"
+            $updated += $relativePath
+        }
+    }
+} else {
+    Write-Info "No agents found in framework"
+}
+
 # List preserved files (never update)
 Write-Step "Preserved files (never updated)..."
 foreach ($pattern in $manifest.always_preserve.patterns) {
@@ -483,6 +516,12 @@ if (Test-Path $claudeDir) {
             if (Test-Path $skillFile) {
                 $woiGitignoreFiles += "/.claude/skills/$skillName/SKILL.md"
             }
+        }
+    }
+    $wofAgentsDir = Join-Path $claudeDir "agents"
+    if (Test-Path $wofAgentsDir) {
+        Get-ChildItem $wofAgentsDir -Filter "*.md" | ForEach-Object {
+            $woiGitignoreFiles += "/.claude/agents/$($_.Name)"
         }
     }
 }
