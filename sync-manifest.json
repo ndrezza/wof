@@ -17,7 +17,8 @@
     "patterns": [
       "agents/*.md",
       "workflows/*.md",
-      ".claude/skills/*/SKILL.md"
+      ".claude/skills/*/SKILL.md",
+      ".claude/agents/*.md"
     ]
   },
 

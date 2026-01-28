@@ -69,7 +69,9 @@ logs/
 /.ai/scripts/update-framework.ps1
 /.ai/scripts/validate-autonomy.ps1
 /.ai/state/
+/.claude/agents/ado.md
 /.claude/settings.json
 /.claude/skills/wof/SKILL.md
+/.gitattributes
 /CLAUDE.md
 # <!-- WOI-SECTION-END -->

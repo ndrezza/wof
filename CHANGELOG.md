@@ -5,6 +5,17 @@ All notable changes to the Workload Orchestration Framework (WOF) will be docume
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.4.4] - 2026-01-28
+
+### Added
+
+- **ADO Subagent (#2956)** - Claude Code subagent for Azure DevOps operations
+  - New `.claude/agents/ado.md` template - isolates verbose ADO JSON in subagent context
+  - Returns concise, human-readable summaries instead of raw JSON
+  - Uses Haiku model for cost-efficient ADO queries
+  - Updated `setup.ps1` and `sync.ps1` to handle `.claude/agents/` directory
+  - Updated `sync-manifest.json` with `.claude/agents/*.md` pattern
+
 ## [2.4.3] - 2026-01-28
 
 ### Fixed
