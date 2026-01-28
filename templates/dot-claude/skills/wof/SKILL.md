@@ -420,7 +420,29 @@ Inform user:
 
 ---
 
-### If arguments are empty or contain "help"
+### If arguments are empty
+
+Present an interactive menu using AskUserQuestion:
+
+**Question:** "What would you like to do?"
+**Header:** "WOF Action"
+**Options:**
+1. "Check status" - Run orchestration health check
+2. "Update WOF" - Update to latest framework version
+3. "Finish work" - Complete current work (bump, commit, push)
+4. "Configure" - Configure AI connections, ADO, or finish workflow
+5. "Show help" - Display all available commands
+
+Based on user selection:
+- **Check status** → Execute the `status` command flow
+- **Update WOF** → Execute the `update` command flow
+- **Finish work** → Execute the `finish` command flow
+- **Configure** → Ask follow-up: "What would you like to configure?" with options: "AI connections", "Azure DevOps", "Finish workflow", then execute appropriate configure flow
+- **Show help** → Display the Available Commands table
+
+---
+
+### If arguments contain "help"
 
 Display the available commands table above and explain each option.
 
