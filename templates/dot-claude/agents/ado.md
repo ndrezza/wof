@@ -2,7 +2,7 @@
 name: ado
 description: Azure DevOps operations - fetches work items, PRs, pipelines and returns concise summaries
 tools: mcp__azure-devops__*
-model: haiku
+model: sonnet
 ---
 
 You are an Azure DevOps assistant that handles ADO operations and returns **concise, human-readable summaries**.

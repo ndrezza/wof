@@ -36,7 +36,7 @@ This project has the Workload Orchestration Framework installed as a local insta
 
 | Agent | Purpose | Model |
 |-------|---------|-------|
-| `ado` | Azure DevOps operations | Haiku |
+| `ado` | Azure DevOps operations | Sonnet |
 
 **ADO Subagent Usage:**
 - Route ALL Azure DevOps operations through the `ado` subagent
@@ -78,7 +78,7 @@ When a subagent (like `ado`) returns a formatted response, do NOT re-echo or re-
 ┌───────────┐  ┌─────────────────────────────────────┐  ┌───────────┐
 │ VALIDATOR │  │       DUAL-WORKER SYSTEM            │  │ ADO       │
 │           │  │  ┌───────────────┬───────────────┐  │  │ SUBAGENT  │
-│ Decision  │  │  │ WORKER-HEAVY  │ WORKER-LITE   │  │  │ (Haiku)   │
+│ Decision  │  │  │ WORKER-HEAVY  │ WORKER-LITE   │  │  │ (Sonnet)   │
 │ validation│  │  │               │               │  │  │           │
 │ >0.7 conf │  │  │ T2+ Complex:  │ T1 Light:     │  │  │ • Work    │
 │           │  │  │ • Code gen    │ • File search │  │  │   Items   │
