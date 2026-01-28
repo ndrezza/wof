@@ -5,6 +5,14 @@ All notable changes to the Workload Orchestration Framework (WOF) will be docume
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.4.3] - 2026-01-28
+
+### Fixed
+
+- **Platform-specific MCP config** - Windows requires `cmd /c` wrapper to execute npx in MCP server config
+  - Updated `/wof configure-ado` docs to show both Windows and Linux/macOS formats
+  - Fixes Claude Code `/doctor` warning about npx execution on Windows
+
 ## [2.4.2] - 2026-01-28
 
 ### Added
