@@ -15,9 +15,9 @@ This project has the Workload Orchestration Framework installed as a local insta
 | Routing Rules | `.ai/config/routing-rules.md` |
 | Routing Script | `.ai/scripts/get-worker-routing.ps1` |
 | Agent Definitions | `.ai/agents/` |
-| Workflows | `.ai/workflows/` |
 | Model Tiers | `.ai/config/models.yaml` |
-| Providers | `.ai/config/providers.yaml` |
+| AI Connections | `.ai/config/connections.json` |
+| Role Mappings | `.ai/config/roles.json` |
 
 ### WOI Commands
 
@@ -25,6 +25,8 @@ This project has the Workload Orchestration Framework installed as a local insta
 |---------|-------------|
 | `/wof status` | Check orchestration health |
 | `/wof update` | Update to latest WOF version |
+| `/wof configure` | Configure AI connections and role mappings |
+| `/wof configure-ado` | Configure Azure DevOps integration |
 | `/wof route <task>` | Classify task routing |
 | `/wof remove` | Remove WOI (preserves config/memory) |
 

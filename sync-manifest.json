@@ -43,7 +43,10 @@
       ".ai/config/models.yaml",
       ".ai/config/ai-rules.md",
       ".ai/config/connections.json",
-      ".ai/config/roles.json"
+      ".ai/config/roles.json",
+      ".ai/config/ado.json",
+      ".ai/scripts/ado-utils.ps1",
+      ".ai/scripts/scan-workitems.ps1"
     ]
   },
 

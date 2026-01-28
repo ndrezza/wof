@@ -188,14 +188,15 @@ Configure Azure DevOps integration with MCP server.
 
 #### Step 1: Check Current Configuration
 
-Read `.ai/config/ado.json` to see current settings:
+Check existing settings:
 ```bash
-cat .ai/config/ado.json 2>/dev/null || echo "No ADO config found"
+cat .ai/config/ado.json 2>/dev/null || echo "No ADO filter config found"
+cat .mcp.json 2>/dev/null || echo "No MCP config found"
 ```
 
 #### Step 2: Ask for Connection Info
 
-Use AskUserQuestion to gather connection details:
+Use AskUserQuestion to gather:
 
 **Question 1: Organization URL**
 - Question: "What is your Azure DevOps organization URL?"
@@ -203,21 +204,17 @@ Use AskUserQuestion to gather connection details:
 - Options:
   1. "https://dev.azure.com/myorg" (example format)
   2. "Other" (let user type)
-- Note: User should provide full URL or just org name
 
 **Question 2: Project Name**
 - Question: "What is your Azure DevOps project name?"
 - Header: "Project"
 - Let user type the project name
 
-**Question 3: Authentication Method**
-- Question: "How do you want to authenticate?"
-- Header: "Auth"
-- Options:
-  1. "Personal Access Token (PAT) (Recommended)" - Silent authentication, no browser popup
-  2. "Azure CLI" - Use existing `az login` session
-
-Ask for the PAT value (will be stored in ado.json and used in .mcp.json env vars).
+**Question 3: Personal Access Token**
+- Question: "Enter your Azure DevOps PAT (Personal Access Token)"
+- Header: "PAT"
+- Let user type the PAT value
+- Note: PAT is stored only in .mcp.json (gitignored), not in ado.json
 
 #### Step 3: Configure Filters
 
@@ -230,39 +227,29 @@ Use AskUserQuestion with proposed defaults:
   1. "Architectural (Recommended)" - Focus on architectural work items
   2. "Business" - Business value items
   3. "No filter" - Show all value areas
-  4. "Other" - Custom value area
 
 **Question 5: Work Item Types**
 - Question: "Which work item types to include?"
 - Header: "Types"
 - MultiSelect: true
-- Options:
-  1. "User Story"
-  2. "Task"
-  3. "Bug"
-  4. "Feature"
+- Options: "User Story", "Task", "Bug", "Feature"
 - Default: All selected
 
 **Question 6: Work Item States**
 - Question: "Which states to include?"
 - Header: "States"
 - MultiSelect: true
-- Options:
-  1. "New"
-  2. "Active"
-  3. "Resolved"
-  4. "Closed"
+- Options: "New", "Active", "Resolved", "Closed"
 - Default: New, Active, Resolved
 
-#### Step 4: Update Configuration Files
+#### Step 4: Update Filter Config
 
-**Update `.ai/config/ado.json`:**
+**Update `.ai/config/ado.json`** (filters only, no credentials):
 ```json
 {
-  "connection": {
+  "project": {
     "organizationUrl": "<user-provided>",
-    "project": "<user-provided>",
-    "pat": "<if-provided-or-empty>"
+    "name": "<user-provided>"
   },
   "filters": {
     "valueArea": "<selected>",
@@ -272,9 +259,9 @@ Use AskUserQuestion with proposed defaults:
 }
 ```
 
-#### Step 5: Configure MCP Server
+#### Step 5: Update MCP Server Config
 
-Update `.mcp.json` with the PAT-based configuration (no browser popup):
+**Update `.mcp.json`** (credentials stored here only):
 ```json
 {
   "mcpServers": {
@@ -292,11 +279,6 @@ Update `.mcp.json` with the PAT-based configuration (no browser popup):
   }
 }
 ```
-
-Replace placeholders with values from `.ai/config/ado.json`:
-- `<organization-url>` → `connection.organizationUrl`
-- `<pat-value>` → `connection.pat`
-- `<project-name>` → `connection.project`
 
 #### Step 6: Test Connection
 

@@ -1,11 +1,10 @@
 {
   "$schema": "./ado.schema.json",
-  "description": "Azure DevOps MCP configuration - preserved after WOF removal. Run /wof configure-ado to set up.",
+  "description": "Azure DevOps work item filters - preserved after WOF removal. Run /wof configure-ado to set up. Connection credentials are stored in .mcp.json.",
 
-  "connection": {
+  "project": {
     "organizationUrl": "",
-    "project": "",
-    "pat": ""
+    "name": ""
   },
 
   "filters": {
@@ -19,11 +18,5 @@
   "wiqlDefaults": {
     "maxResults": 50,
     "orderBy": "System.ChangedDate DESC"
-  },
-
-  "mcp": {
-    "serverPackage": "@tiberriver256/mcp-server-azure-devops",
-    "authMethod": "pat",
-    "envVars": ["AZURE_DEVOPS_ORG_URL", "AZURE_DEVOPS_AUTH_METHOD", "AZURE_DEVOPS_PAT", "AZURE_DEVOPS_DEFAULT_PROJECT"]
   }
 }

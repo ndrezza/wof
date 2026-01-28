@@ -5,6 +5,17 @@ All notable changes to the Workload Orchestration Framework (WOF) will be docume
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.8] - 2026-01-28
+
+### Fixed
+
+- **Update Mechanism (#2961)** - Fixed `/wof update` to work correctly with latest changes
+  - Updated `WOI-SECTION.md` template to reference v2 config files (connections.json, roles.json) instead of v1 (providers.yaml)
+  - Removed obsolete `Workflows` reference from Quick Reference table
+  - Added missing `/wof configure` and `/wof configure-ado` commands to WOI Commands table
+  - Added ADO template files to `template_only` in sync-manifest.json to prevent orphan deprecation
+    - `config/ado.json`, `scripts/ado-utils.ps1`, `scripts/scan-workitems.ps1`
+
 ## [2.3.7] - 2026-01-28
 
 ### Fixed
