@@ -5,6 +5,15 @@ All notable changes to the Workload Orchestration Framework (WOF) will be docume
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.7] - 2026-01-28
+
+### Fixed
+
+- **ADO Browser Popup (#2957)** - Fixed `/wof configure-ado` to use PAT authentication without browser popup
+  - Updated `templates/config/ado.json.template` to use `@tiberriver256/mcp-server-azure-devops`
+  - Updated `templates/dot-claude/skills/wof/SKILL.md` with PAT-based MCP config
+  - PAT is now the recommended auth method (silent, no browser interaction)
+
 ## [2.3.6] - 2026-01-28
 
 ### Changed

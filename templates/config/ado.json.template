@@ -22,8 +22,8 @@
   },
 
   "mcp": {
-    "domains": ["core", "work", "work-items"],
-    "serverCommand": "npx",
-    "serverArgs": ["-y", "@azure-devops/mcp"]
+    "serverPackage": "@tiberriver256/mcp-server-azure-devops",
+    "authMethod": "pat",
+    "envVars": ["AZURE_DEVOPS_ORG_URL", "AZURE_DEVOPS_AUTH_METHOD", "AZURE_DEVOPS_PAT", "AZURE_DEVOPS_DEFAULT_PROJECT"]
   }
 }

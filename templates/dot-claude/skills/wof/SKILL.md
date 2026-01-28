@@ -214,11 +214,10 @@ Use AskUserQuestion to gather connection details:
 - Question: "How do you want to authenticate?"
 - Header: "Auth"
 - Options:
-  1. "Browser login (Recommended)" - Uses Microsoft account via browser
-  2. "Personal Access Token (PAT)" - For automation/CI scenarios
-  3. "Azure CLI" - Use existing `az login` session
+  1. "Personal Access Token (PAT) (Recommended)" - Silent authentication, no browser popup
+  2. "Azure CLI" - Use existing `az login` session
 
-If PAT selected, ask for the PAT value (will be stored in ado.json).
+Ask for the PAT value (will be stored in ado.json and used in .mcp.json env vars).
 
 #### Step 3: Configure Filters
 
@@ -275,32 +274,35 @@ Use AskUserQuestion with proposed defaults:
 
 #### Step 5: Configure MCP Server
 
-Extract organization name from URL (e.g., `https://dev.azure.com/myorg` -> `myorg`).
-
-Add/update the MCP server using Claude CLI:
-```bash
-claude mcp add --scope project azure-devops -- npx -y @azure-devops/mcp <org-name> -d core work work-items
-```
-
-Or update `.mcp.json` directly:
+Update `.mcp.json` with the PAT-based configuration (no browser popup):
 ```json
 {
   "mcpServers": {
     "azure-devops": {
       "type": "stdio",
       "command": "npx",
-      "args": ["-y", "@azure-devops/mcp", "<org-name>", "-d", "core", "work", "work-items"]
+      "args": ["-y", "@tiberriver256/mcp-server-azure-devops"],
+      "env": {
+        "AZURE_DEVOPS_ORG_URL": "<organization-url>",
+        "AZURE_DEVOPS_AUTH_METHOD": "pat",
+        "AZURE_DEVOPS_PAT": "<pat-value>",
+        "AZURE_DEVOPS_DEFAULT_PROJECT": "<project-name>"
+      }
     }
   }
 }
 ```
 
+Replace placeholders with values from `.ai/config/ado.json`:
+- `<organization-url>` → `connection.organizationUrl`
+- `<pat-value>` → `connection.pat`
+- `<project-name>` → `connection.project`
+
 #### Step 6: Test Connection
 
 Inform user:
-- "MCP server configured. Restart Claude Code to activate."
-- "First use will prompt for Microsoft account login in browser."
-- If PAT was provided: "PAT authentication configured for non-interactive use."
+- "MCP server configured with PAT authentication. Restart Claude Code to activate."
+- "No browser popup required - PAT provides silent authentication."
 
 ---
 
