@@ -238,6 +238,7 @@ git push
 
 **Step 3e: Update Work Item** (if `updateWorkItem: true`)
 - Set state to configured `resolveState` (default: "Resolved")
+- Remove any phase tags (Analysis, Design, Implementation, Validation, QA)
 - Add comment with commit hash if `addComment: true`
 
 #### Step 4: Report Results
