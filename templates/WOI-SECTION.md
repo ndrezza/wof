@@ -32,6 +32,25 @@ This project has the Workload Orchestration Framework installed as a local insta
 | `/wof finish` | Complete work: update WI, bump version, commit, push |
 | `/wof remove` | Remove WOI (preserves config/memory) |
 
+### Specialized Agents
+
+| Agent | Purpose | Model |
+|-------|---------|-------|
+| `ado` | Azure DevOps operations | Haiku |
+
+**ADO Subagent Usage:**
+- Route ALL Azure DevOps operations through the `ado` subagent
+- Returns concise, human-readable summaries (not verbose JSON)
+- Handles: work items, PRs, pipelines, code search, wikis
+
+**When to use:** Any query involving work items, pull requests, pipelines, or ADO search.
+
+**Example routing:**
+```
+User: "get work items"
+→ Route to: Task tool with subagent_type="ado"
+```
+
 ### Multi-Agent Architecture
 
 ```
@@ -47,27 +66,27 @@ This project has the Workload Orchestration Framework installed as a local insta
 │                                                               │
 │      PRIMARY DOES NOT CODE                                    │
 └───────────────────────────────────────────────────────────────┘
-            │                         │                    │
-            ▼                         ▼                    ▼
-┌──────────────────┐  ┌───────────────────────────────────────────┐
-│ VALIDATOR        │  │           DUAL-WORKER SYSTEM              │
-│                  │  │  ┌─────────────────┬─────────────────┐    │
-│ Decision valid.  │  │  │ WORKER-HEAVY    │ WORKER-LITE     │    │
-│ >0.7 confidence  │  │  │                 │                 │    │
-│                  │  │  │ T2+ Complex:    │ T1 Lightweight: │    │
-│                  │  │  │ • Code gen      │ • File search   │    │
-│                  │  │  │ • Testing       │ • Formatting    │    │
-│                  │  │  │ • Refactoring   │ • Navigation    │    │
-│                  │  │  └─────────────────┴─────────────────┘    │
-└──────────────────┘  └───────────────────────────────────────────┘
-                                          │
-                                          ▼
-                              ┌──────────────────┐
-                              │ CRITIC           │
-                              │                  │
-                              │ Skeptical Q&A    │
-                              │ ≥80% viability   │
-                              └──────────────────┘
+      │               │                    │               │
+      ▼               ▼                    ▼               ▼
+┌───────────┐  ┌─────────────────────────────────────┐  ┌───────────┐
+│ VALIDATOR │  │       DUAL-WORKER SYSTEM            │  │ ADO       │
+│           │  │  ┌───────────────┬───────────────┐  │  │ SUBAGENT  │
+│ Decision  │  │  │ WORKER-HEAVY  │ WORKER-LITE   │  │  │ (Haiku)   │
+│ validation│  │  │               │               │  │  │           │
+│ >0.7 conf │  │  │ T2+ Complex:  │ T1 Light:     │  │  │ • Work    │
+│           │  │  │ • Code gen    │ • File search │  │  │   Items   │
+│           │  │  │ • Testing     │ • Formatting  │  │  │ • PRs     │
+│           │  │  │ • Refactoring │ • Navigation  │  │  │ • Pipes   │
+│           │  │  └───────────────┴───────────────┘  │  │           │
+└───────────┘  └─────────────────────────────────────┘  └───────────┘
+                              │
+                              ▼
+                  ┌──────────────────┐
+                  │ CRITIC           │
+                  │                  │
+                  │ Skeptical Q&A    │
+                  │ ≥80% viability   │
+                  └──────────────────┘
 ```
 
 | Component | Role |
@@ -77,6 +96,7 @@ This project has the Workload Orchestration Framework installed as a local insta
 | **Worker-Heavy** | T2+ complex tasks |
 | **Worker-Lite** | T1 lightweight tasks |
 | **Critic** | Quality gate (≥80% viability) |
+| **ADO Subagent** | Azure DevOps operations (concise output) |
 
 ### Task Routing
 

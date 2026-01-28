@@ -5,6 +5,18 @@ All notable changes to the Workload Orchestration Framework (WOF) will be docume
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.4.5] - 2026-01-28
+
+### Added
+
+- **ADO Subagent Routing Instructions (#2966)** - Templates now instruct Claude to use ADO subagent
+  - Added "Specialized Agents" section to WOI-SECTION.md template
+  - Updated architecture diagram to show ADO subagent alongside Worker system
+  - Added ADO subagent to component table
+  - Added ADO operations to routing-rules.md task type mapping
+  - Added ADO keywords to keyword-based routing section
+  - Claude Code now knows to route Azure DevOps operations through the `ado` subagent
+
 ## [2.4.4] - 2026-01-28
 
 ### Added

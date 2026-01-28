@@ -158,6 +158,11 @@ This document defines when tasks should be routed to Worker-Lite (local, fast, f
 | Find implementation | Lite | T1 | Search operation |
 | Understand architecture | Heavy | T3 | Deep analysis |
 | Compare approaches | Heavy | T2 | Reasoning required |
+| **Azure DevOps** | | | |
+| Get/list work items | ADO Subagent | T1 | Concise summaries |
+| Get/list PRs | ADO Subagent | T1 | Concise summaries |
+| Pipeline status | ADO Subagent | T1 | Concise summaries |
+| ADO code search | ADO Subagent | T1 | Concise summaries |
 
 ---
 
@@ -182,6 +187,12 @@ analyze, review, generate, build
 ```
 deploy, production, critical, security,
 comprehensive, thorough, all, entire
+```
+
+### Route to ADO Subagent
+```
+work item, workitem, PR, pull request, pipeline,
+ADO, Azure DevOps, sprint, iteration, backlog
 ```
 
 ---
