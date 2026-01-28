@@ -18,6 +18,7 @@ This project has the Workload Orchestration Framework installed as a local insta
 | Model Tiers | `.ai/config/models.yaml` |
 | AI Connections | `.ai/config/connections.json` |
 | Role Mappings | `.ai/config/roles.json` |
+| Finish Config | `.ai/config/finish.json` |
 
 ### WOI Commands
 
@@ -28,6 +29,7 @@ This project has the Workload Orchestration Framework installed as a local insta
 | `/wof configure` | Configure AI connections and role mappings |
 | `/wof configure-ado` | Configure Azure DevOps integration |
 | `/wof route <task>` | Classify task routing |
+| `/wof finish` | Complete work: update WI, bump version, commit, push |
 | `/wof remove` | Remove WOI (preserves config/memory) |
 
 ### Multi-Agent Architecture

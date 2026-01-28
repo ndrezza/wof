@@ -382,6 +382,7 @@ if (-not $SkipTemplates) {
             "config\roles.json.template",
             "config\credentials.local.json.template",
             "config\ado.json.template",
+            "config\finish.json.template",
             "config\models.yaml.template",
             "config\ai-rules.md.template"
         )
@@ -491,6 +492,7 @@ $userdataPatterns = @(
     "config/connections.json",        # Customized AI connections (v2)
     "config/roles.json",              # Customized role mappings (v2)
     "config/ado.json",                # Azure DevOps PAT, org, project, filters (v2)
+    "config/finish.json",             # Finish workflow configuration (v2)
     # Legacy config format (YAML/PS1)
     "config/credentials.local.ps1",   # API keys, connection strings - CRITICAL (legacy)
     "config/providers.yaml",          # Customized provider settings (legacy)

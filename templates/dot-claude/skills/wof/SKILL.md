@@ -26,6 +26,9 @@ Parse the arguments to determine which WOF command to run.
 | `configure --test-only` | Only test existing connections |
 | `configure-ado` | Configure Azure DevOps integration (MCP server, filters) |
 | `route <task>` | Classify a task and show routing decision |
+| `finish` | Complete current work: update WI, bump version, commit, push |
+| `finish --work-item <id>` | Finish with specific work item ID |
+| `configure finish` | Configure finish workflow behavior |
 | `remove` | Remove WOF scripts (preserves config & memory) |
 | `help` | Show this help information |
 
@@ -179,6 +182,135 @@ Run the remove script:
 powershell -ExecutionPolicy Bypass -File "./.ai/scripts/remove.ps1"
 ```
 Add flags as needed: -DryRun, -Force, -IncludeConfig, -RemoveAll
+
+---
+
+### If arguments contain "finish"
+
+Execute the finish workflow to complete current work.
+
+#### Step 1: Load Configuration
+
+Read finish config from `.ai/config/finish.json`. If not found, use defaults:
+- updateWorkItem: true
+- bumpVersion: true
+- updateChangelog: true
+- commit: true
+- push: true
+
+#### Step 2: Determine Work Item
+
+If `--work-item <id>` is provided, use that ID.
+
+Otherwise, check for an active work item by:
+1. Looking at recent git commits for `(#XXXX)` pattern
+2. Checking `.ai/memory/current-sprint.md` for active work items
+3. If no work item found and ADO is configured, ask user which work item to finish
+
+#### Step 3: Execute Finish Steps
+
+Based on configuration, execute enabled steps in order:
+
+**Step 3a: Bump Version** (if `bumpVersion: true`)
+```bash
+# Read current version
+$version = Get-Content VERSION
+# Bump patch version
+$parts = $version -split '\.'
+$parts[2] = [int]$parts[2] + 1
+$newVersion = $parts -join '.'
+Set-Content VERSION $newVersion
+```
+
+**Step 3b: Update Changelog** (if `updateChangelog: true`)
+- Read CHANGELOG.md
+- Add entry for new version with work item reference
+- Use work item title as description
+
+**Step 3c: Commit** (if `commit: true`)
+- Stage changed files (VERSION, CHANGELOG.md, and any other modified files)
+- Create commit with message from template: `{description} (#{workItemId})`
+
+**Step 3d: Push** (if `push: true`)
+```bash
+git push
+```
+
+**Step 3e: Update Work Item** (if `updateWorkItem: true`)
+- Set state to configured `resolveState` (default: "Resolved")
+- Add comment with commit hash if `addComment: true`
+
+#### Step 4: Report Results
+
+Display summary:
+- Version bumped: X.Y.Z → X.Y.Z+1
+- Work item #XXXX resolved
+- Commit: <hash>
+- Pushed to: origin/main
+
+---
+
+### If arguments contain "configure finish"
+
+Configure the finish workflow behavior.
+
+#### Step 1: Load Current Configuration
+
+Read `.ai/config/finish.json` or show defaults if not found.
+
+#### Step 2: Ask User What To Configure
+
+Use AskUserQuestion:
+- Question: "Which finish steps should be enabled?"
+- Header: "Steps"
+- MultiSelect: true
+- Options:
+  1. "Update work item" - Set WI to Resolved
+  2. "Bump version" - Increment VERSION file
+  3. "Update changelog" - Add entry to CHANGELOG.md
+  4. "Commit changes" - Git commit
+  5. "Push to remote" - Git push
+
+#### Step 3: Configure Work Item Settings
+
+If "Update work item" is enabled:
+- Question: "What state should work items be set to?"
+- Header: "WI State"
+- Options: "Resolved", "Closed", "Done"
+
+#### Step 4: Configure Version Settings
+
+If "Bump version" is enabled:
+- Question: "What type of version bump?"
+- Header: "Bump Type"
+- Options: "patch (x.y.Z)", "minor (x.Y.0)", "manual (ask each time)"
+
+#### Step 5: Save Configuration
+
+Write to `.ai/config/finish.json`:
+```json
+{
+  "steps": {
+    "updateWorkItem": true/false,
+    "bumpVersion": true/false,
+    "updateChangelog": true/false,
+    "commit": true/false,
+    "push": true/false
+  },
+  "workItem": {
+    "resolveState": "Resolved",
+    "addComment": true
+  },
+  "version": {
+    "file": "VERSION",
+    "bumpType": "patch"
+  }
+}
+```
+
+#### Step 6: Confirm
+
+Display saved configuration and inform user they can now use `/wof finish`.
 
 ---
 

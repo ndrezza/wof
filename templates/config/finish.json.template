@@ -1,0 +1,23 @@
+{
+  "steps": {
+    "updateWorkItem": true,
+    "bumpVersion": true,
+    "updateChangelog": true,
+    "commit": true,
+    "push": true
+  },
+  "workItem": {
+    "resolveState": "Resolved",
+    "addComment": true
+  },
+  "version": {
+    "file": "VERSION",
+    "bumpType": "patch"
+  },
+  "changelog": {
+    "file": "CHANGELOG.md"
+  },
+  "git": {
+    "commitMessageTemplate": "{description} (#{workItemId})"
+  }
+}

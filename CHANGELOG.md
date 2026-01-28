@@ -5,6 +5,16 @@ All notable changes to the Workload Orchestration Framework (WOF) will be docume
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.4.0] - 2026-01-28
+
+### Added
+
+- **Finish Workflow Skill (#2959)** - New `/wof finish` command to complete work
+  - Automates: update work item, bump version, update changelog, commit, push
+  - Configurable via `/wof configure finish`
+  - New config file: `.ai/config/finish.json`
+  - Supports `--work-item <id>` flag for explicit work item selection
+
 ## [2.3.9] - 2026-01-28
 
 ### Changed
