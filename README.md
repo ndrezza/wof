@@ -38,6 +38,26 @@ https://raw.githubusercontent.com/ndrezza/wof/main/AI-SETUP.md
 - WOF v2.0.0 is the framework version in this repository
 - When you run `setup.ps1` on your project, you create a WOI (instance) based on WOF v2.0.0
 
+## Philosophy
+
+**The Problem:**
+AI assistants and developers alike share a tendency: confidence that outruns understanding. Given a vague requirement, both will often dive straight into implementation—burning time, tokens, and effort on work that misses the mark. The cost of a 2-minute clarification is always less than a 2-hour redo.
+
+**WOF's Core Principles:**
+
+1. **Understand before executing.** Every task must be understood before work begins. Assumptions are validated, not acted upon.
+
+2. **Verify objectively.** If acceptance criteria are clear and testable upfront, work can be verified automatically. This scales—both for regression testing across releases and for validating AI output.
+
+3. **Multi-model validation reduces correlated errors.** When Primary (Claude), Validator (GPT-4), and Critic (another provider) independently agree, confidence increases. Different models hallucinate differently—consensus across providers is meaningful.
+
+4. **Structure enables autonomy.** Clear requirements, automated tests, and validation gates don't constrain work—they enable independence. A developer who understands the domain can work from a one-liner because shared context fills the gaps.
+
+5. **Trust through verification, not confidence.** Neither AI nor human output is trusted because the author is confident. Trust comes from passing objective checks.
+
+**The Outcome:**
+Reduced rework. Increased autonomy. Reliable releases with automated regression testing. Work that meets requirements the first time.
+
 ## Overview
 
 This framework provides:

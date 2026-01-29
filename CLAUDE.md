@@ -1,129 +1,5 @@
 # WOF - Workload Orchestration Framework
 
-<!-- WOI-SECTION-START - Do not edit this section manually, managed by WOF -->
-## Workload Orchestration Instance (WOI)
-
-> **WOI v2.4.5** installed
-
-This project has the Workload Orchestration Framework installed as a local instance (WOI).
-
-### WOI Quick Reference
-
-| Resource | Location |
-|----------|----------|
-| Architecture | `.ai/memory/architecture.md` |
-| Conventions | `.ai/memory/conventions.md` |
-| Current Sprint | `.ai/memory/current-sprint.md` |
-| Routing Rules | `.ai/config/routing-rules.md` |
-| Routing Script | `.ai/scripts/get-worker-routing.ps1` |
-| Agent Definitions | `.ai/agents/` |
-| Model Tiers | `.ai/config/models.yaml` |
-| AI Connections | `.ai/config/connections.json` |
-| Role Mappings | `.ai/config/roles.json` |
-| Finish Config | `.ai/config/finish.json` |
-
-### WOI Commands
-
-| Command | Description |
-|---------|-------------|
-| `/wof status` | Check orchestration health |
-| `/wof update` | Update to latest WOF version |
-| `/wof configure` | Configure AI connections and role mappings |
-| `/wof configure-ado` | Configure Azure DevOps integration |
-| `/wof route <task>` | Classify task routing |
-| `/wof finish` | Complete work: update WI, bump version, commit, push |
-| `/wof remove` | Remove WOI (preserves config/memory) |
-
-### Specialized Agents
-
-| Agent | Purpose | Model |
-|-------|---------|-------|
-| `ado` | Formats ADO JSON into human-readable summaries | Haiku |
-
-**ADO Subagent Usage (Relay Pattern):**
-
-The `ado` subagent is a **formatter**, not a tool-caller. Subagents cannot access MCP tools directly.
-
-**Workflow:**
-1. Primary calls `mcp__azure-devops__*` tools directly
-2. Primary passes raw JSON to `ado` subagent for formatting
-3. Subagent returns concise, human-readable summary
-
-**Example:**
-```
-1. Primary: Call mcp__azure-devops__list_work_items
-2. Primary: Task tool → subagent_type="ado" → "Format this: <raw JSON>"
-3. Subagent: Returns formatted table
-```
-
-**When to use:** After any ADO MCP tool call, to format verbose JSON into clean output.
-
-**IMPORTANT - Handling Subagent Responses:**
-When the subagent returns a formatted response, do NOT re-echo it. The output is already displayed to the user. Just acknowledge completion or move to the next step.
-
-### Multi-Agent Architecture
-
-```
-┌───────────────────────────────────────────────────────────────┐
-│  PRIMARY (Opus 4.5) - ORCHESTRATOR                            │
-│  Anthropic Direct API                                         │
-│                                                               │
-│  • Understand requirements                                    │
-│  • Classify task complexity (T1/T2+)                          │
-│  • Route to appropriate Worker                                │
-│  • Consult Validator for decisions                            │
-│  • Synthesize and respond                                     │
-│                                                               │
-│      PRIMARY DOES NOT CODE                                    │
-└───────────────────────────────────────────────────────────────┘
-      │               │                    │               │
-      ▼               ▼                    ▼               ▼
-┌───────────┐  ┌─────────────────────────────────────┐  ┌───────────┐
-│ VALIDATOR │  │       DUAL-WORKER SYSTEM            │  │ ADO       │
-│           │  │  ┌───────────────┬───────────────┐  │  │ SUBAGENT  │
-│ Decision  │  │  │ WORKER-HEAVY  │ WORKER-LITE   │  │  │ (Haiku)   │
-│ validation│  │  │               │               │  │  │           │
-│ >0.7 conf │  │  │ T2+ Complex:  │ T1 Light:     │  │  │ • Work    │
-│           │  │  │ • Code gen    │ • File search │  │  │   Items   │
-│           │  │  │ • Testing     │ • Formatting  │  │  │ • PRs     │
-│           │  │  │ • Refactoring │ • Navigation  │  │  │ • Pipes   │
-│           │  │  └───────────────┴───────────────┘  │  │           │
-└───────────┘  └─────────────────────────────────────┘  └───────────┘
-                              │
-                              ▼
-                  ┌──────────────────┐
-                  │ CRITIC           │
-                  │                  │
-                  │ Skeptical Q&A    │
-                  │ ≥80% viability   │
-                  └──────────────────┘
-```
-
-| Component | Role |
-|-----------|------|
-| **Primary** | Orchestrator (NO coding) |
-| **Validator** | Decision validation (>0.7 confidence) |
-| **Worker-Heavy** | T2+ complex tasks |
-| **Worker-Lite** | T1 lightweight tasks |
-| **Critic** | Quality gate (≥80% viability) |
-| **ADO Subagent** | Azure DevOps operations (concise output) |
-
-### Task Routing
-
-**T1 - Lightweight (→ Worker-Lite):**
-- File search, glob, grep operations
-- Simple formatting and linting
-- Code navigation and location
-
-**T2+ - Complex (→ Worker-Heavy):**
-- Code generation (> 20 lines)
-- Test writing and execution
-- Refactoring, architecture, security
-
-**Routing:** See `.ai/config/routing-rules.md`
-<!-- WOI-SECTION-END -->
-
-
 > Auto-loaded by Claude Code. This document describes the WOF framework itself.
 
 ## What is WOF?
@@ -162,27 +38,35 @@ wof/
 └── VERSION                  # Current version
 ```
 
-## Inception Mode
+## This Repository
 
-This repository is special - it's **both WOF and a WOI**:
+This repository contains **WOF source code only**. No WOI is installed here.
 
-1. **WOF** - The framework source code lives here
-2. **WOI** - An instance can be installed here for self-orchestration
+| Path | Purpose | Git Status |
+|------|---------|------------|
+| `core/` | Framework scripts and agents | Tracked |
+| `templates/` | Templates for WOI installations | Tracked |
+| `setup.ps1`, `sync.ps1` | Installation and sync scripts | Tracked |
+| `CLAUDE.md`, `README.md` | Documentation | Tracked |
+| `examples/` | Sample projects for testing WOI | Tracked |
 
-This allows using AI orchestration to develop WOF itself.
-
-| Path | Is WOF? | Is WOI? | Git Status |
-|------|---------|---------|------------|
-| `core/`, `templates/`, `setup.ps1`, `sync.ps1` | Yes | No | Tracked |
-| `CLAUDE.md`, `README.md`, `VERSION` | Yes | No | Tracked |
-| `.ai/` (when installed) | No | Yes | Gitignored |
-| `.claude/` (when installed) | No | Yes | Gitignored |
-
-**When editing this repo:**
-- Changes to `core/`, `templates/`, scripts → You're improving **WOF**
-- Changes to `.ai/`, `.claude/` → You're configuring the local **WOI**
+**Why no WOI here?** Installing WOI in the WOF repo creates an "inception paradox"—the same files exist as both source (in `core/`) and instance (in `.ai/`). This causes confusion about which files to edit. To keep WOF development clean, test WOI in separate projects or in `examples/`.
 
 ## Development Guidelines
+
+### Core Principles
+
+These are not suggestions. They are requirements.
+
+1. **Understand the assignment before starting work.** If requirements are unclear, ask. A 2-minute clarification costs less than a 2-hour redo. Do not assume—validate.
+
+2. **Work must be verifiable.** If you cannot describe how to test that your work is correct, you do not yet understand the requirement. Define acceptance criteria before implementation.
+
+3. **Multi-agent validation exists for a reason.** The Validator and Critic are not bureaucracy—they catch errors that self-review misses. Engage them honestly; do not game the process.
+
+4. **Objective verification builds trust.** Your confidence is not evidence. Passing tests, meeting acceptance criteria, and surviving skeptical review—these build trust.
+
+5. **Automated testing is non-negotiable for anything that will be maintained.** Every new feature needs tests that will catch regressions. Manual testing does not scale; agile projects die without automation.
 
 ### Critical Behavioral Rules
 
@@ -245,28 +129,14 @@ If something fails:
 3. **Security issue** → Block commit, report to user
 4. **Unclear requirement** → Ask user, don't assume
 
-## Installing WOI in This Repo
+## Testing WOI
 
-To enable AI orchestration for WOF development itself:
-
-```powershell
-# From the wof directory
-.\setup.ps1 -TargetPath . -SolutionName "WOF" -Force
-```
-
-This will:
-- Create `.ai/` with memory, config, scripts
-- Create `.claude/` with settings and skills
-- Inject a WOI-SECTION into this CLAUDE.md with orchestration instructions
-
-To remove the WOI:
+To test WOI installations, use a separate project or the `examples/` directory:
 
 ```powershell
-.\.ai\scripts\remove.ps1
+# Create a test project
+mkdir C:\code\test-project
+.\setup.ps1 -TargetPath "C:\code\test-project" -SolutionName "TestProject"
 ```
 
-This removes the WOI files and the WOI-SECTION, leaving this base CLAUDE.md intact.
-
----
-
-*This document describes the WOF framework. When a WOI is installed, additional orchestration instructions appear below.*
+**Not recommended:** Installing WOI in this repo (`.\setup.ps1 -TargetPath .`) creates duplicate files and confusion. If you do this anyway, remove it with `.\.ai\scripts\remove.ps1`.
