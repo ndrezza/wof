@@ -5,6 +5,19 @@ All notable changes to the Workload Orchestration Framework (WOF) will be docume
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.6.2] - 2026-01-31
+
+### Changed
+
+- **Setup now copies philosophy and workflows** - WOI installations now include:
+  - `.ai/philosophy/` - Core principles (test-driven improvement)
+  - `.ai/workflows/` - Process definitions (task execution workflow)
+  - New users get full reference documentation locally
+
+- **Updated sync-manifest.json** - Philosophy files now sync with customization protection
+
+- **Updated README.md** - Project structure shows new agent, philosophy, and workflow files
+
 ## [2.6.1] - 2026-01-31
 
 ### Added

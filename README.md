@@ -234,8 +234,14 @@ your-project/
     │   ├── architecture.md        # System architecture
     │   ├── conventions.md         # Coding standards
     │   └── current-sprint.md      # Active work context
-    ├── agents/                    # Agent persona definitions
+    ├── agents/                    # Agent role definitions
+    │   ├── orchestrator-claude.md # Primary coordinator
+    │   ├── validator-claude.md    # Decision validator
+    │   └── critic-claude.md       # Quality gate
+    ├── philosophy/                # Core principles
+    │   └── test-driven-improvement.md  # Three Laws of TDI
     └── workflows/                 # Process definitions
+        └── task-execution-workflow.md  # 6-phase workflow
 ```
 
 ## Core Scripts

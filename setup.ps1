@@ -177,6 +177,7 @@ $dirs = @(
     (Join-Path $aiDir "memory"),
     (Join-Path $aiDir "agents"),
     (Join-Path $aiDir "workflows"),
+    (Join-Path $aiDir "philosophy"),
     (Join-Path $aiDir "state"),
     (Join-Path $aiDir "logs")
 )
@@ -246,6 +247,40 @@ $agentsTarget = Join-Path $aiDir "agents"
 if (Test-Path $agentsSource) {
     Get-ChildItem $agentsSource -Filter "*.md" | ForEach-Object {
         $destFile = Join-Path $agentsTarget $_.Name
+        if ((Test-Path $destFile) -and -not $Force) {
+            Write-Warn "    Skipping (exists): $($_.Name)"
+        } else {
+            Copy-Item $_.FullName $destFile -Force
+            Write-Host "    Copied: $($_.Name)" -ForegroundColor Gray
+        }
+    }
+}
+
+# Step 4b: Copy core philosophy
+Write-Step "Copying philosophy documents..."
+$philosophySource = Join-Path $coreDir "philosophy"
+$philosophyTarget = Join-Path $aiDir "philosophy"
+
+if (Test-Path $philosophySource) {
+    Get-ChildItem $philosophySource -Filter "*.md" | ForEach-Object {
+        $destFile = Join-Path $philosophyTarget $_.Name
+        if ((Test-Path $destFile) -and -not $Force) {
+            Write-Warn "    Skipping (exists): $($_.Name)"
+        } else {
+            Copy-Item $_.FullName $destFile -Force
+            Write-Host "    Copied: $($_.Name)" -ForegroundColor Gray
+        }
+    }
+}
+
+# Step 4c: Copy core workflows
+Write-Step "Copying workflow definitions..."
+$workflowsSource = Join-Path $coreDir "workflows"
+$workflowsTarget = Join-Path $aiDir "workflows"
+
+if (Test-Path $workflowsSource) {
+    Get-ChildItem $workflowsSource -Filter "*.md" | ForEach-Object {
+        $destFile = Join-Path $workflowsTarget $_.Name
         if ((Test-Path $destFile) -and -not $Force) {
             Write-Warn "    Skipping (exists): $($_.Name)"
         } else {
