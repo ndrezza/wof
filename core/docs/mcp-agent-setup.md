@@ -248,7 +248,9 @@ Local inference is CPU/GPU bound. For better performance:
 
 ## Setup Commands
 
-Run these commands in your project directory to register the MCP servers:
+Run these commands in your project directory to register the MCP servers.
+
+### Basic Setup (All use Anthropic API)
 
 ```bash
 # Validator - for independent decision verification
@@ -259,6 +261,66 @@ claude mcp add --scope local critic-claude -- claude mcp serve
 
 # Worker Heavy - for complex implementation tasks
 claude mcp add --scope local worker-claude-heavy -- claude mcp serve
+```
+
+### Hybrid Setup (Local LLM + Cloud API)
+
+To route specific MCP servers to local LLM while others use cloud API, use the `-e` flag to set environment variables:
+
+**Prerequisites:**
+1. Start the claude-code-proxy (translates Anthropic API → OpenAI API):
+   ```bash
+   cd claude-code-proxy
+   uv run uvicorn server:app --host 0.0.0.0 --port 8082
+   ```
+2. Ensure local LLM server is running (e.g., LM Studio on port 1234)
+
+**Configure MCP servers with routing:**
+
+```bash
+# Validator → Local LLM via proxy (cost-free validation)
+claude mcp add --scope local validator-claude \
+  -e ANTHROPIC_BASE_URL=http://localhost:8082 \
+  -e ANTHROPIC_API_KEY=local \
+  -- claude mcp serve
+
+# Critic → Local LLM via proxy (cost-free quality checks)
+claude mcp add --scope local critic-claude \
+  -e ANTHROPIC_BASE_URL=http://localhost:8082 \
+  -e ANTHROPIC_API_KEY=local \
+  -- claude mcp serve
+
+# Worker Heavy → Azure Foundry (enterprise compliance)
+claude mcp add --scope local worker-claude-heavy \
+  -e CLAUDE_CODE_USE_FOUNDRY=1 \
+  -e ANTHROPIC_FOUNDRY_BASE_URL=https://your-resource.services.ai.azure.com/anthropic \
+  -e ANTHROPIC_FOUNDRY_API_KEY=your-key \
+  -- claude mcp serve
+```
+
+**Architecture with hybrid routing:**
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  Claude Code (Orchestrator)                                                   │
+│                                                                               │
+│  ┌─────────────────────┐  ┌─────────────────────┐  ┌─────────────────────┐ │
+│  │ validator-claude    │  │ critic-claude       │  │ worker-claude-heavy │ │
+│  │ env: BASE_URL=:8082 │  │ env: BASE_URL=:8082 │  │ env: FOUNDRY=1      │ │
+│  └──────────┬──────────┘  └──────────┬──────────┘  └──────────┬──────────┘ │
+└─────────────┼────────────────────────┼────────────────────────┼─────────────┘
+              │                        │                        │
+              ▼                        ▼                        ▼
+     ┌────────────────┐       ┌────────────────┐       ┌────────────────┐
+     │ claude-code-   │       │ claude-code-   │       │ Azure Foundry  │
+     │ proxy (:8082)  │       │ proxy (:8082)  │       │                │
+     └───────┬────────┘       └───────┬────────┘       │ Claude Sonnet  │
+             │                        │                └────────────────┘
+             ▼                        ▼
+     ┌────────────────┐       ┌────────────────┐
+     │ LM Studio      │       │ LM Studio      │
+     │ (:1234)        │       │ (:1234)        │
+     │ Local LLM      │       │ Local LLM      │
+     └────────────────┘       └────────────────┘
 ```
 
 After running these commands, restart Claude Code to load the new MCP servers.

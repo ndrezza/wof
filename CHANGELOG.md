@@ -5,6 +5,43 @@ All notable changes to the Workload Orchestration Framework (WOF) will be docume
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.0.5] - 2026-01-31
+
+### Added
+
+- **Hybrid MCP routing with environment variables** - MCP servers can now be configured to route to different AI backends using the `-e` flag
+  - Validator/Critic can use local LLM via proxy for cost-free validation
+  - Worker-Heavy can use Azure Foundry for enterprise compliance
+  - Each MCP server can have independent API endpoint configuration
+
+### Example Configuration
+
+```bash
+# Local LLM routing (via claude-code-proxy)
+claude mcp add --scope local validator-claude \
+  -e ANTHROPIC_BASE_URL=http://localhost:8082 \
+  -e ANTHROPIC_API_KEY=local \
+  -- claude mcp serve
+
+# Azure Foundry routing
+claude mcp add --scope local worker-claude-heavy \
+  -e CLAUDE_CODE_USE_FOUNDRY=1 \
+  -e ANTHROPIC_FOUNDRY_BASE_URL=https://your-resource.services.ai.azure.com/anthropic \
+  -e ANTHROPIC_FOUNDRY_API_KEY=your-key \
+  -- claude mcp serve
+```
+
+### Architecture
+
+```
+Claude Code (Orchestrator)
+├── validator-claude  → proxy:8082 → LM Studio → Local LLM
+├── critic-claude     → proxy:8082 → LM Studio → Local LLM
+└── worker-claude-heavy → Azure Foundry → Claude Sonnet
+```
+
+This enables cost-optimized workflows where validation uses free local inference while heavy work uses cloud APIs.
+
 ## [3.0.4] - 2026-01-31
 
 ### Fixed

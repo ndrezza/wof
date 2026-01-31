@@ -26,26 +26,35 @@ Each agent role runs as a separate Claude Code MCP server with full tool access.
 
 If MCP servers aren't configured yet, run these commands:
 
+**Basic setup (all use Anthropic API):**
 ```bash
 claude mcp add --scope local validator-claude -- claude mcp serve
 claude mcp add --scope local critic-claude -- claude mcp serve
 claude mcp add --scope local worker-claude-heavy -- claude mcp serve
 ```
 
-Then **restart Claude Code** to load the servers.
-
-### Microsoft Foundry Configuration (Optional)
-
-To route MCP servers through **Microsoft Foundry (Azure)** for enterprise compliance:
-
+**Hybrid setup (Local LLM + Cloud API):**
 ```bash
-# Set these BEFORE starting Claude Code
-export CLAUDE_CODE_USE_FOUNDRY=1
-export ANTHROPIC_FOUNDRY_RESOURCE=your-resource-name
-export ANTHROPIC_FOUNDRY_API_KEY=your-key  # or use: az login
+# First start the proxy: uv run uvicorn server:app --host 0.0.0.0 --port 8082
+
+# Validator/Critic → Local LLM (cost-free)
+claude mcp add --scope local validator-claude \
+  -e ANTHROPIC_BASE_URL=http://localhost:8082 -e ANTHROPIC_API_KEY=local \
+  -- claude mcp serve
+
+claude mcp add --scope local critic-claude \
+  -e ANTHROPIC_BASE_URL=http://localhost:8082 -e ANTHROPIC_API_KEY=local \
+  -- claude mcp serve
+
+# Worker Heavy → Azure Foundry (enterprise)
+claude mcp add --scope local worker-claude-heavy \
+  -e CLAUDE_CODE_USE_FOUNDRY=1 \
+  -e ANTHROPIC_FOUNDRY_BASE_URL=https://your-resource.services.ai.azure.com/anthropic \
+  -e ANTHROPIC_FOUNDRY_API_KEY=your-key \
+  -- claude mcp serve
 ```
 
-When set, all MCP servers connect through Azure instead of direct Anthropic API.
+Then **restart Claude Code** to load the servers.
 
 ### Example: Validate a Decision
 
