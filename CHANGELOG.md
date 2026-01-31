@@ -18,6 +18,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Per-question evaluation for low-capability models** - Instead of asking for complex JSON, evaluates each answer with a simple "YES or NO" question
 
+### Fixed
+
+- **Fixed hashtable stringification in low-capability evaluation** - Changed `return @{...}` to `return [PSCustomObject]@{...}` in `Evaluate-Answers-Low` to prevent "System.Collections.Hashtable" string conversion error
+
 ### Changed
 
 - **connections.json template updated to v2.1.0** - Added `capability` field to all connections:

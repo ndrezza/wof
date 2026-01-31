@@ -616,7 +616,8 @@ Is this answer acceptable? Reply only YES or NO.
     $viability = [Math]::Round($passCount / $totalCount, 2)
     $passed = $viability -ge $Threshold
 
-    return @{
+    # Return as PSCustomObject for consistent handling
+    return [PSCustomObject]@{
         evaluations = $evaluations
         overall_viability = $viability
         passed = $passed
