@@ -5,6 +5,36 @@ All notable changes to the Workload Orchestration Framework (WOF) will be docume
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.0.3] - 2026-01-31
+
+### Added
+
+- **Local LLM configuration documentation** - MCP servers can now use local models (Ollama, LM Studio, vLLM) instead of cloud APIs
+  - Method 1: Ollama with native Anthropic API compatibility (simplest)
+  - Method 2: LM Studio/vLLM with claude-code-proxy translation layer
+  - Method 3: Hybrid setup - MCP server with local backend while main session uses cloud
+  - Performance considerations and troubleshooting guide
+  - Architecture diagrams showing proxy setup
+
+### Why This Matters
+
+Local LLMs provide:
+- **Zero API cost** - Free inference after hardware investment
+- **Complete privacy** - Code never leaves your machine
+- **Offline capability** - Work without internet connection
+
+**Recommended use cases:**
+- Worker-Lite tasks (search, format, simple queries)
+- Cost-sensitive high-volume operations
+- Air-gapped/offline environments
+
+**Setup example:**
+```bash
+# Add MCP server using local LLM
+claude mcp add --scope user local-llm-worker -- \
+  bash -c 'ANTHROPIC_BASE_URL=http://localhost:8082 ANTHROPIC_API_KEY=local claude mcp serve'
+```
+
 ## [3.0.2] - 2026-01-31
 
 ### Added

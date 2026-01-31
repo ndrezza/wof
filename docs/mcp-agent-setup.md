@@ -79,6 +79,173 @@ export ANTHROPIC_DEFAULT_OPUS_MODEL='claude-opus-4-1'
 
 When these variables are set, both the main Claude Code instance AND all MCP servers will connect through Microsoft Foundry.
 
+## Local LLM Configuration (Optional)
+
+You can configure MCP servers to use **local LLMs** (Ollama, LM Studio, vLLM) instead of cloud APIs. This provides:
+- **Zero API cost** - Run inference locally
+- **Complete privacy** - Code never leaves your machine
+- **Offline capability** - Work without internet
+
+### Method 1: Ollama (Simplest)
+
+Ollama v0.14.0+ has native Anthropic Messages API compatibility:
+
+```bash
+# Install Ollama and pull a model (64k+ context recommended)
+ollama pull qwen3-coder
+
+# Set environment variables before starting Claude Code
+export ANTHROPIC_BASE_URL="http://localhost:11434"
+export ANTHROPIC_AUTH_TOKEN="ollama"
+export ANTHROPIC_API_KEY=""
+
+# Start Claude Code with specific model
+claude --model qwen3-coder
+```
+
+**Recommended models:** `qwen3-coder`, `deepseek-coder-v2`, `codellama:70b`
+
+### Method 2: LM Studio / vLLM with Proxy
+
+For OpenAI-compatible servers (LM Studio, vLLM), use a translation proxy:
+
+#### Step 1: Install the Proxy
+
+```bash
+# Install uv (fast Python package manager)
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Clone and setup the proxy
+git clone --depth 1 https://github.com/1rgs/claude-code-proxy.git
+cd claude-code-proxy
+uv sync
+```
+
+#### Step 2: Configure for Your Local Server
+
+Create `.env` file:
+
+```bash
+# For LM Studio (default port 1234)
+PREFERRED_PROVIDER="openai"
+OPENAI_BASE_URL="http://localhost:1234/v1"
+OPENAI_API_KEY="lm-studio"
+BIG_MODEL="your-model-name"
+SMALL_MODEL="your-model-name"
+
+# For vLLM (default port 8000)
+# OPENAI_BASE_URL="http://localhost:8000/v1"
+```
+
+#### Step 3: Start the Proxy
+
+```bash
+# On Windows, set encoding to avoid Unicode errors
+export PYTHONIOENCODING=utf-8
+
+# Start the proxy
+uv run uvicorn server:app --host 0.0.0.0 --port 8082
+```
+
+#### Step 4: Configure Claude Code
+
+```bash
+export ANTHROPIC_BASE_URL="http://localhost:8082"
+export ANTHROPIC_API_KEY="local"
+claude
+```
+
+### Method 3: MCP Server with Local LLM Backend
+
+Register an MCP server that uses a local LLM while your main session uses cloud API:
+
+```bash
+# Add MCP server pointing to local proxy
+claude mcp add --scope user local-llm-worker -- \
+  bash -c 'ANTHROPIC_BASE_URL=http://localhost:8082 ANTHROPIC_API_KEY=local claude mcp serve'
+```
+
+This creates a hybrid setup:
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│  Main Claude Code Session                                            │
+│  Model: Claude Opus 4.5 (Anthropic API)                             │
+│                                                                      │
+│  Can invoke: mcp__local-llm-worker__Task                            │
+│              ↓                                                       │
+│  ┌─────────────────────────────────────────────────────────────┐   │
+│  │  local-llm-worker (MCP Server)                               │   │
+│  │  Model: Local LLM via proxy                                  │   │
+│  │  Has: Full tool access (Read, Write, Bash, etc.)            │   │
+│  └─────────────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+### Architecture with Local LLMs
+
+```
+┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
+│  Claude Code    │     │  claude-code-   │     │  Local Model    │
+│  (MCP Client)   │────►│  proxy          │────►│  Server         │
+│                 │     │  :8082          │     │  (LM Studio)    │
+│  Anthropic API  │     │  Translates     │     │  :1234          │
+│  Format         │     │  API formats    │     │  OpenAI Format  │
+└─────────────────┘     └─────────────────┘     └─────────────────┘
+```
+
+### Performance Considerations
+
+| Factor | Cloud API | Local LLM |
+|--------|-----------|-----------|
+| Latency | ~1-3s | ~10-60s (depends on hardware) |
+| Context window | 200k tokens | Model-dependent (aim for 64k+) |
+| Quality | Best (Opus/Sonnet) | Good for simple tasks |
+| Cost | Pay per token | Free after hardware |
+| Privacy | Data sent to cloud | Fully local |
+
+**Recommendation:** Use local LLMs for:
+- Worker-Lite tasks (search, format, simple queries)
+- Cost-sensitive high-volume operations
+- Air-gapped/offline environments
+
+Use cloud API for:
+- Complex reasoning (Validator, Critic)
+- Code generation requiring high quality
+- Tasks needing large context windows
+
+### Troubleshooting Local LLMs
+
+#### "Unicode encode error" on Windows
+```bash
+export PYTHONIOENCODING=utf-8
+```
+
+#### "Model not found"
+Verify the model is loaded in your local server:
+```bash
+# LM Studio
+curl http://localhost:1234/v1/models
+
+# Ollama
+ollama list
+```
+
+#### "Connection refused"
+Ensure your local model server is running:
+```bash
+# Check LM Studio
+curl http://localhost:1234/v1/models
+
+# Check proxy
+curl http://localhost:8082/
+```
+
+#### "Slow responses"
+Local inference is CPU/GPU bound. For better performance:
+- Use a smaller model (7B-13B parameters)
+- Enable GPU acceleration
+- Reduce max_tokens in requests
+
 ## Setup Commands
 
 Run these commands in your project directory to register the MCP servers:
