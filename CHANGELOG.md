@@ -5,6 +5,38 @@ All notable changes to the Workload Orchestration Framework (WOF) will be docume
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.0.0] - 2026-01-31
+
+### Changed - BREAKING
+
+- **MCP servers replace PowerShell scripts for agent invocation** - Validator, Critic, and Worker-Heavy are now invoked via MCP servers instead of REST scripts
+  - `mcp__validator-claude__Task` for validation
+  - `mcp__critic-claude__Task` for quality gate
+  - `mcp__worker-claude-heavy__Task` for complex tasks
+  - Worker-Lite remains REST-based (local model, stateless queries)
+
+### Added
+
+- **MCP Agent Setup Guide** - New `docs/mcp-agent-setup.md` explains architecture and setup commands
+- **Independent verification** - MCP servers have tool access to verify claims (read files, run tests) - no more "blind" validation
+
+### Why This Change
+
+Per the analysis in `docs/agent-communication-methods.md`:
+- REST-based validation is "confidence theater" - Validator only sees what Orchestrator tells it
+- MCP-based validation is "independent verification" - Validator can read files and check claims itself
+- Example: Orchestrator says "small change to utils.js" but Validator can READ utils.js and see it's 2000 lines of critical code
+
+### Migration
+
+Run these commands in your project to set up MCP servers:
+```bash
+claude mcp add --scope local validator-claude -- claude mcp serve
+claude mcp add --scope local critic-claude -- claude mcp serve
+claude mcp add --scope local worker-claude-heavy -- claude mcp serve
+```
+Then restart Claude Code.
+
 ## [2.7.3] - 2026-01-31
 
 ### Changed
