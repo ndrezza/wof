@@ -40,6 +40,45 @@ The analysis in `agent-communication-methods.md` concluded that **MCP servers ar
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
+## Microsoft Foundry Configuration (Optional)
+
+By default, MCP servers use direct Anthropic API. To use **Microsoft Foundry (Azure)** instead, set these environment variables before starting Claude Code:
+
+```bash
+# Enable Microsoft Foundry integration
+export CLAUDE_CODE_USE_FOUNDRY=1
+
+# Azure resource name (replace with your resource name)
+export ANTHROPIC_FOUNDRY_RESOURCE=your-resource-name
+# Or provide the full base URL:
+# export ANTHROPIC_FOUNDRY_BASE_URL=https://your-resource.services.ai.azure.com/anthropic
+
+# Authentication (choose one):
+# Option A: API Key
+export ANTHROPIC_FOUNDRY_API_KEY=your-azure-api-key
+
+# Option B: Microsoft Entra ID (Azure AD)
+# If ANTHROPIC_FOUNDRY_API_KEY is not set, Claude Code uses Azure AD
+# Run: az login
+
+# Model deployment names (optional - uses defaults if not set)
+export ANTHROPIC_DEFAULT_SONNET_MODEL='claude-sonnet-4-5'
+export ANTHROPIC_DEFAULT_HAIKU_MODEL='claude-haiku-4-5'
+export ANTHROPIC_DEFAULT_OPUS_MODEL='claude-opus-4-1'
+```
+
+**Why use Foundry?**
+- Enterprise compliance (data stays in your Azure tenant)
+- Unified billing through Azure
+- Azure RBAC for access control
+- Same models, same capabilities
+
+**Required Azure Permissions:**
+- `Azure AI User` or `Cognitive Services User` role
+- Or custom role with `Microsoft.CognitiveServices/accounts/providers/*` dataAction
+
+When these variables are set, both the main Claude Code instance AND all MCP servers will connect through Microsoft Foundry.
+
 ## Setup Commands
 
 Run these commands in your project directory to register the MCP servers:

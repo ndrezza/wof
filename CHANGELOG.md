@@ -5,6 +5,32 @@ All notable changes to the Workload Orchestration Framework (WOF) will be docume
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.0.2] - 2026-01-31
+
+### Added
+
+- **Microsoft Foundry configuration documentation** - MCP servers can now connect through Microsoft Foundry (Azure) for enterprise compliance
+  - Environment variables: `CLAUDE_CODE_USE_FOUNDRY`, `ANTHROPIC_FOUNDRY_RESOURCE`, `ANTHROPIC_FOUNDRY_API_KEY`
+  - Supports both API key and Microsoft Entra ID authentication
+  - Updated `docs/mcp-agent-setup.md`, `core/docs/mcp-agent-setup.md`, and `AI-SETUP.md`
+
+### Why This Matters
+
+MCP servers using `claude mcp serve` inherit environment variables from the parent process. When Microsoft Foundry variables are set, all agent roles (Validator, Critic, Worker-Heavy) will connect through Azure instead of direct Anthropic API.
+
+**Benefits:**
+- Enterprise compliance (data stays in your Azure tenant)
+- Unified billing through Azure
+- Azure RBAC for access control
+- Same models and capabilities as direct API
+
+**Configuration:**
+```bash
+export CLAUDE_CODE_USE_FOUNDRY=1
+export ANTHROPIC_FOUNDRY_RESOURCE=your-resource-name
+export ANTHROPIC_FOUNDRY_API_KEY=your-key  # or use: az login
+```
+
 ## [3.0.0] - 2026-01-31
 
 ### Changed - BREAKING

@@ -32,6 +32,19 @@ claude mcp add --scope local worker-claude-heavy -- claude mcp serve
 
 Then **restart Claude Code** to load the servers.
 
+### Microsoft Foundry Configuration (Optional)
+
+To route MCP servers through **Microsoft Foundry (Azure)** for enterprise compliance:
+
+```bash
+# Set these BEFORE starting Claude Code
+export CLAUDE_CODE_USE_FOUNDRY=1
+export ANTHROPIC_FOUNDRY_RESOURCE=your-resource-name
+export ANTHROPIC_FOUNDRY_API_KEY=your-key  # or use: az login
+```
+
+When set, all MCP servers connect through Azure instead of direct Anthropic API.
+
 ### Example: Validate a Decision
 
 ```

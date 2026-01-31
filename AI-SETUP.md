@@ -103,6 +103,34 @@ claude mcp add --scope local worker-claude-heavy -- claude mcp serve
 
 **Note:** This step requires Claude Code CLI to be available.
 
+#### Microsoft Foundry Configuration (Optional)
+
+To route MCP servers through **Microsoft Foundry (Azure)** instead of direct Anthropic API, set these environment variables BEFORE starting Claude Code:
+
+```bash
+# Enable Microsoft Foundry integration
+export CLAUDE_CODE_USE_FOUNDRY=1
+
+# Azure resource name
+export ANTHROPIC_FOUNDRY_RESOURCE=your-resource-name
+# Or full base URL:
+# export ANTHROPIC_FOUNDRY_BASE_URL=https://your-resource.services.ai.azure.com/anthropic
+
+# Authentication (choose one):
+# Option A: API Key
+export ANTHROPIC_FOUNDRY_API_KEY=your-azure-api-key
+
+# Option B: Microsoft Entra ID (Azure AD) - if no API key set
+# az login
+```
+
+When these variables are set, both the main Claude Code instance AND all MCP servers (`validator-claude`, `critic-claude`, `worker-claude-heavy`) will connect through Microsoft Foundry.
+
+**Benefits of Foundry:**
+- Enterprise compliance (data stays in your Azure tenant)
+- Unified billing through Azure
+- Azure RBAC for access control
+
 ### Step 6: VERIFY
 
 Run the health check to verify installation:
