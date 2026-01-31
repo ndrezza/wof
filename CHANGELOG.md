@@ -5,6 +5,25 @@ All notable changes to the Workload Orchestration Framework (WOF) will be docume
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.6.4] - 2026-01-31
+
+### Changed
+
+- **Scripts now use v2 config format** - `validate-autonomy.ps1` and `bias-control.ps1` now use `resolve-role.ps1` to read from `connections.json` + `roles.json` instead of hardcoded legacy environment variables
+  - Supports multiple API types: `anthropic`, `azure-openai`, `openai-compatible`
+  - Clear error messages with `STOP:` prefix when credentials are missing
+  - Returns `ConfigError: true` flag for programmatic detection
+
+- **CLAUDE.md template adds STOP behavior** - New "Infrastructure Errors" section with mandatory stop behavior:
+  - When scripts return config errors, Claude must STOP and tell the user
+  - Explicitly forbids working around missing infrastructure
+  - Explicitly forbids roleplaying Validator/Critic with Task tool
+  - Explains why independent validation matters
+
+### Fixed
+
+- **Validator/Critic scripts were hardcoded to legacy env vars** - Now properly read from v2 config files
+
 ## [2.6.3] - 2026-01-31
 
 ### Changed

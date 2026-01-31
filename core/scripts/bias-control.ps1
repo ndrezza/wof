@@ -1,7 +1,9 @@
 # Bias Control Script - Quality Assurance via Critic AI
 #
-# This script implements a "devil's advocate" quality gate using Azure OpenAI.
+# This script implements a "devil's advocate" quality gate using the configured Critic AI.
 # It acts as a skeptical PM/Scrum Master/Product Owner who challenges the work done.
+#
+# Uses resolve-role.ps1 to get connection details from connections.json + roles.json
 #
 # RECIRCLE/REWORK FLOW:
 # +---------------------------------------------------------------------+
@@ -56,24 +58,44 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-# Load credentials
-$credPath = Join-Path $PSScriptRoot "..\config\credentials.local.ps1"
-if (Test-Path $credPath) {
-    . $credPath
-}
-
-$endpoint = $env:AZURE_CODEX_ENDPOINT
-$apiKey = $env:AZURE_CODEX_API_KEY
-
-if (-not $endpoint -or -not $apiKey) {
+# Resolve critic connection using v2 config
+$resolveScript = Join-Path $PSScriptRoot "resolve-role.ps1"
+if (-not (Test-Path $resolveScript)) {
     return @{
         Success = $false
-        Error = "Critic AI not configured. Set AZURE_CODEX_ENDPOINT and AZURE_CODEX_API_KEY."
+        Error = "STOP: resolve-role.ps1 not found. WOF installation may be incomplete."
+        ConfigError = $true
     }
 }
 
-# Note: Codex endpoint already includes the full path, so we don't modify it
-$endpoint = $endpoint.TrimEnd('/')
+try {
+    $criticConfig = & $resolveScript -Role "critic" -ConfigPath (Join-Path $PSScriptRoot "..\config")
+}
+catch {
+    return @{
+        Success = $false
+        Error = "STOP: Could not resolve critic role - $_"
+        ConfigError = $true
+    }
+}
+
+# Check if credentials are resolved
+if (-not $criticConfig.endpoint_resolved -or -not $criticConfig.api_key_resolved) {
+    return @{
+        Success = $false
+        Error = "STOP: Critic AI not configured. Edit .ai/config/credentials.local.json and fill in the credentials for connection '$($criticConfig.connection_id)'. DO NOT attempt to work around this - tell the user to configure credentials."
+        ConfigError = $true
+        Connection = $criticConfig.connection_id
+        Type = $criticConfig.type
+    }
+}
+
+$script:endpoint = $criticConfig.endpoint.TrimEnd('/')
+$script:apiKey = $criticConfig.api_key
+$script:model = $criticConfig.model
+$script:apiType = $criticConfig.type
+$script:deployment = $criticConfig.deployment
+$script:apiVersion = $criticConfig.api_version
 
 # The skeptical PM persona
 $skepticPersona = @"
@@ -151,50 +173,80 @@ function Invoke-CriticAI {
         [string]$UserPrompt
     )
 
-    # Azure OpenAI Responses API format
-    $body = @{
-        model = "gpt-5.1-codex-mini"
-        input = @(
-            @{ role = "system"; content = $SystemPrompt }
-            @{ role = "user"; content = $UserPrompt }
-        )
-    } | ConvertTo-Json -Depth 10
-
     $headers = @{
-        "api-key" = $apiKey
         "Content-Type" = "application/json"
     }
 
-    # Endpoint already includes full path with api-version
-    $uri = $endpoint
+    switch ($script:apiType) {
+        "anthropic" {
+            # Azure AI Foundry Anthropic API
+            $headers["api-key"] = $script:apiKey
+            $headers["x-api-key"] = $script:apiKey
+            $headers["anthropic-version"] = "2023-06-01"
 
-    try {
-        $response = Invoke-RestMethod -Uri $uri -Method Post -Headers $headers -Body $body -TimeoutSec 60
-        # Responses API returns output directly or in output_text field
-        if ($response.output_text) {
-            return $response.output_text
-        }
-        elseif ($response.output) {
-            # Handle array of outputs
-            if ($response.output -is [array]) {
-                $textOutput = $response.output | Where-Object { $_.type -eq 'message' } | Select-Object -First 1
-                if ($textOutput.content) {
-                    if ($textOutput.content -is [array]) {
-                        return ($textOutput.content | Where-Object { $_.type -eq 'output_text' } | Select-Object -First 1).text
-                    }
-                    return $textOutput.content
-                }
+            $body = @{
+                model = $script:model
+                max_tokens = 2000
+                system = $SystemPrompt
+                messages = @(
+                    @{ role = "user"; content = $UserPrompt }
+                )
+            } | ConvertTo-Json -Depth 10
+
+            $uri = "$($script:endpoint)/v1/messages"
+            if ($script:apiVersion) {
+                $uri = "$uri`?api-version=$($script:apiVersion)"
             }
-            return $response.output
+
+            $response = Invoke-RestMethod -Uri $uri -Method Post -Headers $headers -Body $body -TimeoutSec 60
+            return $response.content[0].text
         }
-        elseif ($response.choices) {
-            # Fallback to chat completions format
+
+        "azure-openai" {
+            # Azure OpenAI API
+            $headers["api-key"] = $script:apiKey
+
+            $deploymentName = if ($script:deployment) { $script:deployment } else { $script:model }
+
+            $body = @{
+                messages = @(
+                    @{ role = "system"; content = $SystemPrompt }
+                    @{ role = "user"; content = $UserPrompt }
+                )
+                max_tokens = 2000
+            } | ConvertTo-Json -Depth 10
+
+            $version = if ($script:apiVersion) { $script:apiVersion } else { "2024-02-15-preview" }
+            $uri = "$($script:endpoint)/openai/deployments/$deploymentName/chat/completions?api-version=$version"
+
+            $response = Invoke-RestMethod -Uri $uri -Method Post -Headers $headers -Body $body -TimeoutSec 60
             return $response.choices[0].message.content
         }
-        throw "Unexpected response format from Critic AI"
-    }
-    catch {
-        throw "Critic AI API error: $_"
+
+        "openai-compatible" {
+            # OpenAI-compatible API (local models, etc.)
+            if ($script:apiKey -and $script:apiKey -ne "not-needed") {
+                $headers["Authorization"] = "Bearer $($script:apiKey)"
+            }
+
+            $body = @{
+                model = $script:model
+                messages = @(
+                    @{ role = "system"; content = $SystemPrompt }
+                    @{ role = "user"; content = $UserPrompt }
+                )
+                max_tokens = 2000
+            } | ConvertTo-Json -Depth 10
+
+            $uri = "$($script:endpoint)/v1/chat/completions"
+
+            $response = Invoke-RestMethod -Uri $uri -Method Post -Headers $headers -Body $body -TimeoutSec 60
+            return $response.choices[0].message.content
+        }
+
+        default {
+            throw "Unknown API type '$($script:apiType)' for critic connection. Supported: anthropic, azure-openai, openai-compatible"
+        }
     }
 }
 
@@ -390,6 +442,8 @@ switch ($Phase) {
                 Questions = $questionsArray
                 QuestionsJson = $jsonOutput
                 RawParsed = $parsed
+                CriticModel = $script:model
+                CriticType = $script:apiType
             }
         }
         catch {
@@ -426,6 +480,8 @@ switch ($Phase) {
                         Recommendations = @()
                         FullEvaluation = $evaluation
                         _ParsedFromString = $true
+                        CriticModel = $script:model
+                        CriticType = $script:apiType
                     }
                 }
                 return @{ Success = $false; Error = "Evaluation returned unexpected string: $evaluation" }
@@ -449,6 +505,8 @@ switch ($Phase) {
                 CriticalIssues = $criticalIssues
                 Recommendations = $recommendations
                 FullEvaluation = $evalJson
+                CriticModel = $script:model
+                CriticType = $script:apiType
             }
         }
         catch {
@@ -479,6 +537,8 @@ switch ($Phase) {
                     "4. Re-run bias-control 'questions' phase with updated context",
                     "5. Repeat until viability >= threshold"
                 )
+                CriticModel = $script:model
+                CriticType = $script:apiType
             }
         }
         catch {
@@ -500,6 +560,8 @@ switch ($Phase) {
                 Questions = $questions.questions
                 QuestionsJson = ($questions | ConvertTo-Json -Depth 5)
                 Instructions = "Primary AI should answer each question, then call evaluate phase"
+                CriticModel = $script:model
+                CriticType = $script:apiType
             }
         }
         catch {

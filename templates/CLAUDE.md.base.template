@@ -216,6 +216,44 @@ Every deliverable must pass:
 
 ---
 
+## CRITICAL: Infrastructure Errors
+
+**When scripts return `ConfigError: true` or errors starting with "STOP:"**
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                    MANDATORY STOP BEHAVIOR                          │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  IF a script returns an error about missing credentials or config: │
+│                                                                     │
+│  1. STOP immediately                                                │
+│  2. Tell the user EXACTLY what's missing                            │
+│  3. Point them to the config file to edit                           │
+│  4. DO NOT attempt to work around the problem                       │
+│  5. DO NOT try to fix the infrastructure yourself                   │
+│  6. DO NOT use Task tool as a substitute for external AIs           │
+│  7. DO NOT roleplay the Validator or Critic yourself                │
+│                                                                     │
+│  EXAMPLE ERROR:                                                     │
+│  "STOP: Critic AI not configured. Edit .ai/config/credentials..."  │
+│                                                                     │
+│  CORRECT RESPONSE:                                                  │
+│  "The Critic AI isn't configured yet. Please edit                  │
+│   .ai/config/credentials.local.json and fill in the credentials    │
+│   for the 'ai3' connection. Once configured, I can proceed."       │
+│                                                                     │
+│  WRONG RESPONSE:                                                    │
+│  "Let me work around this by using the Task tool instead..."       │
+│  "I'll act as the Critic myself and generate questions..."         │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+**Why this matters:** The multi-agent system exists to provide independent validation. If you roleplay all roles yourself, you're just talking to yourself - there's no independent check. The whole point is that Validator and Critic are DIFFERENT AIs that can catch your mistakes.
+
+---
+
 ## Agent Reference
 
 ### Validator Commands
