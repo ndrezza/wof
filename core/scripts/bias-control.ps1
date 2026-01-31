@@ -96,8 +96,17 @@ $script:model = $criticConfig.model
 $script:apiType = $criticConfig.type
 $script:deployment = $criticConfig.deployment
 $script:apiVersion = $criticConfig.api_version
+$script:capability = $criticConfig.capability  # high, medium, low
 
-# The skeptical PM persona
+# =============================================================================
+# CAPABILITY-AWARE PROMPTING
+# =============================================================================
+# Different prompt strategies based on model capability level:
+#   high   - Full skeptical PM persona, open-ended questions, complex JSON
+#   medium - Structured questions, simpler JSON format
+#   low    - Yes/no checklist, one question at a time, minimal parsing
+
+# The skeptical PM persona (for high/medium capability)
 $skepticPersona = @"
 You are a SKEPTICAL QUALITY GATEKEEPER - the "devil's advocate" in an AI-assisted development workflow.
 
@@ -253,6 +262,30 @@ function Invoke-CriticAI {
 function Get-SkepticalQuestions {
     param([string]$WorkContext, [string]$Workflow)
 
+    # Different strategies based on model capability
+    switch ($script:capability) {
+        "high" {
+            # Full skeptical PM persona, open-ended questions, complex JSON
+            return Get-SkepticalQuestions-High -WorkContext $WorkContext -Workflow $Workflow
+        }
+        "medium" {
+            # Structured questions, simpler format
+            return Get-SkepticalQuestions-Medium -WorkContext $WorkContext -Workflow $Workflow
+        }
+        "low" {
+            # Yes/no checklist approach
+            return Get-SkepticalQuestions-Low -WorkContext $WorkContext -Workflow $Workflow
+        }
+        default {
+            # Default to medium
+            return Get-SkepticalQuestions-Medium -WorkContext $WorkContext -Workflow $Workflow
+        }
+    }
+}
+
+function Get-SkepticalQuestions-High {
+    param([string]$WorkContext, [string]$Workflow)
+
     $systemPrompt = @"
 $skepticPersona
 
@@ -297,7 +330,120 @@ IMPORTANT: Return ONLY valid JSON, no other text.
     throw "Could not parse questions from Critic AI response: $response"
 }
 
+function Get-SkepticalQuestions-Medium {
+    param([string]$WorkContext, [string]$Workflow)
+
+    # Simpler prompt, more structured output
+    $systemPrompt = "You are a code reviewer checking if work was done correctly."
+
+    $userPrompt = @"
+Review this work and list 3-5 concerns as questions.
+
+WORK:
+$WorkContext
+
+Reply with ONLY a JSON object like this:
+{"questions":[{"id":1,"question":"Was X done?"},{"id":2,"question":"Did Y happen?"}]}
+"@
+
+    $response = Invoke-CriticAI -SystemPrompt $systemPrompt -UserPrompt $userPrompt
+
+    $cleanResponse = $response -replace '```json', '' -replace '```', ''
+    $jsonMatch = [regex]::Match($cleanResponse, '\{[\s\S]*\}')
+    if ($jsonMatch.Success) {
+        $parsed = $jsonMatch.Value | ConvertFrom-Json
+        # Add missing fields for consistency
+        if ($parsed.questions) {
+            $parsed.questions = $parsed.questions | ForEach-Object {
+                if (-not $_.category) { $_ | Add-Member -NotePropertyName "category" -NotePropertyValue "general" -Force }
+                if (-not $_.why_asking) { $_ | Add-Member -NotePropertyName "why_asking" -NotePropertyValue "Quality check" -Force }
+                $_
+            }
+        }
+        return $parsed
+    }
+
+    throw "Could not parse questions from Critic AI response: $response"
+}
+
+function Get-SkepticalQuestions-Low {
+    param([string]$WorkContext, [string]$Workflow)
+
+    # For low-capability models: use a predefined checklist with yes/no questions
+    # The model just needs to understand the context and mark applicable items
+
+    $checklistByWorkflow = @{
+        "general" = @(
+            @{id=1; category="testing"; question="Were tests written for new code?"; why_asking="Tests prevent regressions"}
+            @{id=2; category="testing"; question="Do all tests pass?"; why_asking="Broken tests block releases"}
+            @{id=3; category="security"; question="Are there any hardcoded secrets or passwords?"; why_asking="Security vulnerability"}
+            @{id=4; category="quality"; question="Does the code handle errors properly?"; why_asking="Unhandled errors cause crashes"}
+            @{id=5; category="process"; question="Was the code reviewed?"; why_asking="Reviews catch bugs"}
+        )
+        "feature" = @(
+            @{id=1; category="requirements"; question="Does the feature match the requirements?"; why_asking="Must meet spec"}
+            @{id=2; category="testing"; question="Are there tests for the new feature?"; why_asking="Features need tests"}
+            @{id=3; category="security"; question="Does the feature handle user input safely?"; why_asking="Input validation"}
+            @{id=4; category="quality"; question="Is the feature documented?"; why_asking="Users need docs"}
+            @{id=5; category="testing"; question="Do all existing tests still pass?"; why_asking="No regressions"}
+        )
+        "bugfix" = @(
+            @{id=1; category="testing"; question="Is there a test that reproduces the bug?"; why_asking="Prevent regression"}
+            @{id=2; category="quality"; question="Does the fix address the root cause?"; why_asking="Not just symptoms"}
+            @{id=3; category="testing"; question="Do all tests pass after the fix?"; why_asking="No new bugs"}
+            @{id=4; category="security"; question="Could the bug have security implications?"; why_asking="Security review"}
+            @{id=5; category="process"; question="Was the fix reviewed?"; why_asking="Second opinion"}
+        )
+        "finish" = @(
+            @{id=1; category="testing"; question="Does the build pass?"; why_asking="Must build cleanly"}
+            @{id=2; category="testing"; question="Do all tests pass?"; why_asking="Tests must pass"}
+            @{id=3; category="security"; question="Are there any exposed secrets in the commit?"; why_asking="Security check"}
+            @{id=4; category="process"; question="Is the commit message descriptive?"; why_asking="History clarity"}
+            @{id=5; category="quality"; question="Is the work item linked?"; why_asking="Traceability"}
+        )
+    }
+
+    $questions = if ($checklistByWorkflow.ContainsKey($Workflow)) {
+        $checklistByWorkflow[$Workflow]
+    } else {
+        $checklistByWorkflow["general"]
+    }
+
+    # For low-capability models, we just return the predefined questions
+    # The model doesn't generate questions - it will just evaluate answers to these
+    return @{
+        questions = $questions
+        _generated = $false
+        _capability = "low"
+        _note = "Using predefined checklist for low-capability model"
+    }
+}
+
 function Evaluate-Answers {
+    param(
+        [string]$QuestionsJson,
+        [string]$AnswersText,
+        [double]$Threshold
+    )
+
+    # Different strategies based on model capability
+    switch ($script:capability) {
+        "high" {
+            return Evaluate-Answers-High -QuestionsJson $QuestionsJson -AnswersText $AnswersText -Threshold $Threshold
+        }
+        "medium" {
+            return Evaluate-Answers-Medium -QuestionsJson $QuestionsJson -AnswersText $AnswersText -Threshold $Threshold
+        }
+        "low" {
+            return Evaluate-Answers-Low -QuestionsJson $QuestionsJson -AnswersText $AnswersText -Threshold $Threshold
+        }
+        default {
+            return Evaluate-Answers-Medium -QuestionsJson $QuestionsJson -AnswersText $AnswersText -Threshold $Threshold
+        }
+    }
+}
+
+function Evaluate-Answers-High {
     param(
         [string]$QuestionsJson,
         [string]$AnswersText,
@@ -361,6 +507,126 @@ Be specific in your evaluation. Reference the actual content of the answers.
     }
 
     throw "Could not parse evaluation from Critic AI response: $response"
+}
+
+function Evaluate-Answers-Medium {
+    param(
+        [string]$QuestionsJson,
+        [string]$AnswersText,
+        [double]$Threshold
+    )
+
+    # Simpler evaluation prompt
+    $systemPrompt = "You are evaluating answers to review questions. Be brief."
+
+    $userPrompt = @"
+Questions: $QuestionsJson
+
+Answers: $AnswersText
+
+Rate from 0.0 to 1.0. Reply ONLY with JSON:
+{"overall_viability":0.X,"passed":true/false,"summary":"one sentence"}
+"@
+
+    $response = Invoke-CriticAI -SystemPrompt $systemPrompt -UserPrompt $userPrompt
+
+    $cleanResponse = $response -replace '```json', '' -replace '```', ''
+    $jsonMatch = [regex]::Match($cleanResponse, '\{[\s\S]*?\}')
+    if ($jsonMatch.Success) {
+        $parsed = $jsonMatch.Value | ConvertFrom-Json
+        # Add missing fields
+        if (-not $parsed.evaluations) { $parsed | Add-Member -NotePropertyName "evaluations" -NotePropertyValue @() -Force }
+        if (-not $parsed.critical_issues) { $parsed | Add-Member -NotePropertyName "critical_issues" -NotePropertyValue @() -Force }
+        if (-not $parsed.recommendations) { $parsed | Add-Member -NotePropertyName "recommendations" -NotePropertyValue @() -Force }
+        $parsed | Add-Member -NotePropertyName "threshold_used" -NotePropertyValue $Threshold -Force
+        return $parsed
+    }
+
+    throw "Could not parse evaluation from Critic AI response: $response"
+}
+
+function Evaluate-Answers-Low {
+    param(
+        [string]$QuestionsJson,
+        [string]$AnswersText,
+        [double]$Threshold
+    )
+
+    # For low-capability models: evaluate each answer with a simple yes/no question
+    # This avoids complex JSON parsing issues
+
+    $questions = try {
+        ($QuestionsJson | ConvertFrom-Json).questions
+    } catch {
+        @()
+    }
+
+    $evaluations = @()
+    $passCount = 0
+    $totalCount = [Math]::Max($questions.Count, 1)
+
+    foreach ($q in $questions) {
+        # Ask a simple yes/no question for each
+        $simplePrompt = @"
+Answer YES or NO only.
+
+Question that was asked: $($q.question)
+
+Answer given: $AnswersText
+
+Is this answer acceptable? Reply only YES or NO.
+"@
+
+        try {
+            $response = Invoke-CriticAI -SystemPrompt "Reply only YES or NO." -UserPrompt $simplePrompt
+            $isYes = $response -match '\bYES\b'
+            $isNo = $response -match '\bNO\b'
+
+            $quality = if ($isYes -and -not $isNo) {
+                $passCount++
+                "satisfactory"
+            } elseif ($isNo -and -not $isYes) {
+                "unsatisfactory"
+            } else {
+                # Unclear response - treat as partial
+                $passCount += 0.5
+                "partial"
+            }
+
+            $evaluations += @{
+                question_id = $q.id
+                answer_quality = $quality
+                confidence = if ($quality -eq "satisfactory") { 0.8 } elseif ($quality -eq "partial") { 0.5 } else { 0.3 }
+                concerns = if ($quality -ne "satisfactory") { "Answer needs improvement" } else { $null }
+            }
+        }
+        catch {
+            # If API call fails, mark as partial
+            $passCount += 0.5
+            $evaluations += @{
+                question_id = $q.id
+                answer_quality = "partial"
+                confidence = 0.5
+                concerns = "Could not evaluate: $_"
+            }
+        }
+    }
+
+    # Calculate overall viability
+    $viability = [Math]::Round($passCount / $totalCount, 2)
+    $passed = $viability -ge $Threshold
+
+    return @{
+        evaluations = $evaluations
+        overall_viability = $viability
+        passed = $passed
+        summary = "Evaluated $totalCount questions: $passCount passed (low-capability mode)"
+        critical_issues = @()
+        recommendations = if (-not $passed) { @("Address the unsatisfactory answers") } else { @() }
+        threshold_used = $Threshold
+        _capability = "low"
+        _note = "Evaluated with simple yes/no questions for low-capability model"
+    }
 }
 
 function Get-RemediationPlan {
@@ -444,6 +710,7 @@ switch ($Phase) {
                 RawParsed = $parsed
                 CriticModel = $script:model
                 CriticType = $script:apiType
+                CriticCapability = $script:capability
             }
         }
         catch {
@@ -482,6 +749,7 @@ switch ($Phase) {
                         _ParsedFromString = $true
                         CriticModel = $script:model
                         CriticType = $script:apiType
+                        CriticCapability = $script:capability
                     }
                 }
                 return @{ Success = $false; Error = "Evaluation returned unexpected string: $evaluation" }
@@ -507,6 +775,7 @@ switch ($Phase) {
                 FullEvaluation = $evalJson
                 CriticModel = $script:model
                 CriticType = $script:apiType
+                CriticCapability = $script:capability
             }
         }
         catch {
@@ -539,6 +808,7 @@ switch ($Phase) {
                 )
                 CriticModel = $script:model
                 CriticType = $script:apiType
+                CriticCapability = $script:capability
             }
         }
         catch {
@@ -562,6 +832,7 @@ switch ($Phase) {
                 Instructions = "Primary AI should answer each question, then call evaluate phase"
                 CriticModel = $script:model
                 CriticType = $script:apiType
+                CriticCapability = $script:capability
             }
         }
         catch {

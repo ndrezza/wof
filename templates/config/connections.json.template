@@ -1,20 +1,28 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "Role-agnostic AI connection definitions (AI1-AI10). See roles.json for role-to-connection mapping.",
   "_instructions": [
     "All 10 AI slots (ai1-ai10) can be configured with any connection type.",
     "Use the configuration wizard: .ai/scripts/configure-wizard.ps1",
-    "Or edit this file manually and credentials.local.json for API keys."
+    "Or edit this file manually and credentials.local.json for API keys.",
+    "",
+    "CAPABILITY LEVELS:",
+    "  high   - Full reasoning, complex multi-part prompts (Claude, GPT-4, etc.)",
+    "  medium - Good reasoning, moderate complexity (GPT-3.5, Mistral-7B, etc.)",
+    "  low    - Simple questions only, yes/no preferred (small local models)",
+    "",
+    "Scripts adapt their prompting strategy based on capability level."
   ],
   "connections": {
     "ai1": {
       "alias": "Azure Anthropic",
       "description": "Azure AI Foundry with Anthropic models (Opus, Sonnet)",
-      "type": "azure_ai_foundry_anthropic",
+      "type": "anthropic",
+      "capability": "high",
       "endpoint": "${AI1_ENDPOINT}",
       "api_key": "${AI1_API_KEY}",
-      "api_version": "2023-06-01",
+      "api_version": "2025-01-01-preview",
       "models": {
         "claude-opus-4-5-20251101": {
           "context_window": 200000
@@ -28,7 +36,8 @@
     "ai2": {
       "alias": "Azure OpenAI",
       "description": "Azure OpenAI Service (GPT-4o, etc.)",
-      "type": "azure_openai",
+      "type": "azure-openai",
+      "capability": "high",
       "endpoint": "${AI2_ENDPOINT}",
       "api_key": "${AI2_API_KEY}",
       "api_version": "2025-01-01-preview",
@@ -43,7 +52,8 @@
     "ai3": {
       "alias": "Azure Codex",
       "description": "Azure OpenAI Service with Codex models",
-      "type": "azure_openai",
+      "type": "azure-openai",
+      "capability": "high",
       "endpoint": "${AI3_ENDPOINT}",
       "api_key": "${AI3_API_KEY}",
       "api_version": "2025-04-01-preview",
@@ -56,18 +66,20 @@
       "default_model": "gpt-5.1-codex-mini"
     },
     "ai4": {
-      "alias": "",
-      "description": "Available AI slot",
-      "type": "openai_compatible",
+      "alias": "Local LLM",
+      "description": "Local model via LM Studio, Ollama, vLLM, etc.",
+      "type": "openai-compatible",
+      "capability": "low",
       "endpoint": "${AI4_ENDPOINT}",
       "api_key": "${AI4_API_KEY}",
       "models": {},
-      "default_model": ""
+      "default_model": "local-model"
     },
     "ai5": {
       "alias": "",
       "description": "Available AI slot",
-      "type": "openai_compatible",
+      "type": "openai-compatible",
+      "capability": "medium",
       "endpoint": "${AI5_ENDPOINT}",
       "api_key": "${AI5_API_KEY}",
       "models": {},
@@ -76,7 +88,8 @@
     "ai6": {
       "alias": "",
       "description": "Available AI slot",
-      "type": "openai_compatible",
+      "type": "openai-compatible",
+      "capability": "medium",
       "endpoint": "${AI6_ENDPOINT}",
       "api_key": "${AI6_API_KEY}",
       "models": {},
@@ -85,7 +98,8 @@
     "ai7": {
       "alias": "",
       "description": "Available AI slot",
-      "type": "openai_compatible",
+      "type": "openai-compatible",
+      "capability": "medium",
       "endpoint": "${AI7_ENDPOINT}",
       "api_key": "${AI7_API_KEY}",
       "models": {},
@@ -94,7 +108,8 @@
     "ai8": {
       "alias": "",
       "description": "Available AI slot",
-      "type": "openai_compatible",
+      "type": "openai-compatible",
+      "capability": "medium",
       "endpoint": "${AI8_ENDPOINT}",
       "api_key": "${AI8_API_KEY}",
       "models": {},
@@ -103,7 +118,8 @@
     "ai9": {
       "alias": "",
       "description": "Available AI slot",
-      "type": "openai_compatible",
+      "type": "openai-compatible",
+      "capability": "medium",
       "endpoint": "${AI9_ENDPOINT}",
       "api_key": "${AI9_API_KEY}",
       "models": {},
@@ -112,7 +128,8 @@
     "ai10": {
       "alias": "",
       "description": "Available AI slot",
-      "type": "openai_compatible",
+      "type": "openai-compatible",
+      "capability": "medium",
       "endpoint": "${AI10_ENDPOINT}",
       "api_key": "${AI10_API_KEY}",
       "models": {},
@@ -121,7 +138,8 @@
     "native": {
       "alias": "Claude Code Native",
       "description": "Native Claude Code connection (no external API)",
-      "type": "claude_code_native",
+      "type": "claude-code-native",
+      "capability": "high",
       "models": {
         "claude-opus-4-5-20251101": {}
       },

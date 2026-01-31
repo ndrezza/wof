@@ -5,6 +5,33 @@ All notable changes to the Workload Orchestration Framework (WOF) will be docume
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.7.0] - 2026-01-31
+
+### Added
+
+- **Capability-aware prompting for Critic** - Models now have a `capability` level (high/medium/low) that determines prompting strategy:
+  - `high` - Full skeptical PM persona, open-ended questions, complex JSON responses (Claude, GPT-4)
+  - `medium` - Structured questions, simpler JSON format (GPT-3.5, Mistral-7B)
+  - `low` - Predefined yes/no checklist, one question at a time, minimal parsing (small local models)
+
+- **Predefined checklists for low-capability models** - Workflow-specific question sets (general, feature, bugfix, finish) that don't require the model to generate questions
+
+- **Per-question evaluation for low-capability models** - Instead of asking for complex JSON, evaluates each answer with a simple "YES or NO" question
+
+### Changed
+
+- **connections.json template updated to v2.1.0** - Added `capability` field to all connections:
+  - ai1-ai3: `"capability": "high"` (cloud providers)
+  - ai4: `"capability": "low"` (local LLM default)
+  - ai5-ai10: `"capability": "medium"` (unconfigured slots)
+  - native: `"capability": "high"` (Claude Code)
+
+- **resolve-role.ps1 now passes capability** - Scripts can access `$config.capability` to adapt behavior
+
+- **bias-control.ps1 returns capability in results** - All responses now include `CriticCapability` field
+
+- **Fixed type names for consistency** - Changed `azure_ai_foundry_anthropic` to `anthropic`, `azure_openai` to `azure-openai`, `openai_compatible` to `openai-compatible`
+
 ## [2.6.4] - 2026-01-31
 
 ### Changed

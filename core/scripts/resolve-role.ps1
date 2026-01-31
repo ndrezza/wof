@@ -160,6 +160,13 @@ if ($connectionConfig.api_version) {
     $resolvedConnection.api_version = $connectionConfig.api_version
 }
 
+# Add capability level (high, medium, low) - defaults to medium if not specified
+$resolvedConnection.capability = if ($connectionConfig.capability) {
+    $connectionConfig.capability
+} else {
+    "medium"  # Safe default - not too restrictive, not too permissive
+}
+
 # Add context window - prefer model-specific, fall back to connection-level
 if ($modelConfig -and $modelConfig.context_window) {
     $resolvedConnection.context_window = $modelConfig.context_window
