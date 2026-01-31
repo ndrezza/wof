@@ -5,6 +5,40 @@ All notable changes to the Workload Orchestration Framework (WOF) will be docume
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.6.0] - 2026-01-31
+
+### Added
+
+- **Test-Driven Improvement Philosophy** - `core/philosophy/test-driven-improvement.md`
+  - Three Laws: No plan without test strategy, no commit without tests, no closure without repeatable validation
+  - Pre-commit test protocol (build, test, coverage)
+  - Worker completion criteria (tests required)
+  - Objective validation requirements
+
+- **Orchestrator Claude role definition** - `core/agents/orchestrator-claude.md`
+  - Coordination responsibilities
+  - Testing consultation with Validator
+  - Worker delegation standards (include test requirements)
+  - Task completion protocol
+
+### Changed
+
+- **Validator Claude** - Added testing enforcement responsibilities
+  - Must enforce Three Laws at every checkpoint
+  - Testing questions added to all validations
+  - Task completion enforcement (keep workers busy until tests pass)
+
+- **Critic Claude** - Added testing verification protocol
+  - Must run full test suite (not trust claims)
+  - Response format includes test verification details
+  - Hard requirements for test coverage
+
+- **Task Execution Workflow** - Integrated test-driven requirements
+  - All validation checkpoints updated with testing questions
+  - V4 (Plan) requires testing strategy
+  - V8 (Commit) requires all tests pass
+  - V10 (Closure) requires repeatable validation
+
 ## [2.5.2] - 2026-01-31
 
 ### Added

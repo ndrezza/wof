@@ -35,6 +35,29 @@ This document describes the end-to-end workflow for executing tasks in the WOF m
 
 ---
 
+## Test-Driven Improvement (Mandatory)
+
+All phases must comply with the Test-Driven Improvement philosophy:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│              TEST-DRIVEN GATES (Non-Negotiable)                 │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  PLANNING:     No plan approved without testing strategy       │
+│  DELEGATION:   Workers must include tests in deliverables      │
+│  COMMIT:       No commit without passing tests                 │
+│  CLOSURE:      No closure without repeatable validation        │
+│                                                                 │
+│  Validator enforces these gates. No exceptions.                │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+See: `core/philosophy/test-driven-improvement.md`
+
+---
+
 ## Phase 1: Task Intake
 
 ### 1.1 Task Source
@@ -73,6 +96,8 @@ Questions:
 3. Is scope bounded or open-ended?
 4. Are there implicit assumptions that need clarification?
 5. Is this task appropriate for autonomous execution?
+6. Can this task be objectively validated with tests?
+7. What would "done" look like in testable terms?
 
 Recommend: PROCEED | CLARIFY | ESCALATE
 ```
@@ -156,6 +181,9 @@ VALIDATION CHECKPOINT V4: Plan Validation
 Proposed implementation plan:
 [step-by-step plan]
 
+Testing strategy:
+[required - must be provided]
+
 Questions:
 1. Does this plan achieve the original goal?
 2. Are steps in logical order?
@@ -163,7 +191,15 @@ Questions:
 4. Is each step small enough to be verifiable?
 5. Are rollback points identified?
 6. What could go wrong at each step?
-7. Is documentation/testing included in the plan?
+
+TESTING QUESTIONS (MANDATORY):
+7. Is there a concrete testing strategy?
+8. What tests will be written?
+9. How will we verify each acceptance criterion?
+10. Are edge cases and failure modes covered?
+11. Can tests be written BEFORE implementation?
+
+REJECT if testing strategy is missing or vague.
 
 Recommend: APPROVE | REVISE | ESCALATE_TO_USER
 ```
@@ -337,6 +373,15 @@ Questions:
 6. Is there documentation that should be included?
 7. Should this be multiple smaller commits?
 
+TESTING VERIFICATION (MANDATORY - RUN THESE):
+8. Did ALL tests pass? (run: dotnet test)
+9. What is the test count? (X passed, 0 failed, 0 skipped)
+10. Did coverage decrease? (run: coverage report)
+11. Does new code have tests?
+12. For bug fixes: is there a regression test?
+
+BLOCK COMMIT if tests fail or coverage dropped significantly.
+
 Recommend: COMMIT | REVISE | SPLIT
 ```
 
@@ -412,6 +457,17 @@ Questions:
 4. Are there any loose ends?
 5. Should any follow-up tasks be created?
 6. Were there lessons learned worth documenting?
+
+OBJECTIVE VALIDATION (MANDATORY):
+7. Is the validation AUTOMATED? (no manual steps)
+8. Is the validation REPEATABLE? (anyone can run it)
+9. Do tests pass on CLEAN CHECKOUT? (not just local)
+10. Will these tests catch REGRESSIONS in the future?
+11. Can we objectively prove the task is complete?
+
+REFUSE CLOSURE if validation is not objective and repeatable.
+"It works on my machine" is not validation.
+"I tested it manually" is not validation.
 
 Recommend: CLOSE | FOLLOWUP_NEEDED | REOPEN
 ```
@@ -815,7 +871,7 @@ Based on Validator recommendations, the original 10 checkpoints are revised:
 
 ---
 
-*Workflow Version: 1.1.0*
+*Workflow Version: 1.2.0*
 *Author: Orchestrator Claude*
-*Reviewed by: Validator Claude (Score: 0.65 → Revised)*
-*Status: REVISED - Incorporating Validator Feedback*
+*Reviewed by: Validator Claude (Score: 0.65 → 0.85 after revisions)*
+*Status: ACTIVE - Test-Driven Improvement integrated*
