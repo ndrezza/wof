@@ -5,6 +5,20 @@ All notable changes to the Workload Orchestration Framework (WOF) will be docume
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.6.3] - 2026-01-31
+
+### Changed
+
+- **CLAUDE.md template now wires up multi-agent orchestration** - Complete rewrite of `templates/CLAUDE.md.base.template`:
+  - Establishes Claude as "Orchestrator Claude" with team identity
+  - Defines when and how to invoke each agent (Validator, Critic, Workers)
+  - Includes task routing decision tree
+  - Documents 6-phase task execution workflow
+  - Adds mandatory validation checkpoints (V1-V5)
+  - Includes agent command reference (PowerShell invocations)
+  - Quick reference card for thresholds and circuit breakers
+  - **This makes multi-agent orchestration actually work when WOF is installed**
+
 ## [2.6.2] - 2026-01-31
 
 ### Changed
