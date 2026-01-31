@@ -5,6 +5,19 @@ All notable changes to the Workload Orchestration Framework (WOF) will be docume
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.7.2] - 2026-01-31
+
+### Changed
+
+- **CLAUDE.md template clarifies agent invocation mechanism** - Added explicit "How to Invoke External Agents" section making it unmistakably clear that Bash + PowerShell is the ONLY way to invoke Validator, Critic, and Worker-Lite
+- **CLAUDE.md template clarifies when validation is required** - Added table distinguishing autonomous decisions (need validation) from user interactions (don't need validation)
+- **Agent Reference section updated to show Bash commands** - All examples now show `powershell -File` invocation via Bash tool
+- **interview-validator.ps1 uses v2 config format** - Now uses `resolve-role.ps1` instead of hardcoded legacy environment variables
+
+### Fixed
+
+- **Addressed confusion about validation scope** - Claude was trying to validate questions TO the user; clarified that validation is only for autonomous DECISIONS
+
 ## [2.7.1] - 2026-01-31
 
 ### Fixed

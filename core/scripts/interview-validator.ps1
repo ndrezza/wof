@@ -1,7 +1,7 @@
 # Interview Validator Script
 #
-# Conducts a conversational interview with the Validator AI running in Azure Foundry.
-# This showcases the multi-agent communication capability in WOF.
+# Conducts a conversational interview with the Validator AI.
+# Uses resolve-role.ps1 for connection configuration.
 #
 # Usage:
 #   .\interview-validator.ps1 -Question "What is your role?"
@@ -18,29 +18,35 @@ param(
     [switch]$ShowDebug
 )
 
-# Auto-load credentials if available
-$credPath = Join-Path $PSScriptRoot "..\config\credentials.local.ps1"
-if (Test-Path $credPath) {
-    . $credPath
+# Resolve validator connection using v2 config
+$resolveScript = Join-Path $PSScriptRoot "resolve-role.ps1"
+if (-not (Test-Path $resolveScript)) {
+    Write-Error "STOP: resolve-role.ps1 not found. WOF installation may be corrupted."
+    return @{ ConfigError = $true; Error = "resolve-role.ps1 not found" }
 }
 
-# Get credentials
-$endpoint = if ($env:ANTHROPIC_FOUNDRY_BASE_URL) { $env:ANTHROPIC_FOUNDRY_BASE_URL } else { $env:AZURE_ANTHROPIC_ENDPOINT }
-$apiKey = if ($env:ANTHROPIC_FOUNDRY_API_KEY) { $env:ANTHROPIC_FOUNDRY_API_KEY } else { $env:AZURE_ANTHROPIC_API_KEY }
+$config = & $resolveScript -Role "validator"
 
-if (-not $endpoint -or -not $apiKey) {
-    Write-Error "Azure Foundry not configured. Set ANTHROPIC_FOUNDRY_BASE_URL and ANTHROPIC_FOUNDRY_API_KEY environment variables."
-    exit 1
+if ($config.ConfigError) {
+    Write-Error "STOP: Validator AI not configured. $($config.Error)"
+    return @{ ConfigError = $true; Error = $config.Error }
 }
 
-$endpoint = $endpoint.TrimEnd('/')
+$endpoint = $config.Endpoint.TrimEnd('/')
+$apiKey = $config.ApiKey
+$apiType = $config.Type
+$model = $config.Model
+
+if ($ShowDebug) {
+    Write-Host "Using connection: $($config.ConnectionId) ($apiType)" -ForegroundColor Cyan
+    Write-Host "Model: $model" -ForegroundColor Cyan
+}
 
 $interviewPrompt = @"
 You are the VALIDATOR AI in the WOF (Workload Orchestration Framework) multi-agent system.
 
 YOUR IDENTITY:
 - You are a secondary AI agent that validates decisions made by the Primary Orchestrator
-- You run on Azure AI Foundry using Claude Sonnet
 - Your role is to provide confidence-scored validation of autonomous decisions
 - You apply a threshold of 0.7 (70% confidence) for approving autonomous actions
 
@@ -53,48 +59,72 @@ YOUR RESPONSIBILITIES:
 INTERVIEW CONTEXT:
 $SystemContext
 
-You are being interviewed by the Primary Orchestrator (Claude Opus) to showcase the multi-agent collaboration in WOF. Answer thoughtfully and authentically as the Validator agent. Be conversational but professional.
+You are being interviewed by the Primary Orchestrator to showcase the multi-agent collaboration in WOF. Answer thoughtfully and authentically as the Validator agent. Be conversational but professional.
 
 QUESTION FROM ORCHESTRATOR:
 $Question
 "@
 
-$body = @{
-    model = "claude-sonnet-4-5"
-    max_tokens = 500
-    messages = @(
-        @{
-            role = "user"
-            content = $interviewPrompt
-        }
-    )
-} | ConvertTo-Json -Depth 10
+# Build request based on API type
+$headers = @{ "Content-Type" = "application/json" }
 
-$headers = @{
-    "api-key" = $apiKey
-    "x-api-key" = $apiKey
-    "Content-Type" = "application/json"
-    "anthropic-version" = "2023-06-01"
+switch ($apiType) {
+    "anthropic" {
+        $uri = "$endpoint/v1/messages"
+        $headers["x-api-key"] = $apiKey
+        $headers["anthropic-version"] = "2023-06-01"
+        $body = @{
+            model = $model
+            max_tokens = 500
+            messages = @(@{ role = "user"; content = $interviewPrompt })
+        } | ConvertTo-Json -Depth 10
+    }
+    "azure-openai" {
+        $uri = "$endpoint/openai/deployments/$model/chat/completions?api-version=2025-01-01-preview"
+        $headers["api-key"] = $apiKey
+        $body = @{
+            max_tokens = 500
+            messages = @(@{ role = "user"; content = $interviewPrompt })
+        } | ConvertTo-Json -Depth 10
+    }
+    "openai-compatible" {
+        $uri = "$endpoint/v1/chat/completions"
+        if ($apiKey -and $apiKey -ne "not-needed") {
+            $headers["Authorization"] = "Bearer $apiKey"
+        }
+        $body = @{
+            model = $model
+            max_tokens = 500
+            messages = @(@{ role = "user"; content = $interviewPrompt })
+        } | ConvertTo-Json -Depth 10
+    }
+    default {
+        Write-Error "STOP: Unsupported API type: $apiType"
+        return @{ ConfigError = $true; Error = "Unsupported API type: $apiType" }
+    }
 }
 
 try {
-    $uri = "$endpoint/v1/messages?api-version=2025-01-01-preview"
-
     if ($ShowDebug) {
-        Write-Host "Calling Foundry at: $uri" -ForegroundColor Cyan
+        Write-Host "Calling: $uri" -ForegroundColor Cyan
     }
 
     $response = Invoke-RestMethod -Uri $uri -Method Post -Headers $headers -Body $body
-    $resultText = $response.content[0].text
+
+    # Extract response text based on API type
+    $resultText = switch ($apiType) {
+        "anthropic" { $response.content[0].text }
+        default { $response.choices[0].message.content }
+    }
 
     return @{
         Question = $Question
         Response = $resultText
-        Model = "claude-sonnet-4-5"
-        TokensUsed = $response.usage.output_tokens
+        Model = $model
+        ConnectionId = $config.ConnectionId
     }
 }
 catch {
     Write-Error "Interview failed: $_"
-    exit 1
+    return @{ Error = $_.Exception.Message }
 }

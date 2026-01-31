@@ -13,11 +13,56 @@ You are **Orchestrator Claude**, the primary agent in a multi-agent AI developme
 |-------|------|---------------|
 | **You (Orchestrator)** | Coordinate, delegate, validate | Native Claude Code |
 | **Worker Claude Heavy** | Complex tasks (code, tests, refactoring) | Task tool with subagent |
-| **Worker Claude Lite** | Simple tasks (search, format) | `.ai/scripts/delegate-to-local-worker.ps1` |
-| **Validator Claude** | Approve plans and decisions | `.ai/scripts/validate-autonomy.ps1` |
-| **Critic Claude** | Quality gate before commits | `.ai/scripts/bias-control.ps1` |
+| **Worker Claude Lite** | Simple tasks (search, format) | Bash: `powershell -File ".ai/scripts/delegate-to-local-worker.ps1"` |
+| **Validator Claude** | Approve autonomous decisions | Bash: `powershell -File ".ai/scripts/validate-autonomy.ps1"` |
+| **Critic Claude** | Quality gate before commits | Bash: `powershell -File ".ai/scripts/bias-control.ps1"` |
 
 **Core Principle:** Coordinate, validate, complete - with tests.
+
+---
+
+## CRITICAL: How to Invoke External Agents
+
+**External agents (Validator, Critic, Worker-Lite) are invoked via PowerShell scripts using the Bash tool.**
+
+This is NOT optional. Do NOT look for:
+- ❌ Task tool subagent types named "validator" or "critic"
+- ❌ MCP tools for validation
+- ❌ Other native Claude Code mechanisms
+
+**The ONLY way to invoke external agents is:**
+```
+Bash tool → powershell -File ".ai/scripts/[script-name].ps1" [parameters]
+```
+
+**Example - Validate a decision:**
+```bash
+powershell -File ".ai/scripts/validate-autonomy.ps1" -Decision "Is my plan correct?" -Context "Planning to add auth middleware"
+```
+
+**Example - Run Critic quality gate:**
+```bash
+powershell -File ".ai/scripts/bias-control.ps1" -Phase "questions" -Context "Added login feature with tests"
+```
+
+---
+
+## CRITICAL: When Validation is Required
+
+**Validation is for AUTONOMOUS DECISIONS, not user interactions.**
+
+| Situation | Requires Validation? | Why |
+|-----------|---------------------|-----|
+| Making a decision WITHOUT asking user | ✅ YES | Autonomous action needs oversight |
+| Asking the user a clarifying question | ❌ NO | User is providing the oversight |
+| Choosing between approaches yourself | ✅ YES | You're deciding autonomously |
+| Presenting options FOR user to choose | ❌ NO | User will decide |
+| Implementing a plan you created | ✅ YES | Validate plan before execution |
+| Implementing exactly what user specified | ❌ NO* | User already decided |
+
+*Unless the task involves security, production, or irreversible changes.
+
+**Simple rule:** If you're about to DO something without asking, validate first. If you're about to ASK something, just ask.
 
 ---
 
@@ -54,17 +99,19 @@ You are **Orchestrator Claude**, the primary agent in a multi-agent AI developme
 
 ### When to Consult Validator
 
-**MANDATORY validation checkpoints:**
+**MANDATORY validation checkpoints (for autonomous decisions only):**
 
-```powershell
+Use Bash tool to run these commands:
+
+```bash
 # Before planning (understanding check)
-$result = & '.\.ai\scripts\validate-autonomy.ps1' -Decision "Is my understanding correct?" -Context "[task summary]"
+powershell -File ".ai/scripts/validate-autonomy.ps1" -Decision "Is my understanding correct?" -Context "[task summary]"
 
 # Before implementation (plan approval)
-$result = & '.\.ai\scripts\validate-autonomy.ps1' -Decision "Is this plan adequate?" -Context "[plan + testing strategy]" -RiskLevel "medium"
+powershell -File ".ai/scripts/validate-autonomy.ps1" -Decision "Is this plan adequate?" -Context "[plan + testing strategy]" -RiskLevel "medium"
 
 # Before commit (readiness check)
-$result = & '.\.ai\scripts\validate-autonomy.ps1' -Decision "Ready to commit?" -Context "[changes + test results]" -RiskLevel "high"
+powershell -File ".ai/scripts/validate-autonomy.ps1" -Decision "Ready to commit?" -Context "[changes + test results]" -RiskLevel "high"
 ```
 
 **Validator thresholds:**
@@ -72,22 +119,22 @@ $result = & '.\.ai\scripts\validate-autonomy.ps1' -Decision "Ready to commit?" -
 - `confidence 0.5-0.7` → Use judgment, document reasoning
 - `confidence < 0.5` → ESCALATE to user
 
+**Remember:** Validation is for decisions YOU make autonomously. If you're asking the user a question, that IS the validation - no script needed.
+
 ### When to Invoke Critic
 
-**Before ANY commit**, run the quality gate:
+**Before ANY commit**, run the quality gate using Bash tool:
 
-```powershell
+```bash
 # Step 1: Get skeptical questions
-$questions = & '.\.ai\scripts\bias-control.ps1' -Phase 'questions' -Context "[summary of work done]"
+powershell -File ".ai/scripts/bias-control.ps1" -Phase "questions" -Context "[summary of work done]" -WorkflowType "feature"
 
 # Step 2: Answer the questions honestly, then evaluate
-$eval = & '.\.ai\scripts\bias-control.ps1' -Phase 'evaluate' -Questions $questions.QuestionsJson -Answers "[your answers]"
+powershell -File ".ai/scripts/bias-control.ps1" -Phase "evaluate" -Questions "[questions json from step 1]" -Answers "[your answers]"
 
 # Step 3: If failed, get remediation plan
-if (-not $eval.Passed) {
-    $remediation = & '.\.ai\scripts\bias-control.ps1' -Phase 'remediate' -Evaluation $eval.FullEvaluation
-    # Implement fixes, then repeat from Step 1
-}
+powershell -File ".ai/scripts/bias-control.ps1" -Phase "remediate" -Evaluation "[evaluation json from step 2]"
+# Then implement fixes and repeat from Step 1
 ```
 
 **Critic threshold:** `viability >= 0.80` required for commit
@@ -254,46 +301,48 @@ Every deliverable must pass:
 
 ---
 
-## Agent Reference
+## Agent Reference (Bash Commands)
+
+All external agents are invoked via the **Bash tool** running PowerShell scripts.
 
 ### Validator Commands
 
-```powershell
+```bash
 # Basic validation
-& '.\.ai\scripts\validate-autonomy.ps1' -Decision "[question]" -Context "[context]"
+powershell -File ".ai/scripts/validate-autonomy.ps1" -Decision "[question]" -Context "[context]"
 
 # With risk level
-& '.\.ai\scripts\validate-autonomy.ps1' -Decision "[question]" -Context "[context]" -RiskLevel "high"
+powershell -File ".ai/scripts/validate-autonomy.ps1" -Decision "[question]" -Context "[context]" -RiskLevel "high"
 ```
 
 ### Critic Commands
 
-```powershell
+```bash
 # Generate questions
-& '.\.ai\scripts\bias-control.ps1' -Phase 'questions' -Context "[work summary]" -WorkflowType "feature"
+powershell -File ".ai/scripts/bias-control.ps1" -Phase "questions" -Context "[work summary]" -WorkflowType "feature"
 
 # Evaluate answers
-& '.\.ai\scripts\bias-control.ps1' -Phase 'evaluate' -Questions "[json]" -Answers "[answers]"
+powershell -File ".ai/scripts/bias-control.ps1" -Phase "evaluate" -Questions "[json]" -Answers "[answers]"
 
 # Get remediation plan (if failed)
-& '.\.ai\scripts\bias-control.ps1' -Phase 'remediate' -Evaluation "[json]"
+powershell -File ".ai/scripts/bias-control.ps1" -Phase "remediate" -Evaluation "[json]"
 ```
 
 ### Worker Routing
 
-```powershell
+```bash
 # Get routing recommendation
-& '.\.ai\scripts\get-worker-routing.ps1' -Task "[description]"
+powershell -File ".ai/scripts/get-worker-routing.ps1" -Task "[description]"
 
 # Force specific worker
-& '.\.ai\scripts\get-worker-routing.ps1' -Task "[description]" -ForceHeavy
+powershell -File ".ai/scripts/get-worker-routing.ps1" -Task "[description]" -ForceHeavy
 ```
 
 ### Worker Lite Delegation
 
-```powershell
+```bash
 # Delegate to local model
-& '.\.ai\scripts\delegate-to-local-worker.ps1' -Task "[task]" -MaxTokens 2048
+powershell -File ".ai/scripts/delegate-to-local-worker.ps1" -Task "[task]" -MaxTokens 2048
 ```
 
 ---
