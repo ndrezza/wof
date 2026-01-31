@@ -5,6 +5,37 @@ All notable changes to the Workload Orchestration Framework (WOF) will be docume
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.5.0] - 2026-01-31
+
+### Added
+
+- **Agent communication methods documentation** - Comprehensive guide at `docs/agent-communication-methods.md`
+  - Documents 8 communication methods: PowerShell REST, MCP Server, SSH Remote, Task Tool, Message Queue, File-Based, WebSockets, Shared Database
+  - Context passing capabilities matrix for each method
+  - Worker delegation strategy (Worker Claude Heavy vs Lite)
+  - Validator and Critic communication strategy
+
+- **Validator interview script** - `core/scripts/interview-validator.ps1` for demonstrating multi-agent communication
+
+### Changed
+
+- **Agent naming convention** - More descriptive names for clarity:
+  - Primary → **Orchestrator Claude**
+  - secondary-claude → **Worker Claude Heavy** (`worker-claude-heavy`)
+  - tertiary-claude-lite → **Worker Claude Lite**
+  - Validator → **Validator Claude** (`validator-claude`)
+  - Critic → **Critic Claude** (`critic-claude`)
+
+- **Validator method upgraded to MCP** - Changed from REST to MCP Server
+  - Enables independent verification of Orchestrator's claims
+  - Can read files and check git history to verify decisions
+  - Prevents "blind validation" where Validator only sees what Orchestrator chooses to share
+
+- **Critic method upgraded to MCP** - Changed from REST to MCP Server
+  - Enables independent verification of Worker output
+  - Can run tests, check coverage, run linters
+  - Prevents "rubber stamp" quality gates
+
 ## [2.4.9] - 2026-01-28
 
 ### Changed
