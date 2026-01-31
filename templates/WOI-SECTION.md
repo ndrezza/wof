@@ -59,6 +59,31 @@ The `ado` subagent is a **formatter**, not a tool-caller. Subagents cannot acces
 **IMPORTANT - Handling Subagent Responses:**
 When the subagent returns a formatted response, do NOT re-echo it. The output is already displayed to the user. Just acknowledge completion or move to the next step.
 
+### CRITICAL: How to Invoke External Agents
+
+**External agents (Validator, Critic, Worker-Lite) are invoked via PowerShell scripts using the Bash tool.**
+
+Do NOT look for Task tool subagent types named "validator" or "critic". The ONLY way is:
+
+```bash
+# Validator - for autonomous decisions
+powershell -File ".ai/scripts/validate-autonomy.ps1" -Decision "[question]" -Context "[context]"
+
+# Critic - quality gate before commit
+powershell -File ".ai/scripts/bias-control.ps1" -Phase "questions" -Context "[work summary]"
+
+# Worker-Lite - delegate simple tasks
+powershell -File ".ai/scripts/delegate-to-local-worker.ps1" -Task "[task]"
+```
+
+**When validation is required:**
+- ✅ Making decisions WITHOUT asking user → Validate first
+- ❌ Asking user a question → No validation needed (user IS the validation)
+- ✅ Implementing your own plan → Validate the plan
+- ❌ Implementing exactly what user specified → Usually no validation*
+
+*Unless security, production, or irreversible changes.
+
 ### Multi-Agent Architecture
 
 ```
