@@ -5,6 +5,28 @@ All notable changes to the Workload Orchestration Framework (WOF) will be docume
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.0.4] - 2026-01-31
+
+### Fixed
+
+- **MCP documentation: Task tool does not work** - Fixed incorrect documentation that showed using `mcp__*__Task` tool for agent invocation
+  - `claude mcp serve` instances don't have subagent types configured
+  - Updated to use direct tools instead: `Read`, `Bash`, `Glob`, `Grep`, `Edit`, `Write`
+  - Updated `templates/WOI-SECTION.md` with correct examples
+  - Added "Why NOT the Task Tool?" section explaining the error
+
+### Why This Matters
+
+The previous documentation showed examples like `mcp__validator-claude__Task` which fail with:
+```
+Error: Agent type 'general-purpose' not found. Available agents:
+```
+
+Direct tools work correctly and allow independent verification:
+- `mcp__validator-claude__Read` - Read files to verify claims
+- `mcp__critic-claude__Bash` - Run tests to verify quality
+- `mcp__worker-claude-heavy__Edit` - Make code changes
+
 ## [3.0.3] - 2026-01-31
 
 ### Added

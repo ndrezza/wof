@@ -278,51 +278,64 @@ Expected output should show:
 
 ## How the Orchestrator Uses MCP Servers
 
-Once registered, the Orchestrator has access to MCP tools for each role:
+Once registered, the Orchestrator has access to **direct tools** for each role.
+
+**IMPORTANT:** Do NOT use the `Task` tool on MCP servers - it requires subagent types that aren't configured in `claude mcp serve` instances. Use the direct tools instead.
+
+### Available Direct Tools
+
+Each MCP server exposes these tools (prefixed with `mcp__<server-name>__`):
+
+| Tool | Purpose |
+|------|---------|
+| `Read` | Read files |
+| `Glob` | Find files by pattern |
+| `Grep` | Search file contents |
+| `Bash` | Run shell commands |
+| `Edit` | Modify files |
+| `Write` | Create files |
 
 ### Validator Tools
 ```
-mcp__validator-claude__Task - Spawn a validation task
 mcp__validator-claude__Read - Read files for verification
-mcp__validator-claude__Bash - Run commands for verification
+mcp__validator-claude__Glob - Find files to check
+mcp__validator-claude__Grep - Search for patterns
+mcp__validator-claude__Bash - Run git commands, check history
 ```
 
 ### Critic Tools
 ```
-mcp__critic-claude__Task - Spawn a critique task
 mcp__critic-claude__Bash - Run tests, coverage checks
 mcp__critic-claude__Read - Read code for quality review
+mcp__critic-claude__Grep - Search for issues
 ```
 
 ### Worker Heavy Tools
 ```
-mcp__worker-claude-heavy__Task - Spawn implementation task
 mcp__worker-claude-heavy__Edit - Edit files
 mcp__worker-claude-heavy__Write - Create files
 mcp__worker-claude-heavy__Bash - Run builds, tests
+mcp__worker-claude-heavy__Read - Read files
 ```
 
 ## Example: Validation via MCP
 
-Instead of calling a REST endpoint, the Orchestrator uses MCP:
+The Orchestrator uses MCP direct tools for independent verification:
 
 ```
 Orchestrator: "I want to validate my plan to modify auth.js"
 
-→ Calls mcp__validator-claude__Task with prompt:
-  "You are the Validator. Verify this plan is safe:
-   - Plan: Modify auth.js to add logout functionality
-   - Context: User requested logout feature
+Step 1: Read the file independently
+→ Calls mcp__validator-claude__Read with file_path: "src/auth.js"
+→ Returns: File contents (500 lines of security-critical code)
 
-   IMPORTANT: Don't just trust my description.
-   Use the Read tool to check auth.js yourself.
-   Verify the file size, complexity, and risk level independently."
+Step 2: Check git history
+→ Calls mcp__validator-claude__Bash with command: "git log --oneline -5 src/auth.js"
+→ Returns: Recent commits show active development
 
-→ Validator Claude (MCP Server):
-  1. Reads auth.js using Read tool
-  2. Checks git history using Bash tool
-  3. Independently assesses risk
-  4. Returns: {confidence: 0.85, reasoning: "File is 150 lines, well-tested..."}
+Step 3: Assess based on findings
+→ File is larger and more critical than described
+→ Orchestrator decides: Validation fails, need user approval
 ```
 
 ## Example: Critique via MCP
@@ -330,22 +343,28 @@ Orchestrator: "I want to validate my plan to modify auth.js"
 ```
 Orchestrator: "Worker says tests pass. Verify before commit."
 
-→ Calls mcp__critic-claude__Task with prompt:
-  "You are the Critic. Verify the Worker's claims:
-   - Claim: All tests pass
-   - Claim: Coverage is good
+Step 1: Run tests independently
+→ Calls mcp__critic-claude__Bash with command: "dotnet test --no-build"
+→ Returns: Test results (3/12 passing)
 
-   IMPORTANT: Don't trust these claims.
-   Run the tests yourself using Bash.
-   Check coverage yourself.
-   Report what you actually find."
+Step 2: Check coverage
+→ Calls mcp__critic-claude__Bash with command: "dotnet test --collect:'XPlat Code Coverage'"
+→ Returns: Coverage report (34%)
 
-→ Critic Claude (MCP Server):
-  1. Runs `dotnet test` using Bash tool
-  2. Runs coverage check
-  3. Compares actual results to claims
-  4. Returns: {viability: 0.4, findings: "Only 3/12 tests pass..."}
+Step 3: Assess based on findings
+→ Worker claimed "all tests pass" but only 3/12 pass
+→ Critic returns: {viability: 0.4, findings: "Claims don't match reality"}
 ```
+
+## Why Not Use the Task Tool?
+
+The `mcp__*__Task` tool requires `subagent_type` which is not configured in `claude mcp serve` instances. You'll get this error:
+
+```
+Error: Agent type 'general-purpose' not found. Available agents:
+```
+
+**Solution:** Use direct tools (Read, Bash, Glob, etc.) instead of Task.
 
 ## Worker-Lite Exception
 
