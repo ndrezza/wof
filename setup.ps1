@@ -760,8 +760,10 @@ if ($ConfigFormat -eq "v2") {
     Write-Host "     Add your Azure AI Foundry and OpenAI API keys"
 }
 Write-Host ""
-Write-Host "  2. Set up MCP server:" -ForegroundColor Cyan
-Write-Host "     claude mcp add --scope local secondary-claude -- claude mcp serve"
+Write-Host "  2. Set up MCP servers (for multi-agent orchestration):" -ForegroundColor Cyan
+Write-Host "     claude mcp add --scope local validator-claude -- claude mcp serve"
+Write-Host "     claude mcp add --scope local critic-claude -- claude mcp serve"
+Write-Host "     claude mcp add --scope local worker-claude-heavy -- claude mcp serve"
 Write-Host ""
 Write-Host "  3. (Optional) Configure Worker-Lite:" -ForegroundColor Cyan
 Write-Host "     Use local models, vLLMs, network deployments, or cloud providers"

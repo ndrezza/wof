@@ -125,14 +125,14 @@ worker_routing:
   t2_standard:
     worker: WorkerHeavy
     provider: azure_worker
-    mcp_server: secondary-claude
+    mcp_server: worker-claude-heavy
 
   t3_advanced:
     worker: WorkerHeavy
     provider: azure_worker
-    mcp_server: secondary-claude
+    mcp_server: worker-claude-heavy
 
   t4_critical:
     worker: WorkerHeavy
     provider: azure_worker
-    mcp_server: secondary-claude
+    mcp_server: worker-claude-heavy

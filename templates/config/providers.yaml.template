@@ -168,7 +168,7 @@ task_delegation:
   WorkerHeavy:
     description: "Complex code generation, file ops, execution (T2+)"
     provider: azure_worker
-    mcp_server: secondary-claude
+    mcp_server: worker-claude-heavy
     tier: t3_advanced
     model: claude-opus-4-5-20251101
 

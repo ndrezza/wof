@@ -195,7 +195,9 @@ This ensures `credentials.local.json` stays gitignored even after removing WOF.
 
 2. **Set up MCP server:**
    ```bash
-   claude mcp add --scope local secondary-claude -- claude mcp serve
+   claude mcp add --scope local validator-claude -- claude mcp serve
+   claude mcp add --scope local critic-claude -- claude mcp serve
+   claude mcp add --scope local worker-claude-heavy -- claude mcp serve
    ```
 
 3. **Configure Worker-Lite (optional):**

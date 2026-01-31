@@ -1,38 +1,42 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "version": "2.0.0",
-  "description": "Role-to-connection mapping. Defines which AI connection each role uses.",
+  "version": "3.0.0",
+  "description": "Role-to-connection mapping. Defines which AI connection and MCP server each role uses.",
   "roles": {
     "primary": {
       "description": "Orchestrator - understands requirements, delegates work",
       "connection": "native",
       "model": "claude-opus-4-5-20251101",
+      "mcp_server": null,
       "restrictions": ["PRIMARY DOES NOT CODE", "All coding delegated to Worker"]
     },
     "worker-heavy": {
       "description": "Complex code generation, testing, refactoring (T2+ tasks)",
-      "connection": "ai1",
+      "connection": "native",
       "model": "claude-opus-4-5-20251101",
-      "mcp_server": "secondary-claude",
+      "mcp_server": "worker-claude-heavy",
       "fallback": null
     },
     "worker-lite": {
       "description": "Lightweight tasks - search, format, navigate (T1 tasks)",
       "connection": "ai4",
-      "model": "deepseek-coder-v2-lite-instruct",
-      "mcp_server": "tertiary-claude-lite",
+      "model": "local-model",
+      "mcp_server": null,
+      "invocation": "rest",
       "fallback": "worker-heavy"
     },
     "validator": {
-      "description": "Decision validation with confidence scoring",
-      "connection": "ai1",
+      "description": "Independent decision verification with tool access",
+      "connection": "native",
       "model": "claude-sonnet-4-5",
+      "mcp_server": "validator-claude",
       "threshold": 0.7
     },
     "critic": {
-      "description": "Quality gate - skeptical review of outputs",
-      "connection": "ai3",
-      "model": "gpt-5.1-codex-mini",
+      "description": "Independent quality gate - can run tests and verify claims",
+      "connection": "native",
+      "model": "claude-sonnet-4-5",
+      "mcp_server": "critic-claude",
       "threshold": 0.8
     }
   }

@@ -93,10 +93,12 @@ After collecting credentials, write them to `.ai/config/credentials.local.json` 
 
 ### Step 5: SETUP_MCP
 
-Register the secondary-claude MCP server for Worker delegation:
+Register the role-specific MCP servers:
 
 ```bash
-claude mcp add --scope local secondary-claude -- claude mcp serve
+claude mcp add --scope local validator-claude -- claude mcp serve
+claude mcp add --scope local critic-claude -- claude mcp serve
+claude mcp add --scope local worker-claude-heavy -- claude mcp serve
 ```
 
 **Note:** This step requires Claude Code CLI to be available.
@@ -322,7 +324,7 @@ After installation, verify these items:
 | Roles config | `Test-Path "{TARGET}/.ai/config/roles.json"` | `True` |
 | Credentials file | `Test-Path "{TARGET}/.ai/config/credentials.local.json"` | `True` |
 | Health check passes | `.\.ai\scripts\check-orchestration-health.ps1` | Status output |
-| MCP server registered | `claude mcp list` | Shows `secondary-claude` |
+| MCP servers registered | `claude mcp list` | Shows `validator-claude`, `critic-claude`, `worker-claude-heavy` |
 
 ## TROUBLESHOOTING
 
