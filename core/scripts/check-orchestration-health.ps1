@@ -420,9 +420,7 @@ if ($healthStatus["worker-lite"].Status -eq "ONLINE") {
 
 Write-Host ""
 
-# Return JSON if requested
+# Return JSON if requested (otherwise output is already rendered via Write-Host)
 if ($JsonOutput) {
     return $healthStatus | ConvertTo-Json -Depth 3
 }
-
-return $healthStatus
