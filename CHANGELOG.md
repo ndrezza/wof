@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- **Removed redundant hashtable output from health check** - `check-orchestration-health.ps1` no longer outputs raw hashtable at the end; visual output is already rendered via Write-Host
+- **Removed redundant hashtable output from all scripts** - `check-orchestration-health.ps1`, `sync.ps1`, `setup.ps1`, and `validate.ps1` no longer output raw hashtables at the end; visual output is already rendered via Write-Host
 
 ## [2.7.0] - 2026-01-31
 

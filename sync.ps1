@@ -667,13 +667,3 @@ if ($deprecated.Count -gt 0) {
     }
     Write-Host ""
 }
-
-return @{
-    Success = $true
-    Updated = $updated
-    Skipped = $skipped
-    Deprecated = $deprecated
-    Preserved = $preserved
-    FromVersion = $currentVersion
-    ToVersion = $newVersion
-}

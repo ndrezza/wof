@@ -330,11 +330,3 @@ if ($results.Warnings -gt 0 -and $VerboseOutput) {
 $overallStatus = if ($results.Failed -eq 0) { "READY" } elseif ($results.Failed -le 2) { "PARTIAL" } else { "NOT READY" }
 Write-Host "Overall Status: $overallStatus" -ForegroundColor $(if ($overallStatus -eq "READY") { "Green" } elseif ($overallStatus -eq "PARTIAL") { "Yellow" } else { "Red" })
 Write-Host ""
-
-return @{
-    Status = $overallStatus
-    Passed = $results.Passed
-    Warnings = $results.Warnings
-    Failed = $results.Failed
-    Checks = $results.Checks
-}

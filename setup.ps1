@@ -833,9 +833,3 @@ if ($Cleanup) {
         }
     }
 }
-
-return @{
-    Success = $true
-    TargetPath = $TargetPath
-    SolutionName = $SolutionName
-}
