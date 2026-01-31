@@ -5,6 +5,23 @@ All notable changes to the Workload Orchestration Framework (WOF) will be docume
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.5.1] - 2026-01-31
+
+### Added
+
+- **Validator Claude role definition** - `core/agents/validator-claude.md`
+  - 17 verification questions for validating Orchestrator decisions
+  - Structured JSON response format with confidence scoring
+  - Examples for approve, escalate, and approve-with-concerns scenarios
+  - Anti-patterns to avoid (rubber stamping, obstruction, false precision)
+
+- **Critic Claude role definition** - `core/agents/critic-claude.md`
+  - 26 verification questions for critiquing Worker output
+  - Structured JSON response format with viability scoring
+  - PASS/FAIL/REMEDIATE verdict framework
+  - Fix Now vs. Work Item decision framework
+  - Examples for pass, fail, and remediate scenarios
+
 ## [2.5.0] - 2026-01-31
 
 ### Added
