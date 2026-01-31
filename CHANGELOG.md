@@ -5,6 +5,20 @@ All notable changes to the Workload Orchestration Framework (WOF) will be docume
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.5.2] - 2026-01-31
+
+### Added
+
+- **Task Execution Workflow** - `core/workflows/task-execution-workflow.md`
+  - 6-phase workflow: Intake, Planning, Implementation, Quality Gate, Commit, Completion
+  - 6 validation checkpoints (reduced from initial 10 after Validator review)
+  - Risk-tiered validation: auto-approve, batch, and individual tiers
+  - Pre-flight snapshot checkpoint for rollback readiness
+  - Anomaly detection replacing per-step validation
+  - Explicit human escalation triggers (auto-escalate at <0.50 confidence)
+  - Progressive autonomy levels: supervised, guided, autonomous
+  - Validator-reviewed and approved (score: 0.65 → 0.85 after revisions)
+
 ## [2.5.1] - 2026-01-31
 
 ### Added
