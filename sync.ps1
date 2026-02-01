@@ -45,6 +45,59 @@ function Write-Success { param([string]$Message) Write-Host "[+] $Message" -Fore
 function Write-Warn { param([string]$Message) Write-Host "[!] $Message" -ForegroundColor Yellow }
 function Write-Info { param([string]$Message) Write-Host "    $Message" -ForegroundColor Gray }
 
+# Detect OS and shell environment
+$isWindows = $env:OS -eq "Windows_NT" -or $PSVersionTable.Platform -eq "Win32NT" -or (-not $PSVersionTable.Platform)
+$isUnix = $PSVersionTable.Platform -eq "Unix"
+$isMacOS = $PSVersionTable.OS -match "Darwin"
+
+if ($isWindows) {
+    $woiOS = "Windows"
+    $woiShell = "PowerShell"
+} elseif ($isMacOS) {
+    $woiOS = "macOS"
+    $woiShell = "Bash/Zsh"
+} else {
+    $woiOS = "Linux"
+    $woiShell = "Bash"
+}
+
+# Conditional block processing function
+function Process-ConditionalBlocks {
+    param(
+        [string]$Content,
+        [hashtable]$Flags
+    )
+
+    # Process {{#if FLAG}}...{{/if}} blocks
+    foreach ($flag in $Flags.Keys) {
+        $ifPattern = "(?s)\{\{#if $flag\}\}(.*?)\{\{/if\}\}"
+        if ($Flags[$flag]) {
+            # Flag is true - keep the content, remove the markers
+            $Content = [regex]::Replace($Content, $ifPattern, '$1')
+        } else {
+            # Flag is false - remove the entire block
+            $Content = [regex]::Replace($Content, $ifPattern, '')
+        }
+    }
+
+    # Process {{#unless FLAG}}...{{/unless}} blocks
+    foreach ($flag in $Flags.Keys) {
+        $unlessPattern = "(?s)\{\{#unless $flag\}\}(.*?)\{\{/unless\}\}"
+        if (-not $Flags[$flag]) {
+            # Flag is false - keep the content, remove the markers
+            $Content = [regex]::Replace($Content, $unlessPattern, '$1')
+        } else {
+            # Flag is true - remove the entire block
+            $Content = [regex]::Replace($Content, $unlessPattern, '')
+        }
+    }
+
+    # Clean up any remaining empty lines from removed blocks
+    $Content = $Content -replace "(\r?\n){3,}", "`n`n"
+
+    return $Content
+}
+
 # Validation
 if (-not (Test-Path $TargetPath)) {
     Write-Host "[-] Target path does not exist: $TargetPath" -ForegroundColor Red
@@ -401,13 +454,47 @@ Write-Step "Processing WOI section in CLAUDE.md..."
 $claudeMdPath = Join-Path $TargetPath "CLAUDE.md"
 $woiSectionTemplate = Join-Path $scriptRoot "templates\WOI-SECTION.md"
 
+# Check if ADO is configured
+$adoConfigPath = Join-Path $aiDir "config\ado.json"
+$adoEnabled = $false
+$adoProject = ""
+$adoOrg = ""
+if (Test-Path $adoConfigPath) {
+    try {
+        $adoConfig = Get-Content $adoConfigPath -Raw | ConvertFrom-Json
+        if ($adoConfig.project -and $adoConfig.project.name) {
+            $adoEnabled = $true
+            $adoProject = $adoConfig.project.name
+            $adoOrg = if ($adoConfig.project.organizationUrl) { $adoConfig.project.organizationUrl } else { "" }
+        }
+    } catch {
+        # ADO config exists but couldn't be parsed
+    }
+}
+
+# Build conditional flags for template processing
+$conditionalFlags = @{
+    "WOI_IS_WINDOWS" = $isWindows
+    "WOI_IS_UNIX" = $isUnix -or $isMacOS
+    "WOI_ADO_ENABLED" = $adoEnabled
+}
+
 if (Test-Path $claudeMdPath) {
     $claudeMdContent = Get-Content $claudeMdPath -Raw
 
     # Load WOI section template and replace placeholders
     if (Test-Path $woiSectionTemplate) {
         $woiSection = Get-Content $woiSectionTemplate -Raw
+
+        # Process conditional blocks first
+        $woiSection = Process-ConditionalBlocks -Content $woiSection -Flags $conditionalFlags
+
+        # Then replace placeholders
         $woiSection = $woiSection -replace '\{\{WOI_VERSION\}\}', $newVersion
+        $woiSection = $woiSection -replace '\{\{WOI_OS\}\}', $woiOS
+        $woiSection = $woiSection -replace '\{\{WOI_SHELL\}\}', $woiShell
+        $woiSection = $woiSection -replace '\{\{WOI_ADO_PROJECT\}\}', $adoProject
+        $woiSection = $woiSection -replace '\{\{WOI_ADO_ORG\}\}', $adoOrg
 
         $startMarker = "<!-- WOI-SECTION-START"
         $endMarker = "<!-- WOI-SECTION-END -->"

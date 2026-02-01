@@ -125,6 +125,25 @@ Write-Host ""
 $versionFile = Join-Path $scriptRoot "VERSION"
 $frameworkVersion = if (Test-Path $versionFile) { (Get-Content $versionFile).Trim() } else { "unknown" }
 
+# Detect OS and shell environment
+$isWindows = $env:OS -eq "Windows_NT" -or $PSVersionTable.Platform -eq "Win32NT" -or (-not $PSVersionTable.Platform)
+$isUnix = $PSVersionTable.Platform -eq "Unix"
+$isMacOS = $PSVersionTable.OS -match "Darwin"
+
+if ($isWindows) {
+    $woiOS = "Windows"
+    $woiShell = "PowerShell"
+} elseif ($isMacOS) {
+    $woiOS = "macOS"
+    $woiShell = "Bash/Zsh"
+} else {
+    $woiOS = "Linux"
+    $woiShell = "Bash"
+}
+
+# ADO enabled flag
+$adoEnabled = $AdoOrganization -and $AdoProject
+
 # Placeholder values
 $placeholders = @{
     "{{SOLUTION_NAME}}" = $SolutionName
@@ -135,6 +154,53 @@ $placeholders = @{
     "{{ADO_ORGANIZATION}}" = $AdoOrganization
     "{{ADO_PROJECT}}" = $AdoProject
     "{{WOI_VERSION}}" = $frameworkVersion
+    "{{WOI_OS}}" = $woiOS
+    "{{WOI_SHELL}}" = $woiShell
+    "{{WOI_ADO_PROJECT}}" = $AdoProject
+    "{{WOI_ADO_ORG}}" = $AdoOrganization
+}
+
+# Conditional flags for template processing
+$conditionalFlags = @{
+    "WOI_IS_WINDOWS" = $isWindows
+    "WOI_IS_UNIX" = $isUnix -or $isMacOS
+    "WOI_ADO_ENABLED" = $adoEnabled
+}
+
+function Process-ConditionalBlocks {
+    param(
+        [string]$Content,
+        [hashtable]$Flags
+    )
+
+    # Process {{#if FLAG}}...{{/if}} blocks
+    foreach ($flag in $Flags.Keys) {
+        $ifPattern = "(?s)\{\{#if $flag\}\}(.*?)\{\{/if\}\}"
+        if ($Flags[$flag]) {
+            # Flag is true - keep the content, remove the markers
+            $Content = [regex]::Replace($Content, $ifPattern, '$1')
+        } else {
+            # Flag is false - remove the entire block
+            $Content = [regex]::Replace($Content, $ifPattern, '')
+        }
+    }
+
+    # Process {{#unless FLAG}}...{{/unless}} blocks
+    foreach ($flag in $Flags.Keys) {
+        $unlessPattern = "(?s)\{\{#unless $flag\}\}(.*?)\{\{/unless\}\}"
+        if (-not $Flags[$flag]) {
+            # Flag is false - keep the content, remove the markers
+            $Content = [regex]::Replace($Content, $unlessPattern, '$1')
+        } else {
+            # Flag is true - remove the entire block
+            $Content = [regex]::Replace($Content, $unlessPattern, '')
+        }
+    }
+
+    # Clean up any remaining empty lines from removed blocks
+    $Content = $Content -replace "(\r?\n){3,}", "`n`n"
+
+    return $Content
 }
 
 function Replace-Placeholders {
@@ -154,10 +220,18 @@ function Copy-WithPlaceholders {
     param(
         [string]$SourceFile,
         [string]$DestFile,
-        [hashtable]$Values
+        [hashtable]$Values,
+        [hashtable]$Flags = @{}
     )
 
     $content = Get-Content $SourceFile -Raw
+
+    # Process conditional blocks first (if flags provided)
+    if ($Flags.Count -gt 0) {
+        $content = Process-ConditionalBlocks -Content $content -Flags $Flags
+    }
+
+    # Then replace placeholders
     $processed = Replace-Placeholders -Content $content -Values $Values
 
     $destDir = Split-Path $DestFile -Parent
@@ -313,6 +387,8 @@ if (-not $SkipTemplates) {
     if ((Test-Path $claudeTarget) -and (Test-Path $woiSectionTemplate)) {
         $claudeContent = Get-Content $claudeTarget -Raw
         $woiSection = Get-Content $woiSectionTemplate -Raw
+        # Process conditional blocks first, then placeholders
+        $woiSection = Process-ConditionalBlocks -Content $woiSection -Flags $conditionalFlags
         $woiSection = Replace-Placeholders -Content $woiSection -Values $placeholders
 
         $startMarker = "<!-- WOI-SECTION-START"

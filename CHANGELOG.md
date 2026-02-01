@@ -5,6 +5,27 @@ All notable changes to the Workload Orchestration Framework (WOF) will be docume
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.0.6] - 2026-02-01
+
+### Added
+
+- **Environment-aware shell syntax guidance** - WOI section now includes OS/shell detection with explicit syntax guidance
+  - Windows/PowerShell users see PowerShell syntax examples (Test-Path, Get-ChildItem, etc.)
+  - Unix/macOS users see Bash syntax examples
+  - Prevents frequent "I need to use proper bash syntax, not PowerShell" errors
+
+- **Strengthened ADO project filtering** - Added critical guidance for Azure DevOps queries
+  - Template now shows configured project name prominently
+  - WIQL examples explicitly include `[System.TeamProject]` filter
+  - MCP tool calls show required `projectId` parameter
+  - Warning about failure mode when filter is omitted
+
+### Changed
+
+- `setup.ps1` now detects OS and shell environment, populates conditional template blocks
+- `sync.ps1` now processes conditional blocks when updating WOI section
+- Added `Process-ConditionalBlocks` function for Handlebars-style `{{#if}}` / `{{#unless}}` processing
+
 ## [3.0.5] - 2026-01-31
 
 ### Added

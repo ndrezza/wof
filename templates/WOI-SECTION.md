@@ -5,6 +5,39 @@
 
 This project has the Workload Orchestration Framework installed as a local instance (WOI).
 
+### CRITICAL: Shell Environment
+
+**This environment runs on: {{WOI_OS}} with {{WOI_SHELL}}**
+
+{{#if WOI_IS_WINDOWS}}
+**YOU ARE ON WINDOWS WITH POWERSHELL.** Use PowerShell syntax, NOT Bash/Unix syntax.
+
+| Task | CORRECT (PowerShell) | WRONG (Bash) |
+|------|---------------------|--------------|
+| Check if path exists | `Test-Path ".ai"` | `[ -d ".ai" ]` |
+| List files | `Get-ChildItem` or `dir` | `ls -la` |
+| Read file | `Get-Content file.txt` | `cat file.txt` |
+| Set variable | `$var = "value"` | `var="value"` |
+| If statement | `if ($condition) { ... }` | `if [ $condition ]; then ... fi` |
+| Run script | `powershell -File "script.ps1"` | `./script.sh` |
+| Environment var | `$env:VAR_NAME` | `$VAR_NAME` |
+
+**For WOF scripts, always use:**
+```powershell
+powershell -ExecutionPolicy Bypass -File ".\.ai\scripts\script-name.ps1"
+```
+{{/if}}
+{{#if WOI_IS_UNIX}}
+**YOU ARE ON UNIX/LINUX/MACOS.** Use Bash syntax.
+
+For WOF scripts, use:
+```bash
+bash ./.ai/scripts/script-name.sh
+# Or for PowerShell Core:
+pwsh -File "./.ai/scripts/script-name.ps1"
+```
+{{/if}}
+
 ### CRITICAL: How to Invoke External Agents
 
 **External agents are invoked via MCP servers using DIRECT TOOLS, NOT the Task tool.**
@@ -135,6 +168,40 @@ This happens because `claude mcp serve` instances don't have subagent types conf
 │ claims    │  └─────────────────────────────────────┘  │ verify    │
 └───────────┘                                           └───────────┘
 ```
+
+### CRITICAL: Azure DevOps Query Behavior
+{{#if WOI_ADO_ENABLED}}
+**ADO is configured for this project. ALWAYS filter queries by the configured project.**
+
+**Configured Project:** `{{WOI_ADO_PROJECT}}`
+**Organization:** `{{WOI_ADO_ORG}}`
+
+**MANDATORY: Every work item query MUST include the project filter:**
+```sql
+SELECT [System.Id], [System.Title], [System.State]
+FROM WorkItems
+WHERE [System.TeamProject] = '{{WOI_ADO_PROJECT}}'  -- NEVER omit this
+  AND [System.State] IN ('New', 'Active')
+ORDER BY [Microsoft.VSTS.Common.Priority] ASC
+```
+
+**When using MCP tools, ALWAYS specify projectId:**
+```
+mcp__azure-devops__list_work_items with:
+  projectId: "{{WOI_ADO_PROJECT}}"
+  wiql: "SELECT ... WHERE [System.TeamProject] = '{{WOI_ADO_PROJECT}}' ..."
+```
+
+**FAILURE MODE TO AVOID:** Omitting the project filter returns work items from ALL projects in the organization, causing confusion and retrieving irrelevant items.
+
+**Before ANY ADO query:**
+1. Read `.ai/config/ado.json` to get the configured project name
+2. Include `[System.TeamProject] = '<project>'` in WIQL
+3. Pass `projectId` parameter to MCP tools
+{{/if}}
+{{#unless WOI_ADO_ENABLED}}
+**ADO is not configured.** Run `/wof configure-ado` to set up Azure DevOps integration.
+{{/unless}}
 
 ### WOI Quick Reference
 
