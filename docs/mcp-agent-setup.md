@@ -102,7 +102,8 @@ You can configure MCP servers to use **local LLMs** instead of cloud APIs. This 
 #### Setup
 
 ```bash
-# 1. Install Ollama (https://ollama.com)
+# 1. Install Ollama - see docs/ollama-setup.md for detailed instructions
+#    Quick install: https://ollama.com/download
 # 2. Pull a coding model (64k+ context recommended)
 ollama pull qwen3-coder:30b
 
@@ -259,6 +260,8 @@ Use cloud API for:
 - Tasks needing very large context windows (>64k)
 
 ### Troubleshooting Local LLMs
+
+For comprehensive Ollama troubleshooting, see **[docs/ollama-setup.md](./ollama-setup.md)**.
 
 #### "Unicode encode error" on Windows
 ```bash
