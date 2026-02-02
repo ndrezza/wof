@@ -66,14 +66,14 @@
       "default_model": "gpt-5.1-codex-mini"
     },
     "ai4": {
-      "alias": "Local LLM",
-      "description": "Local model via LM Studio, Ollama, vLLM, etc.",
+      "alias": "Local LLM (Ollama)",
+      "description": "Local model via Ollama (recommended) or other OpenAI-compatible servers",
       "type": "openai-compatible",
-      "capability": "low",
+      "capability": "medium",
       "endpoint": "${AI4_ENDPOINT}",
       "api_key": "${AI4_API_KEY}",
       "models": {},
-      "default_model": "local-model"
+      "default_model": "qwen3-coder:30b"
     },
     "ai5": {
       "alias": "",

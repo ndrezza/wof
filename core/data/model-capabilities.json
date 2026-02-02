@@ -1,0 +1,301 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "version": "1.0.0",
+  "description": "Model capabilities database for WOF role recommendations",
+  "_instructions": [
+    "This file caches known model capabilities to avoid repeated web searches.",
+    "When a model is not found here, WOF will search the web for capabilities.",
+    "Contributions welcome - add models you've tested!"
+  ],
+  "models": {
+    "qwen3-coder:30b": {
+      "family": "Qwen",
+      "parameters": "30.5B",
+      "context_window": 65536,
+      "strengths": ["code generation", "code completion", "refactoring", "large context"],
+      "weaknesses": ["slower inference", "high RAM"],
+      "ram_required_gb": 20,
+      "recommended_roles": ["worker-heavy"],
+      "quality_tier": "high",
+      "speed_tier": "slow",
+      "notes": "Excellent for complex code tasks. MoE architecture."
+    },
+    "qwen2.5-coder:32b": {
+      "family": "Qwen",
+      "parameters": "32B",
+      "context_window": 131072,
+      "strengths": ["code generation", "128k context", "instruction following"],
+      "weaknesses": ["slower inference", "high RAM"],
+      "ram_required_gb": 22,
+      "recommended_roles": ["worker-heavy", "orchestrator"],
+      "quality_tier": "high",
+      "speed_tier": "slow",
+      "notes": "Large context window, good for orchestration."
+    },
+    "qwen2.5-coder:14b": {
+      "family": "Qwen",
+      "parameters": "14B",
+      "context_window": 131072,
+      "strengths": ["code generation", "balanced speed/quality"],
+      "weaknesses": ["less capable than 32B"],
+      "ram_required_gb": 10,
+      "recommended_roles": ["worker-heavy", "validator"],
+      "quality_tier": "high",
+      "speed_tier": "medium",
+      "notes": "Good balance of speed and capability."
+    },
+    "qwen2.5-coder:7b": {
+      "family": "Qwen",
+      "parameters": "7B",
+      "context_window": 131072,
+      "strengths": ["fast", "code completion", "low RAM"],
+      "weaknesses": ["less capable for complex tasks"],
+      "ram_required_gb": 5,
+      "recommended_roles": ["worker-lite"],
+      "quality_tier": "medium",
+      "speed_tier": "fast",
+      "notes": "Fast and efficient for simple tasks."
+    },
+    "deepseek-r1:8b": {
+      "family": "DeepSeek",
+      "parameters": "8B",
+      "context_window": 65536,
+      "strengths": ["reasoning", "chain-of-thought", "verification"],
+      "weaknesses": ["verbose output", "slower due to thinking"],
+      "ram_required_gb": 5,
+      "recommended_roles": ["validator", "critic"],
+      "quality_tier": "high",
+      "speed_tier": "medium",
+      "notes": "Strong reasoning capabilities, good for verification tasks."
+    },
+    "deepseek-r1:14b": {
+      "family": "DeepSeek",
+      "parameters": "14B",
+      "context_window": 65536,
+      "strengths": ["reasoning", "chain-of-thought", "complex analysis"],
+      "weaknesses": ["verbose output", "higher RAM"],
+      "ram_required_gb": 10,
+      "recommended_roles": ["validator", "critic", "orchestrator"],
+      "quality_tier": "high",
+      "speed_tier": "medium",
+      "notes": "Excellent reasoning for complex validation."
+    },
+    "deepseek-r1:32b": {
+      "family": "DeepSeek",
+      "parameters": "32B",
+      "context_window": 65536,
+      "strengths": ["reasoning", "complex analysis", "high quality"],
+      "weaknesses": ["slow", "high RAM", "verbose"],
+      "ram_required_gb": 22,
+      "recommended_roles": ["orchestrator", "validator"],
+      "quality_tier": "very-high",
+      "speed_tier": "slow",
+      "notes": "Best reasoning capability, good for orchestration."
+    },
+    "deepseek-coder-v2:16b": {
+      "family": "DeepSeek",
+      "parameters": "16B",
+      "context_window": 65536,
+      "strengths": ["code generation", "balanced"],
+      "weaknesses": ["older model"],
+      "ram_required_gb": 10,
+      "recommended_roles": ["worker-heavy"],
+      "quality_tier": "high",
+      "speed_tier": "medium",
+      "notes": "Solid coding model, predecessor to R1."
+    },
+    "codellama:34b": {
+      "family": "CodeLlama",
+      "parameters": "34B",
+      "context_window": 16384,
+      "strengths": ["code completion", "infilling", "Meta quality"],
+      "weaknesses": ["smaller context", "high RAM"],
+      "ram_required_gb": 20,
+      "recommended_roles": ["worker-heavy"],
+      "quality_tier": "high",
+      "speed_tier": "slow",
+      "notes": "Meta's coding model, excellent completion."
+    },
+    "codellama:13b": {
+      "family": "CodeLlama",
+      "parameters": "13B",
+      "context_window": 16384,
+      "strengths": ["code completion", "balanced"],
+      "weaknesses": ["smaller context"],
+      "ram_required_gb": 8,
+      "recommended_roles": ["worker-lite", "validator"],
+      "quality_tier": "medium",
+      "speed_tier": "medium",
+      "notes": "Good balance for medium complexity tasks."
+    },
+    "codellama:7b": {
+      "family": "CodeLlama",
+      "parameters": "7B",
+      "context_window": 16384,
+      "strengths": ["fast", "code completion", "low RAM"],
+      "weaknesses": ["smaller context", "simpler tasks only"],
+      "ram_required_gb": 4,
+      "recommended_roles": ["worker-lite"],
+      "quality_tier": "medium",
+      "speed_tier": "fast",
+      "notes": "Fast and efficient for simple code tasks."
+    },
+    "llama3.2:3b": {
+      "family": "Llama",
+      "parameters": "3B",
+      "context_window": 131072,
+      "strengths": ["very fast", "low RAM", "large context"],
+      "weaknesses": ["limited capability"],
+      "ram_required_gb": 2,
+      "recommended_roles": ["worker-lite"],
+      "quality_tier": "low",
+      "speed_tier": "very-fast",
+      "notes": "Ultra-light, good for simple queries."
+    },
+    "llama3.1:8b": {
+      "family": "Llama",
+      "parameters": "8B",
+      "context_window": 131072,
+      "strengths": ["general purpose", "fast", "large context"],
+      "weaknesses": ["not specialized for code"],
+      "ram_required_gb": 5,
+      "recommended_roles": ["orchestrator", "worker-lite"],
+      "quality_tier": "medium",
+      "speed_tier": "fast",
+      "notes": "Good general model for orchestration."
+    },
+    "llama3.1:70b": {
+      "family": "Llama",
+      "parameters": "70B",
+      "context_window": 131072,
+      "strengths": ["high quality", "general purpose", "reasoning"],
+      "weaknesses": ["very high RAM", "slow"],
+      "ram_required_gb": 45,
+      "recommended_roles": ["orchestrator", "worker-heavy"],
+      "quality_tier": "very-high",
+      "speed_tier": "very-slow",
+      "notes": "High-end general model, needs significant hardware."
+    },
+    "mistral:7b": {
+      "family": "Mistral",
+      "parameters": "7B",
+      "context_window": 32768,
+      "strengths": ["fast", "efficient", "good reasoning"],
+      "weaknesses": ["not specialized for code"],
+      "ram_required_gb": 4,
+      "recommended_roles": ["orchestrator", "validator"],
+      "quality_tier": "medium",
+      "speed_tier": "fast",
+      "notes": "Efficient general model, good for orchestration."
+    },
+    "mixtral:8x7b": {
+      "family": "Mistral",
+      "parameters": "47B (8x7B MoE)",
+      "context_window": 32768,
+      "strengths": ["MoE efficiency", "good quality", "balanced"],
+      "weaknesses": ["complex architecture"],
+      "ram_required_gb": 26,
+      "recommended_roles": ["orchestrator", "worker-heavy"],
+      "quality_tier": "high",
+      "speed_tier": "medium",
+      "notes": "MoE architecture, good quality/speed balance."
+    },
+    "phi3:14b": {
+      "family": "Phi",
+      "parameters": "14B",
+      "context_window": 131072,
+      "strengths": ["reasoning", "Microsoft quality", "large context"],
+      "weaknesses": ["less coding focus"],
+      "ram_required_gb": 8,
+      "recommended_roles": ["validator", "critic"],
+      "quality_tier": "high",
+      "speed_tier": "medium",
+      "notes": "Microsoft's reasoning model, good for validation."
+    },
+    "gemma2:9b": {
+      "family": "Gemma",
+      "parameters": "9B",
+      "context_window": 8192,
+      "strengths": ["Google quality", "efficient"],
+      "weaknesses": ["smaller context"],
+      "ram_required_gb": 6,
+      "recommended_roles": ["worker-lite", "validator"],
+      "quality_tier": "medium",
+      "speed_tier": "fast",
+      "notes": "Google's efficient model."
+    },
+    "gemma2:27b": {
+      "family": "Gemma",
+      "parameters": "27B",
+      "context_window": 8192,
+      "strengths": ["Google quality", "good reasoning"],
+      "weaknesses": ["smaller context", "high RAM"],
+      "ram_required_gb": 18,
+      "recommended_roles": ["orchestrator", "validator"],
+      "quality_tier": "high",
+      "speed_tier": "medium",
+      "notes": "Larger Gemma, better reasoning."
+    },
+    "starcoder2:15b": {
+      "family": "StarCoder",
+      "parameters": "15B",
+      "context_window": 16384,
+      "strengths": ["code generation", "multi-language"],
+      "weaknesses": ["smaller context"],
+      "ram_required_gb": 10,
+      "recommended_roles": ["worker-heavy", "worker-lite"],
+      "quality_tier": "high",
+      "speed_tier": "medium",
+      "notes": "BigCode's coding model, strong multi-language."
+    },
+    "starcoder2:7b": {
+      "family": "StarCoder",
+      "parameters": "7B",
+      "context_window": 16384,
+      "strengths": ["code completion", "fast"],
+      "weaknesses": ["smaller context"],
+      "ram_required_gb": 5,
+      "recommended_roles": ["worker-lite"],
+      "quality_tier": "medium",
+      "speed_tier": "fast",
+      "notes": "Fast coding model for simple tasks."
+    }
+  },
+  "role_requirements": {
+    "orchestrator": {
+      "description": "Coordinates tasks, routes to workers, interacts with user",
+      "priority_strengths": ["reasoning", "instruction following", "large context"],
+      "minimum_quality_tier": "medium",
+      "speed_preference": "fast",
+      "notes": "Needs good reasoning to route tasks correctly. Speed matters for UX."
+    },
+    "worker-heavy": {
+      "description": "Complex code generation, refactoring, large changes",
+      "priority_strengths": ["code generation", "large context", "refactoring"],
+      "minimum_quality_tier": "high",
+      "speed_preference": "any",
+      "notes": "Quality is paramount. Can be slower."
+    },
+    "worker-lite": {
+      "description": "Simple tasks: search, format, lint, quick queries",
+      "priority_strengths": ["fast", "code completion"],
+      "minimum_quality_tier": "low",
+      "speed_preference": "fast",
+      "notes": "Speed is paramount. Simple tasks only."
+    },
+    "validator": {
+      "description": "Independent verification of plans and claims",
+      "priority_strengths": ["reasoning", "verification", "chain-of-thought"],
+      "minimum_quality_tier": "medium",
+      "speed_preference": "medium",
+      "notes": "Needs skeptical reasoning to catch errors."
+    },
+    "critic": {
+      "description": "Quality gate - runs tests, checks coverage, reviews code",
+      "priority_strengths": ["reasoning", "quality assessment"],
+      "minimum_quality_tier": "medium",
+      "speed_preference": "medium",
+      "notes": "Must accurately assess quality before commit."
+    }
+  }
+}

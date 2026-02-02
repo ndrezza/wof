@@ -1,19 +1,25 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "version": "3.0.0",
-  "description": "Role-to-connection mapping. Defines which AI connection and MCP server each role uses.",
+  "version": "3.1.0",
+  "description": "Role-to-connection mapping. Defines which AI connection, model, and delegation method each role uses.",
+  "_delegation_types": [
+    "mcp    - Separate Claude Code process via MCP server (parallel, independent)",
+    "script - Sequential delegation via PowerShell script",
+    "native - Direct invocation (orchestrator only)"
+  ],
   "roles": {
     "primary": {
       "description": "Orchestrator - understands requirements, delegates work",
       "connection": "native",
       "model": "claude-opus-4-5-20251101",
-      "mcp_server": null,
+      "delegation": "native",
       "restrictions": ["PRIMARY DOES NOT CODE", "All coding delegated to Worker"]
     },
     "worker-heavy": {
       "description": "Complex code generation, testing, refactoring (T2+ tasks)",
       "connection": "native",
       "model": "claude-opus-4-5-20251101",
+      "delegation": "mcp",
       "mcp_server": "worker-claude-heavy",
       "fallback": null
     },
@@ -21,14 +27,15 @@
       "description": "Lightweight tasks - search, format, navigate (T1 tasks)",
       "connection": "ai4",
       "model": "local-model",
-      "mcp_server": null,
-      "invocation": "rest",
+      "delegation": "script",
+      "script": ".ai/scripts/delegate-to-local-worker.ps1",
       "fallback": "worker-heavy"
     },
     "validator": {
       "description": "Independent decision verification with tool access",
       "connection": "native",
       "model": "claude-sonnet-4-5",
+      "delegation": "mcp",
       "mcp_server": "validator-claude",
       "threshold": 0.7
     },
@@ -36,6 +43,7 @@
       "description": "Independent quality gate - can run tests and verify claims",
       "connection": "native",
       "model": "claude-sonnet-4-5",
+      "delegation": "mcp",
       "mcp_server": "critic-claude",
       "threshold": 0.8
     }

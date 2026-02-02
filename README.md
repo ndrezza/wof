@@ -201,7 +201,7 @@ This ensures `credentials.local.json` stays gitignored even after removing WOF.
    ```
 
 3. **Configure Worker-Lite (optional):**
-   - Worker-Lite can use local models (vLLM, LM Studio, Ollama), network deployments, or cloud providers
+   - Worker-Lite can use local models (Ollama recommended, or vLLM/llama.cpp with proxy)
 
 4. **Verify setup:**
    ```powershell

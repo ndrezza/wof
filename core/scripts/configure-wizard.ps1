@@ -131,7 +131,7 @@ The wizard will guide you through:
 Connection Types:
     azure_ai_foundry_anthropic  - Claude on Azure (key required)
     azure_openai                - GPT on Azure (key required)
-    openai_compatible           - OpenAI-compatible API (LM Studio, Ollama, etc.)
+    openai_compatible           - OpenAI-compatible API (Ollama, vLLM, llama.cpp)
 
 "@
     exit 0
@@ -574,7 +574,7 @@ function Add-AIConnection {
     Write-Host "Type (auto-detected: $detectedLabel):" -ForegroundColor Cyan
     Write-Host "  [1] azure_ai_foundry_anthropic (Claude on Azure)"
     Write-Host "  [2] azure_openai (GPT on Azure)"
-    Write-Host "  [3] openai_compatible (LM Studio, Ollama, OpenAI API)"
+    Write-Host "  [3] openai_compatible (Ollama, vLLM, llama.cpp)"
     Write-Host ""
     $defaultChoice = switch ($detectedType) {
         "azure_ai_foundry_anthropic" { "1" }

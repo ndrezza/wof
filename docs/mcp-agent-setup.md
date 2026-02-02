@@ -81,33 +81,63 @@ When these variables are set, both the main Claude Code instance AND all MCP ser
 
 ## Local LLM Configuration (Optional)
 
-You can configure MCP servers to use **local LLMs** (Ollama, LM Studio, vLLM) instead of cloud APIs. This provides:
+You can configure MCP servers to use **local LLMs** instead of cloud APIs. This provides:
 - **Zero API cost** - Run inference locally
 - **Complete privacy** - Code never leaves your machine
 - **Offline capability** - Work without internet
 
-### Method 1: Ollama (Simplest)
+### Recommended: Ollama (Native Support)
 
-Ollama v0.14.0+ has native Anthropic Messages API compatibility:
+**Ollama v0.14.0+** has native Anthropic Messages API compatibility - no proxy required.
+
+#### Why Ollama?
+
+| Feature | Ollama | Other Local Servers |
+|---------|--------|---------------------|
+| Anthropic API native | ✅ Yes (v0.14+) | ❌ No |
+| Auto model switching | ✅ Dynamic | ❌ Manual |
+| CLI/headless | ✅ Yes | ⚠️ Limited |
+| Proxy required | ❌ No | ✅ Yes |
+
+#### Setup
 
 ```bash
-# Install Ollama and pull a model (64k+ context recommended)
-ollama pull qwen3-coder
+# 1. Install Ollama (https://ollama.com)
+# 2. Pull a coding model (64k+ context recommended)
+ollama pull qwen3-coder:30b
 
-# Set environment variables before starting Claude Code
+# 3. Set environment variables before starting Claude Code
 export ANTHROPIC_BASE_URL="http://localhost:11434"
-export ANTHROPIC_AUTH_TOKEN="ollama"
-export ANTHROPIC_API_KEY=""
+export ANTHROPIC_API_KEY="ollama"
 
-# Start Claude Code with specific model
-claude --model qwen3-coder
+# 4. Start Claude Code
+claude
 ```
 
-**Recommended models:** `qwen3-coder`, `deepseek-coder-v2`, `codellama:70b`
+**Windows (PowerShell):**
+```powershell
+$env:ANTHROPIC_BASE_URL = "http://localhost:11434"
+$env:ANTHROPIC_API_KEY = "ollama"
+claude
+```
 
-### Method 2: LM Studio / vLLM with Proxy
+**Recommended models:**
+- `qwen3-coder:30b` - Excellent for code generation (requires ~20GB RAM)
+- `deepseek-r1:8b` - Good reasoning, lighter weight
+- `codellama:34b` - Strong code completion
 
-For OpenAI-compatible servers (LM Studio, vLLM), use a translation proxy:
+#### Switching Models at Runtime
+
+Use the `/wof model` command to switch between Ollama models without restarting:
+```
+/wof model qwen3-coder:30b    # Switch to specific model
+/wof model list               # List available models
+/wof model                    # Show current model
+```
+
+### Alternative: vLLM/llama.cpp with Proxy
+
+For OpenAI-compatible servers (vLLM, llama.cpp, text-generation-webui), use a translation proxy:
 
 #### Step 1: Install the Proxy
 
@@ -126,15 +156,15 @@ uv sync
 Create `.env` file:
 
 ```bash
-# For LM Studio (default port 1234)
+# For vLLM (default port 8000)
 PREFERRED_PROVIDER="openai"
-OPENAI_BASE_URL="http://localhost:1234/v1"
-OPENAI_API_KEY="lm-studio"
+OPENAI_BASE_URL="http://localhost:8000/v1"
+OPENAI_API_KEY="local"
 BIG_MODEL="your-model-name"
 SMALL_MODEL="your-model-name"
 
-# For vLLM (default port 8000)
-# OPENAI_BASE_URL="http://localhost:8000/v1"
+# For llama.cpp server (default port 8080)
+# OPENAI_BASE_URL="http://localhost:8080/v1"
 ```
 
 #### Step 3: Start the Proxy
@@ -155,14 +185,16 @@ export ANTHROPIC_API_KEY="local"
 claude
 ```
 
-### Method 3: MCP Server with Local LLM Backend
+### Hybrid Setup: MCP Server with Local Backend
 
 Register an MCP server that uses a local LLM while your main session uses cloud API:
 
 ```bash
-# Add MCP server pointing to local proxy
-claude mcp add --scope user local-llm-worker -- \
-  bash -c 'ANTHROPIC_BASE_URL=http://localhost:8082 ANTHROPIC_API_KEY=local claude mcp serve'
+# Add MCP server pointing to Ollama
+claude mcp add --scope user local-llm-worker \
+  -e ANTHROPIC_BASE_URL=http://localhost:11434 \
+  -e ANTHROPIC_API_KEY=ollama \
+  -- claude mcp serve
 ```
 
 This creates a hybrid setup:
@@ -175,7 +207,7 @@ This creates a hybrid setup:
 │              ↓                                                       │
 │  ┌─────────────────────────────────────────────────────────────┐   │
 │  │  local-llm-worker (MCP Server)                               │   │
-│  │  Model: Local LLM via proxy                                  │   │
+│  │  Model: Local LLM via Ollama                                 │   │
 │  │  Has: Full tool access (Read, Write, Bash, etc.)            │   │
 │  └─────────────────────────────────────────────────────────────┘   │
 └─────────────────────────────────────────────────────────────────────┘
@@ -183,23 +215,35 @@ This creates a hybrid setup:
 
 ### Architecture with Local LLMs
 
+**With Ollama (recommended):**
+```
+┌─────────────────┐                      ┌─────────────────┐
+│  Claude Code    │                      │  Ollama         │
+│  (MCP Client)   │─────────────────────►│  :11434         │
+│                 │                      │                 │
+│  Anthropic API  │   Native support     │  Local Models   │
+│  Format         │   (no proxy!)        │  qwen3-coder    │
+└─────────────────┘                      └─────────────────┘
+```
+
+**With vLLM/llama.cpp (requires proxy):**
 ```
 ┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
-│  Claude Code    │     │  claude-code-   │     │  Local Model    │
+│  Claude Code    │     │  claude-code-   │     │  vLLM/llama.cpp │
 │  (MCP Client)   │────►│  proxy          │────►│  Server         │
-│                 │     │  :8082          │     │  (LM Studio)    │
-│  Anthropic API  │     │  Translates     │     │  :1234          │
-│  Format         │     │  API formats    │     │  OpenAI Format  │
+│                 │     │  :8082          │     │  :8000          │
+│  Anthropic API  │     │  Translates     │     │  OpenAI Format  │
+│  Format         │     │  API formats    │     │                 │
 └─────────────────┘     └─────────────────┘     └─────────────────┘
 ```
 
 ### Performance Considerations
 
-| Factor | Cloud API | Local LLM |
+| Factor | Cloud API | Local LLM (Ollama) |
 |--------|-----------|-----------|
-| Latency | ~1-3s | ~10-60s (depends on hardware) |
+| Latency | ~1-3s | ~5-30s (depends on hardware) |
 | Context window | 200k tokens | Model-dependent (aim for 64k+) |
-| Quality | Best (Opus/Sonnet) | Good for simple tasks |
+| Quality | Best (Opus/Sonnet) | Good for code tasks |
 | Cost | Pay per token | Free after hardware |
 | Privacy | Data sent to cloud | Fully local |
 
@@ -207,11 +251,12 @@ This creates a hybrid setup:
 - Worker-Lite tasks (search, format, simple queries)
 - Cost-sensitive high-volume operations
 - Air-gapped/offline environments
+- Development and testing
 
 Use cloud API for:
 - Complex reasoning (Validator, Critic)
-- Code generation requiring high quality
-- Tasks needing large context windows
+- Code generation requiring highest quality
+- Tasks needing very large context windows (>64k)
 
 ### Troubleshooting Local LLMs
 
@@ -221,30 +266,31 @@ export PYTHONIOENCODING=utf-8
 ```
 
 #### "Model not found"
-Verify the model is loaded in your local server:
+Verify the model is available in Ollama:
 ```bash
-# LM Studio
-curl http://localhost:1234/v1/models
-
-# Ollama
+# List available models
 ollama list
+
+# Pull a model if needed
+ollama pull qwen3-coder:30b
 ```
 
 #### "Connection refused"
-Ensure your local model server is running:
+Ensure Ollama is running:
 ```bash
-# Check LM Studio
-curl http://localhost:1234/v1/models
+# Check Ollama status
+curl http://localhost:11434/api/tags
 
-# Check proxy
-curl http://localhost:8082/
+# Start Ollama if needed (it usually runs as a service)
+ollama serve
 ```
 
 #### "Slow responses"
 Local inference is CPU/GPU bound. For better performance:
 - Use a smaller model (7B-13B parameters)
-- Enable GPU acceleration
-- Reduce max_tokens in requests
+- Enable GPU acceleration (Ollama auto-detects CUDA/Metal)
+- Ensure sufficient RAM (model size + ~4GB overhead)
+- Use quantized models (Q4_K_M is a good balance)
 
 ## Setup Commands
 
@@ -265,29 +311,28 @@ claude mcp add --scope local worker-claude-heavy -- claude mcp serve
 
 ### Hybrid Setup (Local LLM + Cloud API)
 
-To route specific MCP servers to local LLM while others use cloud API, use the `-e` flag to set environment variables:
+To route specific MCP servers to local LLM (Ollama) while others use cloud API, use the `-e` flag to set environment variables:
 
 **Prerequisites:**
-1. Start the claude-code-proxy (translates Anthropic API → OpenAI API):
+1. Ensure Ollama is running with your preferred model:
    ```bash
-   cd claude-code-proxy
-   uv run uvicorn server:app --host 0.0.0.0 --port 8082
+   ollama pull qwen3-coder:30b
+   ollama serve  # Usually runs as a service automatically
    ```
-2. Ensure local LLM server is running (e.g., LM Studio on port 1234)
 
 **Configure MCP servers with routing:**
 
 ```bash
-# Validator → Local LLM via proxy (cost-free validation)
+# Validator → Ollama (cost-free validation)
 claude mcp add --scope local validator-claude \
-  -e ANTHROPIC_BASE_URL=http://localhost:8082 \
-  -e ANTHROPIC_API_KEY=local \
+  -e ANTHROPIC_BASE_URL=http://localhost:11434 \
+  -e ANTHROPIC_API_KEY=ollama \
   -- claude mcp serve
 
-# Critic → Local LLM via proxy (cost-free quality checks)
+# Critic → Ollama (cost-free quality checks)
 claude mcp add --scope local critic-claude \
-  -e ANTHROPIC_BASE_URL=http://localhost:8082 \
-  -e ANTHROPIC_API_KEY=local \
+  -e ANTHROPIC_BASE_URL=http://localhost:11434 \
+  -e ANTHROPIC_API_KEY=ollama \
   -- claude mcp serve
 
 # Worker Heavy → Azure Foundry (enterprise compliance)
@@ -305,22 +350,16 @@ claude mcp add --scope local worker-claude-heavy \
 │                                                                               │
 │  ┌─────────────────────┐  ┌─────────────────────┐  ┌─────────────────────┐ │
 │  │ validator-claude    │  │ critic-claude       │  │ worker-claude-heavy │ │
-│  │ env: BASE_URL=:8082 │  │ env: BASE_URL=:8082 │  │ env: FOUNDRY=1      │ │
+│  │ env: BASE_URL=11434 │  │ env: BASE_URL=11434 │  │ env: FOUNDRY=1      │ │
 │  └──────────┬──────────┘  └──────────┬──────────┘  └──────────┬──────────┘ │
 └─────────────┼────────────────────────┼────────────────────────┼─────────────┘
               │                        │                        │
               ▼                        ▼                        ▼
      ┌────────────────┐       ┌────────────────┐       ┌────────────────┐
-     │ claude-code-   │       │ claude-code-   │       │ Azure Foundry  │
-     │ proxy (:8082)  │       │ proxy (:8082)  │       │                │
-     └───────┬────────┘       └───────┬────────┘       │ Claude Sonnet  │
-             │                        │                └────────────────┘
-             ▼                        ▼
-     ┌────────────────┐       ┌────────────────┐
-     │ LM Studio      │       │ LM Studio      │
-     │ (:1234)        │       │ (:1234)        │
-     │ Local LLM      │       │ Local LLM      │
-     └────────────────┘       └────────────────┘
+     │ Ollama         │       │ Ollama         │       │ Azure Foundry  │
+     │ (:11434)       │       │ (:11434)       │       │                │
+     │ qwen3-coder    │       │ qwen3-coder    │       │ Claude Sonnet  │
+     └────────────────┘       └────────────────┘       └────────────────┘
 ```
 
 After running these commands, restart Claude Code to load the new MCP servers.

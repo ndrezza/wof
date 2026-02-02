@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "version": "1.0.0",
+  "description": "Local AI (Ollama) configuration for WOF",
+  "ollama": {
+    "host": "{{OLLAMA_HOST}}",
+    "port": {{OLLAMA_PORT}},
+    "verified": true,
+    "lastChecked": "{{LAST_CHECKED}}"
+  },
+  "models": {
+    "available": [],
+    "analyzed": {}
+  },
+  "roleMapping": {
+    "orchestrator": {
+      "model": "{{ORCHESTRATOR_MODEL}}",
+      "delegation": "native"
+    },
+    "worker-heavy": {
+      "model": "{{WORKER_HEAVY_MODEL}}",
+      "delegation": "{{WORKER_HEAVY_DELEGATION}}",
+      "mcp_server": "worker-heavy"
+    },
+    "worker-lite": {
+      "model": "{{WORKER_LITE_MODEL}}",
+      "delegation": "{{WORKER_LITE_DELEGATION}}",
+      "script": ".ai/scripts/delegate-to-local-worker.ps1"
+    },
+    "validator": {
+      "model": "{{VALIDATOR_MODEL}}",
+      "delegation": "{{VALIDATOR_DELEGATION}}",
+      "mcp_server": "validator"
+    },
+    "critic": {
+      "model": "{{CRITIC_MODEL}}",
+      "delegation": "{{CRITIC_DELEGATION}}",
+      "mcp_server": "critic"
+    }
+  },
+  "launcher": {
+    "windows": "{{LAUNCHER_WINDOWS_PATH}}",
+    "unix": "{{LAUNCHER_UNIX_PATH}}",
+    "created": "{{GENERATED_DATE}}"
+  },
+  "registeredAsSlot": "{{REGISTERED_SLOT}}",
+  "ramEstimate": {
+    "perModel": {},
+    "peakEstimateGb": 0,
+    "note": "Ollama manages memory dynamically. Models unload when not in use."
+  }
+}

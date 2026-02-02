@@ -344,7 +344,7 @@ See `core/philosophy/test-driven-improvement.md` for the complete philosophy.
 │   Connection Types:                                                            │
 │   • azure_ai_foundry_anthropic  - Claude via Azure                             │
 │   • azure_openai                - GPT via Azure                                │
-│   • openai_compatible           - Local models (vLLM, LM Studio, Ollama)       │
+│   • openai_compatible           - Local models (Ollama, vLLM, llama.cpp)       │
 │                                                                                 │
 └─────────────────────────────────────────────────────────────────────────────────┘
 ```

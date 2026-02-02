@@ -233,7 +233,8 @@ required: false
 format: "URL to your AI service"
 help: |
   Enter the endpoint URL for your fourth AI connection.
-  Can be local (vLLM, LM Studio, Ollama), network, or cloud.
+  Recommended: Ollama (http://localhost:11434) - native Anthropic API support.
+  Alternative: vLLM/llama.cpp with proxy (http://localhost:8082).
 sensitive: false
 skip_message: "AI4 will remain unconfigured. You can add this later."
 maps_to: "ai4 connection in connections.json"

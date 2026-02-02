@@ -1,6 +1,6 @@
 ---
 name: wof
-description: Workload Orchestration Framework commands - update, status, configure, route, remove
+description: Workload Orchestration Framework commands - update, status, configure, model, route, remove
 allowed-tools:
   - Bash
   - Read
@@ -25,6 +25,11 @@ Parse the arguments to determine which WOF command to run.
 | `configure` | Interactive AI configuration (add connections, map roles) |
 | `configure --test-only` | Only test existing connections |
 | `configure-ado` | Configure Azure DevOps integration (MCP server, filters) |
+| `model` | Show current backend and model info |
+| `model list` | List available Ollama models |
+| `model <name>` | Switch to a specific Ollama model |
+| `model pull <name>` | Pull/download an Ollama model |
+| `model status` | Show comprehensive backend status |
 | `route <task>` | Classify a task and show routing decision |
 | `finish` | Complete current work: update WI, bump version, commit, push |
 | `finish --work-item <id>` | Finish with specific work item ID |
@@ -60,7 +65,8 @@ Use AskUserQuestion to ask:
 - Options:
   1. "Add/modify an AI connection" - Add a new AI or update existing
   2. "Configure role mappings" - Map roles to AI connections
-  3. "Done" - Finish configuration
+  3. "Local AI (Ollama)" - Configure local Ollama instance and generate launcher
+  4. "Done" - Finish configuration
 
 #### Step 3a: If Adding/Modifying AI Connection
 
@@ -105,7 +111,285 @@ Then update the config files:
 
 After adding, loop back to Step 2 to ask if they want to do more.
 
-#### Step 3b: If Configuring Role Mappings
+#### Step 3b: If Configuring Local AI (Ollama)
+
+Configure a local Ollama instance and generate launcher scripts.
+
+##### Step B1: Detect Ollama
+
+First, check if Ollama is running at localhost:
+```bash
+curl -s http://localhost:11434/api/version
+```
+
+If successful, show:
+```
+✓ Ollama found at localhost:11434
+  Version: <version>
+```
+
+If connection fails, use AskUserQuestion:
+- Question: "Cannot connect to Ollama at localhost:11434. What would you like to do?"
+- Header: "Ollama"
+- Options:
+  1. "Try again" - Retry localhost connection
+  2. "Different host" - Enter custom host/IP
+  3. "Cancel" - Return to configure menu
+
+If user selects "Different host":
+- Ask: "Enter Ollama host (IP or hostname):"
+- Ask: "Enter port [11434]:"
+- Test connection at the provided address
+
+##### Step B2: List and Analyze Available Models
+
+Once connected, list models:
+```bash
+curl -s http://<host>:<port>/api/tags
+```
+
+**Analyze each model's capabilities:**
+
+1. First, check WOF's model capabilities cache:
+   - Read `core/data/model-capabilities.json` (or `.ai/data/model-capabilities.json` in WOI)
+   - Look up each model by name
+
+2. For models NOT in cache:
+   - Use WebSearch: "<model-name> capabilities context window coding reasoning"
+   - Extract: strengths, weaknesses, context window, RAM requirements
+   - Inform user this is a new/unknown model
+
+3. Display analyzed results:
+```
+Available Models (analyzed):
+| Model              | Size    | RAM   | Quality | Speed  | Best For              |
+|--------------------|---------|-------|---------|--------|----------------------|
+| qwen3-coder:30b    | 18.6 GB | ~20GB | High    | Slow   | Worker-Heavy          |
+| deepseek-r1:8b     | 5.2 GB  | ~5GB  | High    | Medium | Validator, Critic     |
+| codellama:7b       | 4.1 GB  | ~4GB  | Medium  | Fast   | Worker-Lite           |
+
+Total RAM if all loaded simultaneously: ~29GB
+Note: Ollama loads models on-demand; not all need to be in RAM at once.
+```
+
+If no models found:
+```
+No models found in Ollama.
+
+Recommended models to pull:
+  ollama pull qwen3-coder:30b    # Complex code tasks (~20GB RAM)
+  ollama pull deepseek-r1:8b     # Reasoning/validation (~5GB RAM)
+  ollama pull codellama:7b       # Fast simple tasks (~4GB RAM)
+```
+
+##### Step B3: Role Mapping with Delegation Choice
+
+For each WOF role, ask the user to:
+1. Select a model (or skip/use cloud)
+2. Choose delegation method
+
+**Use AskUserQuestion for each role:**
+
+```
+Role: Worker-Heavy
+Description: Complex code generation, refactoring, large changes
+Recommended: qwen3-coder:30b (High quality, code generation)
+
+"Which model for Worker-Heavy?"
+  1. qwen3-coder:30b (Recommended)
+  2. deepseek-r1:8b
+  3. Skip (use cloud API for this role)
+  4. Pull a different model
+```
+
+**After model selection, ask delegation method:**
+
+```
+"How should Worker-Heavy be invoked?"
+  1. MCP Server (Recommended) - Separate Claude Code process, parallel execution
+  2. PS Script delegation - Sequential, simpler, uses delegate-to-local-worker.ps1
+```
+
+**Repeat for each role:**
+- Orchestrator (if user wants local orchestrator)
+- Worker-Heavy
+- Worker-Lite
+- Validator
+- Critic
+
+**Show RAM summary after all selections:**
+```
+Role Configuration Summary:
+| Role         | Model           | Delegation | RAM    |
+|--------------|-----------------|------------|--------|
+| Orchestrator | mistral:7b      | (main)     | ~4GB   |
+| Worker-Heavy | qwen3-coder:30b | MCP Server | ~20GB  |
+| Worker-Lite  | codellama:7b    | PS Script  | ~4GB   |
+| Validator    | deepseek-r1:8b  | MCP Server | ~5GB   |
+| Critic       | deepseek-r1:8b  | MCP Server | (shared)|
+
+Estimated peak RAM: ~33GB (if all models loaded simultaneously)
+Note: Ollama manages memory dynamically. Models unload when not in use.
+
+"Proceed with this configuration?"
+```
+
+##### Step B4: Choose Launcher Location
+
+##### Step B4: Choose Launcher Location
+
+Use AskUserQuestion:
+- Question: "Where should I save the launcher script?"
+- Header: "Location"
+- Options:
+  1. "User profile (~/.claude/)" - Recommended
+  2. "Desktop" - Easy access
+  3. "Current directory" - Project-specific
+  4. "Custom location" - Specify path
+
+Determine paths based on OS:
+- **Windows:**
+  - User profile: `$env:USERPROFILE\.claude\Start-ClaudeLocal.ps1`
+  - Desktop: `$env:USERPROFILE\Desktop\Start-ClaudeLocal.ps1`
+- **macOS/Linux:**
+  - User profile: `~/.claude/start-claude-local.sh`
+  - Desktop: `~/Desktop/start-claude-local.sh`
+
+##### Step B5: Generate Launcher Scripts
+
+Create the launcher script(s) using the templates from `.ai/templates/`:
+
+**For Windows (always generate):**
+Read template from `.ai/templates/Start-ClaudeLocal.ps1.template` and replace:
+- `{{OLLAMA_HOST}}` → detected host
+- `{{OLLAMA_PORT}}` → detected port
+- `{{DEFAULT_MODEL}}` → selected model
+
+Write to chosen location.
+
+**For macOS/Linux (always generate alongside Windows):**
+Read template from `.ai/templates/start-claude-local.sh.template` and replace same variables.
+
+Write to equivalent Unix path.
+
+##### Step B6: Register MCP Servers and AI Slots
+
+Based on the role mapping from Step B3, register the necessary components:
+
+**For each role configured with MCP Server delegation:**
+
+```bash
+# Example: Worker-Heavy with qwen3-coder:30b via MCP
+claude mcp add --scope local worker-heavy \
+  -e ANTHROPIC_BASE_URL=http://<host>:<port> \
+  -e ANTHROPIC_API_KEY=ollama \
+  -e OLLAMA_MODEL=qwen3-coder:30b \
+  -- claude mcp serve
+
+# Example: Validator with deepseek-r1:8b via MCP
+claude mcp add --scope local validator \
+  -e ANTHROPIC_BASE_URL=http://<host>:<port> \
+  -e ANTHROPIC_API_KEY=ollama \
+  -e OLLAMA_MODEL=deepseek-r1:8b \
+  -- claude mcp serve
+```
+
+**For roles configured with PS Script delegation:**
+
+No MCP registration needed. The role will use `delegate-to-local-worker.ps1` with the configured model.
+
+**Register Ollama as AI slot:**
+
+Update `.ai/config/connections.json`:
+```json
+"ai4": {
+  "alias": "Local Ollama",
+  "description": "Local Ollama instance at <host>:<port>",
+  "type": "ollama",
+  "host": "<host>",
+  "port": <port>,
+  "capability": "high",
+  "endpoint": "http://<host>:<port>",
+  "api_key": "ollama",
+  "requires_proxy": false,
+  "models": {
+    "<model1>": { "ram_gb": <ram>, "roles": ["worker-heavy"] },
+    "<model2>": { "ram_gb": <ram>, "roles": ["validator", "critic"] }
+  }
+}
+```
+
+**Update `.ai/config/roles.json` with delegation method:**
+```json
+{
+  "roles": {
+    "worker-heavy": {
+      "connection": "ai4",
+      "model": "qwen3-coder:30b",
+      "delegation": "mcp",
+      "mcp_server": "worker-heavy"
+    },
+    "worker-lite": {
+      "connection": "ai4",
+      "model": "codellama:7b",
+      "delegation": "script",
+      "script": ".ai/scripts/delegate-to-local-worker.ps1"
+    },
+    "validator": {
+      "connection": "ai4",
+      "model": "deepseek-r1:8b",
+      "delegation": "mcp",
+      "mcp_server": "validator"
+    }
+  }
+}
+```
+
+##### Step B7: Save Configuration
+
+Write to `.ai/config/local-ai.json`:
+```json
+{
+  "ollama": {
+    "host": "<host>",
+    "port": <port>,
+    "defaultModel": "<model>",
+    "verified": true,
+    "lastChecked": "<ISO timestamp>"
+  },
+  "launcher": {
+    "windows": "<windows-path>",
+    "unix": "<unix-path>",
+    "created": "<ISO timestamp>"
+  },
+  "registeredAsSlot": "<ai4 or null>"
+}
+```
+
+##### Step B8: Show Summary
+
+Display:
+```
+✓ Local AI Configuration Complete
+
+Ollama:
+  Host: localhost:11434
+  Default Model: qwen3-coder:30b
+
+Launcher Scripts:
+  Windows: ~/.claude/Start-ClaudeLocal.ps1
+  Unix:    ~/.claude/start-claude-local.sh
+
+To start Claude Code with local Ollama:
+  Windows:  ~/.claude/Start-ClaudeLocal.ps1
+  macOS:    ~/.claude/start-claude-local.sh
+
+Registered as: AI4 (can be mapped to roles)
+```
+
+Loop back to Step 2 to ask if they want to do more.
+
+#### Step 3d: If Configuring Role Mappings
 
 First read the current connections to see which are available (have endpoints configured).
 
@@ -143,6 +427,215 @@ powershell -ExecutionPolicy Bypass -File "./.ai/scripts/check-orchestration-heal
 Just run the test:
 ```bash
 powershell -ExecutionPolicy Bypass -File "./.ai/scripts/configure-wizard.ps1" -TestOnly
+```
+
+---
+
+### If arguments contain "model"
+
+Manage models and detect current Claude Code backend.
+
+#### Step 1: Detect Current Backend
+
+First, detect which backend Claude Code is currently using by checking environment variables.
+
+**Detection logic:**
+```bash
+# Check ANTHROPIC_BASE_URL environment variable
+# Windows: $env:ANTHROPIC_BASE_URL
+# Unix: $ANTHROPIC_BASE_URL
+```
+
+**Determine backend type:**
+- If `ANTHROPIC_BASE_URL` is not set or empty → **Anthropic API (cloud)**
+- If `ANTHROPIC_BASE_URL` contains `localhost:11434` or port 11434 → **Ollama (local)**
+- If `ANTHROPIC_BASE_URL` contains `.services.ai.azure.com` → **Azure Foundry**
+- If `ANTHROPIC_BASE_URL` contains other localhost/IP → **Other local server**
+
+#### If arguments are exactly "model" (show current backend & model)
+
+Display current backend information:
+
+**If on Anthropic API (cloud):**
+```
+Current Backend: Anthropic API (cloud)
+  Endpoint: https://api.anthropic.com
+  Model: claude-opus-4-5-20251101 (or current model)
+
+This session is using Anthropic's cloud API.
+
+To switch to local Ollama:
+  Windows:  ~/.claude/Start-ClaudeLocal.ps1
+  macOS:    ~/.claude/start-claude-local.sh
+
+Or run: /wof configure → "Local AI (Ollama)" to set up first.
+```
+
+**If on Ollama (local):**
+First check Ollama connectivity:
+```bash
+curl -s http://localhost:11434/api/tags
+```
+
+Then display:
+```
+Current Backend: Ollama (local)
+  Endpoint: http://localhost:11434
+
+Available Models:
+| Model              | Size    | Quantization | Status  |
+|--------------------|---------|--------------|---------|
+| qwen3-coder:30b    | 18.6 GB | Q4_K_M       | ready   |
+| deepseek-r1:8b     | 5.2 GB  | Q4_K_M       | ready   |
+
+Commands:
+  /wof model list              - List all models
+  /wof model <name>            - Switch to model
+  /wof model pull <name>       - Download new model
+
+To switch back to Anthropic cloud:
+  Start a new terminal and run: claude
+```
+
+**If on Azure Foundry:**
+```
+Current Backend: Azure Foundry
+  Endpoint: https://<resource>.services.ai.azure.com/anthropic
+  Model: claude-sonnet-4-5
+
+This session is using Azure-hosted Claude.
+```
+
+**If on other local server:**
+```
+Current Backend: Local Server (custom)
+  Endpoint: <ANTHROPIC_BASE_URL value>
+
+Note: This appears to be a custom local server.
+For Ollama support, ensure it's running on port 11434.
+```
+
+#### If arguments contain "model list"
+
+**If on Ollama:** List all available models:
+```bash
+curl -s http://localhost:11434/api/tags
+```
+
+Parse and display as table:
+```
+Available Ollama Models:
+| Model              | Size    | Quantization | Modified           |
+|--------------------|---------|--------------|-------------------|
+| qwen3-coder:30b    | 18.6 GB | Q4_K_M       | 2026-02-02 19:19 |
+| deepseek-r1:8b     | 5.2 GB  | Q4_K_M       | 2026-02-02 19:17 |
+```
+
+**If NOT on Ollama:**
+```
+Note: You're currently on <backend-name>, not Ollama.
+Model listing is only available when connected to Ollama.
+
+To check Ollama models anyway:
+```bash
+curl -s http://localhost:11434/api/tags
+```
+
+Then offer to run that command to show Ollama models regardless.
+
+#### If arguments contain "model pull <name>"
+
+**If on Ollama:** Pull the model:
+```bash
+curl -X POST http://localhost:11434/api/pull -d '{"name": "<model-name>", "stream": false}'
+```
+
+Inform user:
+```
+Pulling model '<model-name>' from Ollama registry...
+This may take a while depending on model size and internet speed.
+```
+
+After completion:
+```
+✓ Model '<model-name>' downloaded successfully.
+Use '/wof model <model-name>' to switch to it.
+```
+
+**If NOT on Ollama:**
+```
+Note: You're currently on <backend-name>.
+Pulling models is only supported when connected to Ollama.
+
+However, I can still pull the model to Ollama for future use:
+```
+Then offer to pull anyway (Ollama can accept pull requests even when Claude Code isn't connected to it).
+
+**Recommended models for coding:**
+- `qwen3-coder:30b` - Excellent code generation (~20GB)
+- `deepseek-r1:8b` - Good reasoning, lighter (~5GB)
+- `codellama:34b` - Strong code completion (~20GB)
+- `deepseek-coder-v2:16b` - Good balance (~10GB)
+
+#### If arguments contain "model <name>" (switch model)
+
+**If on Ollama:** Switch to the specified model by loading it:
+```bash
+curl -s http://localhost:11434/api/generate -d '{"model": "<model-name>", "prompt": "test", "stream": false}'
+```
+
+If successful:
+```
+✓ Switched to Ollama model: <model-name>
+```
+
+If model doesn't exist:
+```
+✗ Model '<model-name>' not found in Ollama.
+
+Available models:
+  - qwen3-coder:30b
+  - deepseek-r1:8b
+
+Use '/wof model pull <name>' to download a new model.
+```
+
+**If NOT on Ollama:**
+```
+Note: You're currently on <backend-name>.
+Model switching is only available when connected to Ollama.
+
+To use Ollama with model '<model-name>':
+  1. Start Claude Code with Ollama backend:
+     Windows: ~/.claude/Start-ClaudeLocal.ps1 -Model "<model-name>"
+     macOS:   ~/.claude/start-claude-local.sh --model "<model-name>"
+
+  2. Or set environment and restart:
+     $env:ANTHROPIC_BASE_URL = "http://localhost:11434"
+     $env:ANTHROPIC_API_KEY = "ollama"
+     claude
+```
+
+#### If arguments contain "model status"
+
+Show comprehensive status of all backends:
+```
+Backend Status:
+
+Current Session:
+  Backend: <detected backend>
+  Endpoint: <endpoint>
+
+Ollama (localhost:11434):
+  Status: <Online/Offline>
+  Models: <count> available
+
+Configured in WOF:
+  AI4: Local Ollama @ localhost:11434 (if configured)
+
+Launcher Scripts:
+  Windows: ~/.claude/Start-ClaudeLocal.ps1 <exists/not found>
+  Unix:    ~/.claude/start-claude-local.sh <exists/not found>
 ```
 
 ---
@@ -450,13 +943,15 @@ Present an interactive menu using AskUserQuestion:
 **Options:**
 1. "Check status" - Run orchestration health check
 2. "Update WOF" - Update to latest framework version
-3. "Finish work" - Complete current work (bump, commit, push)
-4. "Configure" - Configure AI connections, ADO, or finish workflow
-5. "Show help" - Display all available commands
+3. "Manage models" - List, switch, or pull Ollama models
+4. "Finish work" - Complete current work (bump, commit, push)
+5. "Configure" - Configure AI connections, ADO, or finish workflow
+6. "Show help" - Display all available commands
 
 Based on user selection:
 - **Check status** → Execute the `status` command flow
 - **Update WOF** → Execute the `update` command flow
+- **Manage models** → Execute the `model list` command flow
 - **Finish work** → Execute the `finish` command flow
 - **Configure** → Ask follow-up: "What would you like to configure?" with options: "AI connections", "Azure DevOps", "Finish workflow", then execute appropriate configure flow
 - **Show help** → Display the Available Commands table

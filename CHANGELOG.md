@@ -5,6 +5,127 @@ All notable changes to the Workload Orchestration Framework (WOF) will be docume
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.1.0] - 2026-02-02
+
+### Added
+
+- **`/wof configure` → "Local AI (Ollama)"** - New menu option to configure local Ollama instance
+  - Auto-detect Ollama at localhost:11434 or custom host/IP
+  - **Dynamic model analysis**: Checks WOF's model capabilities cache first, then WebSearch for unknown models
+  - Recommends models for each role based on capabilities (reasoning, code gen, speed)
+  - Per-role delegation choice: MCP Server (parallel) or PS Script (sequential)
+  - RAM requirements shown but user decides (supports everything from laptops to Mac Studio clusters)
+  - Generate cross-platform launcher scripts
+  - Register as AI slot (AI1-AI10) for role mapping
+
+- **Model capabilities database** - `core/data/model-capabilities.json`
+  - Pre-cached capabilities for 20+ popular models (Qwen, DeepSeek, CodeLlama, Llama, Mistral, etc.)
+  - Includes: strengths, weaknesses, RAM requirements, recommended roles, quality/speed tiers
+  - Role requirements defined: what each role needs (orchestrator, worker-heavy, worker-lite, validator, critic)
+  - Unknown models trigger WebSearch for capability analysis
+
+- **`/wof model` command with backend detection** - Enhanced model management
+  - `/wof model` - Detect current backend (Anthropic/Ollama/Azure) and show status
+  - `/wof model list` - List available Ollama models with capability analysis
+  - `/wof model <name>` - Switch to a specific model (when on Ollama)
+  - `/wof model pull <name>` - Download a new model
+  - `/wof model status` - Comprehensive backend and launcher status
+
+- **Cross-platform launcher scripts** - Start Claude Code with local Ollama backend
+  - Windows: `Start-ClaudeLocal.ps1` with `-Model` parameter support
+  - macOS/Linux: `start-claude-local.sh` with `--model` flag support
+  - Default locations: `~/.claude/` or Desktop
+  - Templates in `templates/launchers/`
+
+- **Flexible delegation methods** - Each role can choose:
+  - `mcp` - Separate Claude Code process via MCP server (parallel, independent)
+  - `script` - Sequential delegation via PowerShell script (simpler)
+  - `native` - Direct invocation (orchestrator only)
+
+### Changed
+
+- **Worker-Lite can now use MCP Server** - No longer limited to REST/script delegation
+  - User chooses: MCP Server (parallel) or PS Script (sequential) per role
+  - `delegate-to-local-worker.ps1` remains available for script delegation
+
+- **roles.json schema updated to v3.1.0** - Added `delegation` field
+  - Explicit delegation method per role
+  - Backward compatible with existing configs
+
+- **Ollama is now the recommended local LLM solution** - Updated all documentation
+  - Ollama v0.14.0+ has native Anthropic Messages API compatibility (no proxy required)
+  - Removed LM Studio as primary example; now listed as alternative with vLLM/llama.cpp
+
+### Architecture: Full Local Setup
+
+This release enables running entirely on local models with role-specific model selection:
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  Start-ClaudeLocal.ps1                                                       │
+│                                                                              │
+│  ORCHESTRATOR (Claude Code Process #1)                                       │
+│  Model: mistral:7b @ localhost:11434 (~4GB RAM)                             │
+│  Role: Task routing, coordination, user interaction                         │
+│                                                                              │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │  Worker Pool (MCP Servers = separate Claude Code processes)          │   │
+│  │                                                                      │   │
+│  │  ┌───────────────┐ ┌───────────────┐ ┌───────────────┐ ┌──────────┐│   │
+│  │  │ worker-heavy  │ │ worker-lite   │ │ validator     │ │ critic   ││   │
+│  │  │ Process #2    │ │ Process #3    │ │ Process #4    │ │ Process #5│   │
+│  │  │               │ │               │ │               │ │          ││   │
+│  │  │ qwen3-coder   │ │ codellama:7b  │ │ deepseek-r1   │ │ deepseek ││   │
+│  │  │ :30b (~20GB)  │ │ (~4GB)        │ │ :8b (~5GB)    │ │ -r1:8b   ││   │
+│  │  │               │ │               │ │               │ │          ││   │
+│  │  │ Complex code  │ │ Simple tasks  │ │ Verify claims │ │ Quality  ││   │
+│  │  │ generation    │ │ Search, fmt   │ │ Check files   │ │ gate     ││   │
+│  │  │               │ │ OR: PS Script │ │               │ │          ││   │
+│  │  └───────────────┘ └───────────────┘ └───────────────┘ └──────────┘│   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+│                                                                              │
+│  All connect to Ollama @ localhost:11434                                    │
+│  Models loaded on-demand (not all in RAM simultaneously)                    │
+│  Peak RAM estimate: ~33GB (if all loaded at once)                           │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Hybrid Architecture: Local Orchestrator + Cloud Workers
+
+For cost optimization with quality fallback:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  ORCHESTRATOR (Local - mistral:7b)                               │
+│  Cost: $0                                                        │
+│                                                                  │
+│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐ │
+│  │ worker-heavy    │  │ validator       │  │ worker-lite     │ │
+│  │ Azure Foundry   │  │ Ollama local    │  │ Ollama local    │ │
+│  │ Claude Sonnet   │  │ deepseek-r1:8b  │  │ codellama:7b    │ │
+│  │ Cost: $$        │  │ Cost: $0        │  │ Cost: $0        │ │
+│  └─────────────────┘  └─────────────────┘  └─────────────────┘ │
+└─────────────────────────────────────────────────────────────────┘
+```
+```
+
+## [3.0.7] - 2026-02-02
+
+### Changed
+
+- **Ollama is now the recommended local LLM solution** - Updated all documentation to prioritize Ollama over other options
+  - Removed LM Studio references from primary documentation
+  - vLLM/llama.cpp listed as alternatives requiring proxy
+
+### Why Ollama?
+
+| Feature | Ollama | Other Local Servers |
+|---------|--------|---------------------|
+| Anthropic API native | Yes (v0.14+) | No |
+| Auto model switching | Dynamic | Manual |
+| CLI/headless | Yes | Limited |
+| Proxy required | No | Yes |
+
 ## [3.0.6] - 2026-02-01
 
 ### Added
@@ -56,8 +177,8 @@ claude mcp add --scope local worker-claude-heavy \
 
 ```
 Claude Code (Orchestrator)
-├── validator-claude  → proxy:8082 → LM Studio → Local LLM
-├── critic-claude     → proxy:8082 → LM Studio → Local LLM
+├── validator-claude  → Ollama :11434 → Local LLM (no proxy!)
+├── critic-claude     → Ollama :11434 → Local LLM (no proxy!)
 └── worker-claude-heavy → Azure Foundry → Claude Sonnet
 ```
 
@@ -89,9 +210,9 @@ Direct tools work correctly and allow independent verification:
 
 ### Added
 
-- **Local LLM configuration documentation** - MCP servers can now use local models (Ollama, LM Studio, vLLM) instead of cloud APIs
-  - Method 1: Ollama with native Anthropic API compatibility (simplest)
-  - Method 2: LM Studio/vLLM with claude-code-proxy translation layer
+- **Local LLM configuration documentation** - MCP servers can now use local models (Ollama recommended) instead of cloud APIs
+  - Recommended: Ollama v0.14.0+ with native Anthropic API compatibility (no proxy required)
+  - Alternative: vLLM/llama.cpp with claude-code-proxy translation layer
   - Method 3: Hybrid setup - MCP server with local backend while main session uses cloud
   - Performance considerations and troubleshooting guide
   - Architecture diagrams showing proxy setup
