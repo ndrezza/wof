@@ -1,6 +1,6 @@
 ---
 name: wof
-description: Workload Orchestration Framework commands - update, status, configure, model, route, remove
+description: Workload Orchestration Framework commands - start, update, status, configure, model, route, remove
 allowed-tools:
   - Bash
   - Read
@@ -19,6 +19,8 @@ Parse the arguments to determine which WOF command to run.
 
 | Command | Description |
 |---------|-------------|
+| `start` | Initialize session - check infrastructure, load context, acknowledge role |
+| `start -verbose` | Detailed startup diagnostics |
 | `update` | Update WOF to latest version from repository |
 | `update --dry-run` | Preview update changes without applying |
 | `status` | Check orchestration health and component status |
@@ -40,6 +42,45 @@ Parse the arguments to determine which WOF command to run.
 ## Command Handling
 
 Based on the arguments, execute the appropriate action:
+
+---
+
+### If arguments contain "start"
+
+Initialize the WOF session with infrastructure checks and context loading.
+
+#### Standard Start (Compact Output)
+
+Run the start-session script:
+```bash
+powershell -ExecutionPolicy Bypass -File "./.ai/scripts/start-session.ps1"
+```
+
+This performs:
+1. **Infrastructure Check** - Verifies MCP servers and config files
+2. **Context Loading** - Loads current sprint, conventions, architecture
+3. **Role Acknowledgment** - Confirms Orchestrator role and key rules
+
+#### Verbose Start (Detailed Output)
+
+If arguments contain "-verbose":
+```bash
+powershell -ExecutionPolicy Bypass -File "./.ai/scripts/start-session.ps1" -Verbose
+```
+
+Shows detailed status for each check.
+
+#### Post-Start Behavior
+
+After running the script, if there are warnings about missing MCP or configuration:
+- **MCP not configured**: Inform user ADO integration is unavailable but work can proceed
+- **Config missing**: Suggest running `/wof configure` to set up connections
+
+If context files are missing:
+- **No current-sprint.md**: Note that sprint context is unavailable
+- **No conventions.md**: Suggest documenting project conventions
+
+The session is ready regardless of warnings - they are informational, not blocking.
 
 ---
 

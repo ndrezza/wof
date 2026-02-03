@@ -5,6 +5,19 @@ All notable changes to the Workload Orchestration Framework (WOF) will be docume
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.2.0] - 2026-02-03
+
+### Added
+
+- **`/wof start` command** - Session initialization with health checks
+  - Tests AI endpoint connectivity for each configured role (5s timeout)
+  - Reports MCP server configuration status
+  - Loads memory bank context (sprint, conventions, architecture)
+  - Acknowledges Orchestrator role with key behavioral rules
+  - Compact table output showing role status, connection, and latency
+  - `-verbose` flag for detailed output including sprint summary
+  - Non-blocking warnings - session proceeds even with offline endpoints
+
 ## [3.1.0] - 2026-02-02
 
 ### Added
