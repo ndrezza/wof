@@ -11,6 +11,8 @@
     All connections are uniform - no special "local" category.
     Connection type determines behavior (cloud vs local, key required vs optional).
 
+    Menu-based navigation with back option at every level.
+
 .PARAMETER Help
     Show usage information.
 
@@ -37,6 +39,9 @@ param(
 )
 
 $ErrorActionPreference = "SilentlyContinue"
+
+# Track unsaved changes
+$script:hasUnsavedChanges = $false
 
 # ============================================================================
 # Output Helpers
@@ -106,6 +111,10 @@ $connectionsPath = Join-Path $configDir "connections.json"
 $rolesPath = Join-Path $configDir "roles.json"
 $credentialsPath = Join-Path $configDir "credentials.local.json"
 
+# MCP configuration - look for .mcp.json in repo root or WOI root
+$repoRoot = (Get-Item $PSScriptRoot).Parent.Parent.FullName
+$mcpPath = Join-Path $repoRoot ".mcp.json"
+
 # ============================================================================
 # Show Help
 # ============================================================================
@@ -124,14 +133,18 @@ Options:
     -Quick      Skip confirmations
 
 The wizard will guide you through:
-1. Adding AI connections (AI1-AI10)
-2. Testing connectivity
-3. Mapping roles to connections
+1. Managing AI connections (AI1-AI10)
+2. Configuring role mappings
+3. Setting up Azure DevOps MCP server
+4. Testing connectivity
 
-Connection Types:
+AI Connection Types:
     azure_ai_foundry_anthropic  - Claude on Azure (key required)
     azure_openai                - GPT on Azure (key required)
     openai_compatible           - OpenAI-compatible API (Ollama, vLLM, llama.cpp)
+
+MCP Servers:
+    azure-devops                - Azure DevOps work items, repos, PRs
 
 "@
     exit 0
@@ -534,49 +547,70 @@ function Show-RoleMappings {
 }
 
 # ============================================================================
-# Interactive Add Connection
+# Interactive Add/Edit Connection
 # ============================================================================
 
-function Add-AIConnection {
+function Edit-AIConnection {
     param(
         [int]$SlotNumber,
         [hashtable]$Config
     )
 
     $id = "ai$SlotNumber"
+    $endpointKey = "AI${SlotNumber}_ENDPOINT"
+    $apiKeyKey = "AI${SlotNumber}_API_KEY"
+    $existingConn = $Config.connections[$id]
+    $existingEndpoint = $Config.credentials[$endpointKey]
+    $existingApiKey = $Config.credentials[$apiKeyKey]
+
     Write-Host ""
-    Write-Host "--- Adding AI$SlotNumber ---" -ForegroundColor Cyan
+    Write-Host "--- Configuring AI$SlotNumber ---" -ForegroundColor Cyan
     Write-Host ""
 
     # Alias
-    Write-Host "Alias (friendly name): " -NoNewline
+    $currentAlias = if ($existingConn -and $existingConn.alias) { $existingConn.alias } else { "AI$SlotNumber" }
+    Write-Host "Alias (friendly name) [$currentAlias]: " -NoNewline
     $alias = Read-Host
     if (-not $alias) {
-        $alias = "AI$SlotNumber"
+        $alias = $currentAlias
     }
 
     # Endpoint first - so we can auto-detect type
+    $currentEndpoint = if ($existingEndpoint) { $existingEndpoint } else { "" }
     Write-Host ""
-    Write-Host "Endpoint URL: " -NoNewline
+    if ($currentEndpoint) {
+        Write-Host "Endpoint URL [$currentEndpoint]: " -NoNewline
+    } else {
+        Write-Host "Endpoint URL: " -NoNewline
+    }
     $endpoint = Read-Host
+    if (-not $endpoint -and $currentEndpoint) {
+        $endpoint = $currentEndpoint
+    }
+
+    if (-not $endpoint) {
+        Write-Warn "Endpoint is required. Aborting."
+        return $Config
+    }
 
     # Auto-detect type from URL
     $detectedType = Get-ConnectionTypeFromUrl -Url $endpoint
-    $detectedLabel = switch ($detectedType) {
+    $currentType = if ($existingConn -and $existingConn.type) { $existingConn.type } else { $detectedType }
+    $detectedLabel = switch ($currentType) {
         "azure_ai_foundry_anthropic" { "Azure AI Foundry Anthropic" }
         "azure_openai" { "Azure OpenAI" }
         "openai_compatible" { "OpenAI-compatible" }
         default { "OpenAI-compatible" }
     }
 
-    # Type selection with auto-detected default
+    # Type selection with current/auto-detected default
     Write-Host ""
-    Write-Host "Type (auto-detected: $detectedLabel):" -ForegroundColor Cyan
+    Write-Host "Type (current: $detectedLabel):" -ForegroundColor Cyan
     Write-Host "  [1] azure_ai_foundry_anthropic (Claude on Azure)"
     Write-Host "  [2] azure_openai (GPT on Azure)"
     Write-Host "  [3] openai_compatible (Ollama, vLLM, llama.cpp)"
     Write-Host ""
-    $defaultChoice = switch ($detectedType) {
+    $defaultChoice = switch ($currentType) {
         "azure_ai_foundry_anthropic" { "1" }
         "azure_openai" { "2" }
         "openai_compatible" { "3" }
@@ -593,30 +627,38 @@ function Add-AIConnection {
         "1" { "azure_ai_foundry_anthropic" }
         "2" { "azure_openai" }
         "3" { "openai_compatible" }
-        default { $detectedType }
+        default { $currentType }
     }
 
     # API Key (optional for openai_compatible)
     Write-Host ""
+    $hasExistingKey = if ($existingApiKey) { "(has existing key)" } else { "" }
     if ($type -eq "openai_compatible") {
-        Write-Host "API Key (optional, press Enter to skip): " -NoNewline
+        Write-Host "API Key (optional, Enter to keep existing) ${hasExistingKey}: " -NoNewline
     } else {
-        Write-Host "API Key: " -NoNewline
+        Write-Host "API Key (Enter to keep existing) ${hasExistingKey}: " -NoNewline
     }
     $apiKey = Read-Host
+    if (-not $apiKey -and $existingApiKey) {
+        $apiKey = $existingApiKey
+    }
 
     # Model
     Write-Host ""
-    $defaultModel = switch ($type) {
-        "azure_ai_foundry_anthropic" { "claude-opus-4-5-20251101" }
-        "azure_openai" { "gpt-4o" }
-        "openai_compatible" { "deepseek-coder-v2-lite-instruct" }
-        default { "" }
+    $currentModel = if ($existingConn -and $existingConn.default_model) {
+        $existingConn.default_model
+    } else {
+        switch ($type) {
+            "azure_ai_foundry_anthropic" { "claude-opus-4-5-20251101" }
+            "azure_openai" { "gpt-4o" }
+            "openai_compatible" { "deepseek-coder-v2-lite-instruct" }
+            default { "" }
+        }
     }
-    Write-Host "Model [$defaultModel]: " -NoNewline
+    Write-Host "Model [$currentModel]: " -NoNewline
     $model = Read-Host
     if (-not $model) {
-        $model = $defaultModel
+        $model = $currentModel
     }
 
     # Description
@@ -650,9 +692,9 @@ function Add-AIConnection {
     }
 
     # Update credentials
-    $Config.credentials["AI${SlotNumber}_ENDPOINT"] = $endpoint
+    $Config.credentials[$endpointKey] = $endpoint
     if ($apiKey) {
-        $Config.credentials["AI${SlotNumber}_API_KEY"] = $apiKey
+        $Config.credentials[$apiKeyKey] = $apiKey
     }
 
     # Test connection
@@ -668,210 +710,924 @@ function Add-AIConnection {
         Write-Fail "OFFLINE - $($testResult.Error)"
     }
 
+    $script:hasUnsavedChanges = $true
     return $Config
 }
 
-# ============================================================================
-# Role Mapping Wizard
-# ============================================================================
+function Rename-AIConnection {
+    param(
+        [int]$SlotNumber,
+        [hashtable]$Config
+    )
 
-function Start-RoleMappingWizard {
-    param([hashtable]$Config)
+    $id = "ai$SlotNumber"
+    $existingConn = $Config.connections[$id]
 
-    Write-Host ""
-    Write-Host "--- Role Mapping ---" -ForegroundColor Cyan
-    Write-Host ""
-
-    # Build list of available connections
-    $availableConns = @()
-    $connDisplay = @()
-
-    1..10 | ForEach-Object {
-        $id = "ai$_"
-        $endpointKey = "AI${_}_ENDPOINT"
-
-        if ($Config.credentials[$endpointKey]) {
-            $conn = $Config.connections[$id]
-            $alias = if ($conn -and $conn.alias) { $conn.alias } else { "AI$_" }
-            $availableConns += $id
-            $connDisplay += "  [$($availableConns.Count)] $($id.ToUpper()) - $alias"
-        }
-    }
-
-    if ($availableConns.Count -eq 0) {
-        Write-Warn "No AI connections configured. Please add connections first."
+    if (-not $existingConn) {
+        Write-Warn "AI$SlotNumber is not configured."
         return $Config
     }
 
-    Write-Host "Available AIs:" -ForegroundColor Cyan
-    $connDisplay | ForEach-Object { Write-Host $_ }
+    $currentAlias = if ($existingConn.alias) { $existingConn.alias } else { "AI$SlotNumber" }
     Write-Host ""
+    Write-Host "Current alias: $currentAlias" -ForegroundColor Gray
+    Write-Host "New alias: " -NoNewline
+    $newAlias = Read-Host
 
-    # Map each role (except primary which is always native)
-    $rolesToMap = @("worker-heavy", "worker-lite", "validator", "critic")
+    if ($newAlias) {
+        $Config.connections[$id].alias = $newAlias
+        Write-Pass "Renamed AI$SlotNumber to '$newAlias'"
+        $script:hasUnsavedChanges = $true
+    } else {
+        Write-Info "No change made."
+    }
 
-    foreach ($roleName in $rolesToMap) {
-        $currentConn = if ($Config.roles.ContainsKey($roleName)) { $Config.roles[$roleName].connection } else { "" }
-        $currentIndex = $availableConns.IndexOf($currentConn) + 1
-        $default = if ($currentIndex -gt 0) { $currentIndex } else { "1" }
+    return $Config
+}
 
-        Write-Host "Map $roleName to [1-$($availableConns.Count), current=$default]: " -NoNewline
+function Remove-AIConnection {
+    param(
+        [int]$SlotNumber,
+        [hashtable]$Config
+    )
+
+    $id = "ai$SlotNumber"
+    $endpointKey = "AI${SlotNumber}_ENDPOINT"
+    $apiKeyKey = "AI${SlotNumber}_API_KEY"
+    $existingConn = $Config.connections[$id]
+
+    if (-not $existingConn -or -not $Config.credentials[$endpointKey]) {
+        Write-Warn "AI$SlotNumber is not configured."
+        return $Config
+    }
+
+    $alias = if ($existingConn.alias) { $existingConn.alias } else { "AI$SlotNumber" }
+    Write-Host ""
+    Write-Host "Delete AI$SlotNumber ($alias)? This cannot be undone." -ForegroundColor Yellow
+    Write-Host "Type 'DELETE' to confirm: " -NoNewline
+    $confirm = Read-Host
+
+    if ($confirm -eq "DELETE") {
+        $Config.connections.Remove($id)
+        $Config.credentials.Remove($endpointKey)
+        $Config.credentials.Remove($apiKeyKey)
+
+        # Check if any roles use this connection and warn
+        $affectedRoles = @()
+        foreach ($roleName in $Config.roles.Keys) {
+            if ($Config.roles[$roleName].connection -eq $id) {
+                $affectedRoles += $roleName
+            }
+        }
+        if ($affectedRoles.Count -gt 0) {
+            Write-Warn "The following roles used this connection and need reassignment: $($affectedRoles -join ', ')"
+        }
+
+        Write-Pass "AI$SlotNumber deleted."
+        $script:hasUnsavedChanges = $true
+    } else {
+        Write-Info "Deletion cancelled."
+    }
+
+    return $Config
+}
+
+function Test-SingleConnection {
+    param(
+        [int]$SlotNumber,
+        [hashtable]$Config
+    )
+
+    $id = "ai$SlotNumber"
+    $endpointKey = "AI${SlotNumber}_ENDPOINT"
+    $apiKeyKey = "AI${SlotNumber}_API_KEY"
+
+    $endpoint = $Config.credentials[$endpointKey]
+    $apiKey = $Config.credentials[$apiKeyKey]
+    $conn = $Config.connections[$id]
+
+    if (-not $endpoint) {
+        Write-Warn "AI$SlotNumber is not configured."
+        return
+    }
+
+    $alias = if ($conn -and $conn.alias) { $conn.alias } else { "AI$SlotNumber" }
+    $type = if ($conn -and $conn.type) { $conn.type } else { "openai_compatible" }
+
+    Write-Host ""
+    Write-Check "Testing AI$SlotNumber ($alias)..."
+    $testResult = Test-AIEndpoint -Endpoint $endpoint -ApiKey $apiKey -Type $type
+
+    if ($testResult.Status -eq "ONLINE") {
+        Write-Pass "ONLINE - $($testResult.Latency)ms latency"
+    } elseif ($testResult.Status -eq "AUTH_ERR") {
+        Write-Warn "AUTH ERROR - $($testResult.Error)"
+    } else {
+        Write-Fail "OFFLINE - $($testResult.Error)"
+    }
+}
+
+# ============================================================================
+# Role Mapping Menu
+# ============================================================================
+
+function Show-RoleMenu {
+    param([hashtable]$Config)
+
+    while ($true) {
+        Write-Host ""
+        Write-Host "--- Role Mapping ---" -ForegroundColor Cyan
+        Write-Host ""
+
+        # Show current mappings
+        Show-RoleMappings -Config $Config
+
+        # Build list of available connections
+        $availableConns = @()
+        1..10 | ForEach-Object {
+            $id = "ai$_"
+            $endpointKey = "AI${_}_ENDPOINT"
+            if ($Config.credentials[$endpointKey]) {
+                $availableConns += $id
+            }
+        }
+
+        if ($availableConns.Count -eq 0) {
+            Write-Warn "No AI connections configured. Please add connections first."
+            Write-Host ""
+            Write-Host "Press Enter to go back..." -NoNewline
+            Read-Host
+            return $Config
+        }
+
+        Write-Host "Select role to modify:" -ForegroundColor Cyan
+        Write-Host "  [1] worker-heavy"
+        Write-Host "  [2] worker-lite"
+        Write-Host "  [3] validator"
+        Write-Host "  [4] critic"
+        Write-Host ""
+        Write-Host "  [B] Back to main menu" -ForegroundColor Yellow
+        Write-Host ""
+        Write-Host "Choice: " -NoNewline
         $choice = Read-Host
 
-        if (-not $choice) {
-            $choice = $default
+        if ($choice -eq "B" -or $choice -eq "b") {
+            return $Config
         }
 
-        $choiceInt = [int]$choice
-        if ($choiceInt -ge 1 -and $choiceInt -le $availableConns.Count) {
-            $selectedConn = $availableConns[$choiceInt - 1]
+        $roleName = switch ($choice) {
+            "1" { "worker-heavy" }
+            "2" { "worker-lite" }
+            "3" { "validator" }
+            "4" { "critic" }
+            default { $null }
+        }
 
-            # Update or create role
-            if (-not $Config.roles.ContainsKey($roleName)) {
-                $Config.roles[$roleName] = @{}
-            }
-            $Config.roles[$roleName].connection = $selectedConn
+        if ($roleName) {
+            $Config = Edit-RoleMapping -Config $Config -RoleName $roleName -AvailableConns $availableConns
+        }
+    }
+}
 
-            # Set default model based on connection type
-            $connConfig = $Config.connections[$selectedConn]
-            if ($connConfig -and $connConfig.default_model) {
-                $Config.roles[$roleName].model = $connConfig.default_model
+function Edit-RoleMapping {
+    param(
+        [hashtable]$Config,
+        [string]$RoleName,
+        [array]$AvailableConns
+    )
+
+    Write-Host ""
+    Write-Host "--- Configure $RoleName ---" -ForegroundColor Cyan
+    Write-Host ""
+
+    # Show available connections
+    Write-Host "Available connections:" -ForegroundColor Gray
+    $i = 1
+    foreach ($connId in $AvailableConns) {
+        $conn = $Config.connections[$connId]
+        $alias = if ($conn -and $conn.alias) { $conn.alias } else { $connId.ToUpper() }
+        $current = ""
+        if ($Config.roles.ContainsKey($RoleName) -and $Config.roles[$RoleName].connection -eq $connId) {
+            $current = " (current)"
+        }
+        Write-Host "  [$i] $($connId.ToUpper()) - $alias$current"
+        $i++
+    }
+    Write-Host ""
+    Write-Host "  [B] Back without changes" -ForegroundColor Yellow
+    Write-Host ""
+    Write-Host "Select connection for ${RoleName}: " -NoNewline
+    $choice = Read-Host
+
+    if ($choice -eq "B" -or $choice -eq "b") {
+        return $Config
+    }
+
+    $choiceInt = 0
+    if ([int]::TryParse($choice, [ref]$choiceInt) -and $choiceInt -ge 1 -and $choiceInt -le $AvailableConns.Count) {
+        $selectedConn = $AvailableConns[$choiceInt - 1]
+
+        # Update or create role
+        if (-not $Config.roles.ContainsKey($RoleName)) {
+            $Config.roles[$RoleName] = @{
+                description = "WOF $RoleName agent"
             }
         }
+        $Config.roles[$RoleName].connection = $selectedConn
+
+        # Set default model based on connection type
+        $connConfig = $Config.connections[$selectedConn]
+        if ($connConfig -and $connConfig.default_model) {
+            $Config.roles[$RoleName].model = $connConfig.default_model
+        }
+
+        $alias = if ($connConfig -and $connConfig.alias) { $connConfig.alias } else { $selectedConn.ToUpper() }
+        Write-Pass "$RoleName now uses $($selectedConn.ToUpper()) ($alias)"
+        $script:hasUnsavedChanges = $true
     }
 
     return $Config
 }
 
 # ============================================================================
-# Main Wizard Flow
+# Azure DevOps MCP Configuration
 # ============================================================================
 
-Write-Header "WOF CONFIGURATION WIZARD"
+function Load-McpConfiguration {
+    $mcp = @{
+        servers = @{}
+    }
+
+    if (Test-Path $mcpPath) {
+        try {
+            $mcpJson = Get-Content $mcpPath -Raw | ConvertFrom-Json
+            if ($mcpJson.mcpServers) {
+                $mcpJson.mcpServers.PSObject.Properties | ForEach-Object {
+                    $serverName = $_.Name
+                    $serverConfig = $_.Value
+                    $mcp.servers[$serverName] = @{
+                        type = $serverConfig.type
+                        command = $serverConfig.command
+                        args = $serverConfig.args
+                        env = @{}
+                    }
+                    if ($serverConfig.env) {
+                        $serverConfig.env.PSObject.Properties | ForEach-Object {
+                            $mcp.servers[$serverName].env[$_.Name] = $_.Value
+                        }
+                    }
+                }
+            }
+        } catch {
+            Write-Warn "Could not parse .mcp.json: $_"
+        }
+    }
+
+    return $mcp
+}
+
+function Save-McpConfiguration {
+    param([hashtable]$Mcp)
+
+    $mcpObj = [ordered]@{
+        mcpServers = [ordered]@{}
+    }
+
+    foreach ($serverName in $Mcp.servers.Keys) {
+        $server = $Mcp.servers[$serverName]
+        $serverEntry = [ordered]@{
+            type = $server.type
+            command = $server.command
+            args = $server.args
+        }
+        if ($server.env -and $server.env.Count -gt 0) {
+            $serverEntry.env = [ordered]@{}
+            foreach ($envKey in $server.env.Keys) {
+                $serverEntry.env[$envKey] = $server.env[$envKey]
+            }
+        }
+        $mcpObj.mcpServers[$serverName] = $serverEntry
+    }
+
+    $json = $mcpObj | ConvertTo-Json -Depth 10
+    Set-Content -Path $mcpPath -Value $json -Encoding UTF8
+}
+
+function Test-AdoConnection {
+    param(
+        [string]$OrgUrl,
+        [string]$Pat
+    )
+
+    $result = @{
+        Status = "OFFLINE"
+        Latency = 0
+        Error = $null
+        User = $null
+    }
+
+    if (-not $OrgUrl -or -not $Pat) {
+        $result.Status = "N/C"
+        $result.Error = "Missing organization URL or PAT"
+        return $result
+    }
+
+    $stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
+
+    try {
+        $base64Auth = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes(":$Pat"))
+        $headers = @{
+            "Authorization" = "Basic $base64Auth"
+            "Content-Type" = "application/json"
+        }
+
+        # Test by getting connection data (who am I)
+        $testUrl = "$OrgUrl/_apis/connectionData?api-version=7.1"
+        $response = Invoke-RestMethod -Uri $testUrl -Headers $headers -Method Get -TimeoutSec 10 -ErrorAction Stop
+
+        $stopwatch.Stop()
+        $result.Status = "ONLINE"
+        $result.Latency = $stopwatch.ElapsedMilliseconds
+
+        if ($response.authenticatedUser -and $response.authenticatedUser.providerDisplayName) {
+            $result.User = $response.authenticatedUser.providerDisplayName
+        }
+    }
+    catch {
+        $stopwatch.Stop()
+        $result.Latency = $stopwatch.ElapsedMilliseconds
+        $result.Error = $_.Exception.Message
+
+        if ($_.Exception.Response.StatusCode.value__ -eq 401 -or
+            $_.Exception.Response.StatusCode.value__ -eq 403) {
+            $result.Status = "AUTH_ERR"
+            $result.Error = "Authentication failed - check PAT permissions"
+        }
+    }
+
+    return $result
+}
+
+function Show-AdoMenu {
+    param([hashtable]$Mcp)
+
+    while ($true) {
+        Write-Host ""
+        Write-Host "--- Azure DevOps MCP Configuration ---" -ForegroundColor Cyan
+        Write-Host ""
+
+        # Check current configuration
+        $adoConfig = $Mcp.servers["azure-devops"]
+        $isConfigured = $adoConfig -and $adoConfig.env -and $adoConfig.env["AZURE_DEVOPS_ORG_URL"]
+
+        if ($isConfigured) {
+            $orgUrl = $adoConfig.env["AZURE_DEVOPS_ORG_URL"]
+            $hasPat = $adoConfig.env["AZURE_DEVOPS_PAT"] -and $adoConfig.env["AZURE_DEVOPS_PAT"].Length -gt 0
+            $patDisplay = if ($hasPat) { "(configured)" } else { "(not set)" }
+
+            Write-Host "  Organization URL: $orgUrl" -ForegroundColor Gray
+            Write-Host "  PAT:              $patDisplay" -ForegroundColor Gray
+            Write-Host "  Auth Method:      $($adoConfig.env["AZURE_DEVOPS_AUTH_METHOD"])" -ForegroundColor Gray
+            Write-Host ""
+        } else {
+            Write-Host "  (not configured)" -ForegroundColor DarkGray
+            Write-Host ""
+        }
+
+        Write-Host "Options:" -ForegroundColor Cyan
+        if ($isConfigured) {
+            Write-Host "  [1] Edit ADO connection"
+            Write-Host "  [2] Test connection"
+            Write-Host "  [3] Delete configuration" -ForegroundColor Red
+        } else {
+            Write-Host "  [1] Configure ADO MCP server"
+        }
+        Write-Host ""
+        Write-Host "  [B] Back to main menu" -ForegroundColor Yellow
+        Write-Host ""
+        Write-Host "Choice: " -NoNewline
+        $choice = Read-Host
+
+        switch ($choice.ToUpper()) {
+            "B" { return $Mcp }
+            "1" { $Mcp = Edit-AdoConnection -Mcp $Mcp }
+            "2" {
+                if ($isConfigured) {
+                    Write-Host ""
+                    Write-Check "Testing ADO connection..."
+                    $testResult = Test-AdoConnection -OrgUrl $adoConfig.env["AZURE_DEVOPS_ORG_URL"] -Pat $adoConfig.env["AZURE_DEVOPS_PAT"]
+
+                    if ($testResult.Status -eq "ONLINE") {
+                        Write-Pass "ONLINE - $($testResult.Latency)ms"
+                        if ($testResult.User) {
+                            Write-Info "Authenticated as: $($testResult.User)"
+                        }
+                    } elseif ($testResult.Status -eq "AUTH_ERR") {
+                        Write-Warn "AUTH ERROR - $($testResult.Error)"
+                    } else {
+                        Write-Fail "OFFLINE - $($testResult.Error)"
+                    }
+                    Write-Host ""
+                    Write-Host "Press Enter to continue..." -NoNewline
+                    Read-Host
+                }
+            }
+            "3" {
+                if ($isConfigured) {
+                    $Mcp = Remove-AdoConfiguration -Mcp $Mcp
+                }
+            }
+        }
+
+        # Refresh state
+        $adoConfig = $Mcp.servers["azure-devops"]
+        $isConfigured = $adoConfig -and $adoConfig.env -and $adoConfig.env["AZURE_DEVOPS_ORG_URL"]
+    }
+}
+
+function Edit-AdoConnection {
+    param([hashtable]$Mcp)
+
+    $existingConfig = $Mcp.servers["azure-devops"]
+    $existingOrgUrl = if ($existingConfig -and $existingConfig.env) { $existingConfig.env["AZURE_DEVOPS_ORG_URL"] } else { "" }
+    $existingPat = if ($existingConfig -and $existingConfig.env) { $existingConfig.env["AZURE_DEVOPS_PAT"] } else { "" }
+
+    Write-Host ""
+    Write-Host "--- Configure Azure DevOps MCP Server ---" -ForegroundColor Cyan
+    Write-Host ""
+
+    # Organization URL
+    Write-Host "Organization URL formats:" -ForegroundColor Gray
+    Write-Host "  https://dev.azure.com/your-org" -ForegroundColor DarkGray
+    Write-Host "  https://your-org.visualstudio.com" -ForegroundColor DarkGray
+    Write-Host ""
+
+    if ($existingOrgUrl) {
+        Write-Host "Organization URL [$existingOrgUrl]: " -NoNewline
+    } else {
+        Write-Host "Organization URL: " -NoNewline
+    }
+    $orgUrl = Read-Host
+    if (-not $orgUrl -and $existingOrgUrl) {
+        $orgUrl = $existingOrgUrl
+    }
+
+    if (-not $orgUrl) {
+        Write-Warn "Organization URL is required. Aborting."
+        return $Mcp
+    }
+
+    # Normalize URL (remove trailing slash)
+    $orgUrl = $orgUrl.TrimEnd('/')
+
+    # PAT
+    Write-Host ""
+    Write-Host "Personal Access Token (PAT):" -ForegroundColor Gray
+    Write-Host "  Create at: $orgUrl/_usersSettings/tokens" -ForegroundColor DarkGray
+    Write-Host "  Required scopes: Work Items (Read/Write), Code (Read)" -ForegroundColor DarkGray
+    Write-Host ""
+
+    $patPrompt = if ($existingPat) { "(has existing PAT, Enter to keep)" } else { "" }
+    Write-Host "PAT ${patPrompt}: " -NoNewline
+    $pat = Read-Host
+    if (-not $pat -and $existingPat) {
+        $pat = $existingPat
+    }
+
+    if (-not $pat) {
+        Write-Warn "PAT is required for MCP server authentication."
+        Write-Host "Continue without PAT? [y/N]: " -NoNewline
+        $continueWithoutPat = Read-Host
+        if ($continueWithoutPat -ne "y" -and $continueWithoutPat -ne "Y") {
+            return $Mcp
+        }
+    }
+
+    # Test connection before saving
+    if ($pat) {
+        Write-Host ""
+        Write-Check "Testing connection..."
+        $testResult = Test-AdoConnection -OrgUrl $orgUrl -Pat $pat
+
+        if ($testResult.Status -eq "ONLINE") {
+            Write-Pass "ONLINE - $($testResult.Latency)ms"
+            if ($testResult.User) {
+                Write-Info "Authenticated as: $($testResult.User)"
+            }
+        } elseif ($testResult.Status -eq "AUTH_ERR") {
+            Write-Warn "AUTH ERROR - $($testResult.Error)"
+            Write-Host "Save anyway? [y/N]: " -NoNewline
+            $saveAnyway = Read-Host
+            if ($saveAnyway -ne "y" -and $saveAnyway -ne "Y") {
+                return $Mcp
+            }
+        } else {
+            Write-Warn "OFFLINE - $($testResult.Error)"
+            Write-Host "Save anyway? [y/N]: " -NoNewline
+            $saveAnyway = Read-Host
+            if ($saveAnyway -ne "y" -and $saveAnyway -ne "Y") {
+                return $Mcp
+            }
+        }
+    }
+
+    # Build MCP server configuration
+    $Mcp.servers["azure-devops"] = @{
+        type = "stdio"
+        command = "cmd"
+        args = @("/c", "npx", "-y", "@tiberriver256/mcp-server-azure-devops")
+        env = @{
+            "AZURE_DEVOPS_ORG_URL" = $orgUrl
+            "AZURE_DEVOPS_AUTH_METHOD" = "pat"
+        }
+    }
+
+    if ($pat) {
+        $Mcp.servers["azure-devops"].env["AZURE_DEVOPS_PAT"] = $pat
+    }
+
+    Write-Host ""
+    Write-Pass "ADO MCP configuration saved"
+    $script:hasUnsavedChanges = $true
+
+    return $Mcp
+}
+
+function Remove-AdoConfiguration {
+    param([hashtable]$Mcp)
+
+    Write-Host ""
+    Write-Host "Delete Azure DevOps MCP configuration? This cannot be undone." -ForegroundColor Yellow
+    Write-Host "Type 'DELETE' to confirm: " -NoNewline
+    $confirm = Read-Host
+
+    if ($confirm -eq "DELETE") {
+        $Mcp.servers.Remove("azure-devops")
+        Write-Pass "ADO MCP configuration deleted"
+        $script:hasUnsavedChanges = $true
+    } else {
+        Write-Info "Deletion cancelled."
+    }
+
+    return $Mcp
+}
+
+# ============================================================================
+# Connection Slot Menu (for individual AI slot)
+# ============================================================================
+
+function Show-ConnectionSlotMenu {
+    param(
+        [int]$SlotNumber,
+        [hashtable]$Config
+    )
+
+    $id = "ai$SlotNumber"
+    $endpointKey = "AI${SlotNumber}_ENDPOINT"
+    $conn = $Config.connections[$id]
+    $endpoint = $Config.credentials[$endpointKey]
+    $isConfigured = $conn -and $endpoint
+
+    while ($true) {
+        Write-Host ""
+        Write-Host "--- AI$SlotNumber Configuration ---" -ForegroundColor Cyan
+        Write-Host ""
+
+        if ($isConfigured) {
+            $alias = if ($conn.alias) { $conn.alias } else { "AI$SlotNumber" }
+            $type = if ($conn.type) { $conn.type } else { "unknown" }
+            Write-Host "  Alias:    $alias" -ForegroundColor Gray
+            Write-Host "  Type:     $type" -ForegroundColor Gray
+            Write-Host "  Endpoint: $endpoint" -ForegroundColor Gray
+            Write-Host ""
+        } else {
+            Write-Host "  (not configured)" -ForegroundColor DarkGray
+            Write-Host ""
+        }
+
+        Write-Host "Options:" -ForegroundColor Cyan
+        if ($isConfigured) {
+            Write-Host "  [1] Edit connection settings"
+            Write-Host "  [2] Rename (change alias)"
+            Write-Host "  [3] Test connection"
+            Write-Host "  [4] Delete connection" -ForegroundColor Red
+        } else {
+            Write-Host "  [1] Configure new connection"
+        }
+        Write-Host ""
+        Write-Host "  [B] Back to connections list" -ForegroundColor Yellow
+        Write-Host ""
+        Write-Host "Choice: " -NoNewline
+        $choice = Read-Host
+
+        switch ($choice.ToUpper()) {
+            "B" { return $Config }
+            "1" {
+                $Config = Edit-AIConnection -SlotNumber $SlotNumber -Config $Config
+                # Refresh state
+                $conn = $Config.connections[$id]
+                $endpoint = $Config.credentials[$endpointKey]
+                $isConfigured = $conn -and $endpoint
+            }
+            "2" {
+                if ($isConfigured) {
+                    $Config = Rename-AIConnection -SlotNumber $SlotNumber -Config $Config
+                    $conn = $Config.connections[$id]
+                }
+            }
+            "3" {
+                if ($isConfigured) {
+                    Test-SingleConnection -SlotNumber $SlotNumber -Config $Config
+                    Write-Host ""
+                    Write-Host "Press Enter to continue..." -NoNewline
+                    Read-Host
+                }
+            }
+            "4" {
+                if ($isConfigured) {
+                    $Config = Remove-AIConnection -SlotNumber $SlotNumber -Config $Config
+                    # Refresh state
+                    $conn = $Config.connections[$id]
+                    $endpoint = $Config.credentials[$endpointKey]
+                    $isConfigured = $conn -and $endpoint
+                    if (-not $isConfigured) {
+                        return $Config
+                    }
+                }
+            }
+        }
+    }
+}
+
+# ============================================================================
+# Connections Menu
+# ============================================================================
+
+function Show-ConnectionsMenu {
+    param([hashtable]$Config)
+
+    while ($true) {
+        Write-Host ""
+        Write-Host "--- Manage AI Connections ---" -ForegroundColor Cyan
+
+        # Show table without testing (for speed)
+        Write-Host ""
+        Write-Host "+------+-------------------+----------------------------------+------------------------+" -ForegroundColor Gray
+        Write-Host "| Slot | Alias             | Endpoint                         | Type                   |" -ForegroundColor Gray
+        Write-Host "+------+-------------------+----------------------------------+------------------------+" -ForegroundColor Gray
+
+        1..10 | ForEach-Object {
+            $id = "ai$_"
+            $displayId = "AI$_".PadRight(4)
+
+            $conn = $Config.connections[$id]
+            $endpointKey = "AI${_}_ENDPOINT"
+            $endpoint = $Config.credentials[$endpointKey]
+
+            if ($conn -and $conn.alias -and $endpoint) {
+                $alias = $conn.alias
+                if ($alias.Length -gt 17) { $alias = $alias.Substring(0, 14) + "..." }
+                $alias = $alias.PadRight(17)
+
+                $displayEndpoint = $endpoint
+                if ($displayEndpoint.Length -gt 32) { $displayEndpoint = $displayEndpoint.Substring(0, 29) + "..." }
+                $displayEndpoint = $displayEndpoint.PadRight(32)
+
+                $type = if ($conn.type) { $conn.type } else { "-" }
+                if ($type.Length -gt 22) { $type = $type.Substring(0, 19) + "..." }
+                $type = $type.PadRight(22)
+
+                Write-Host "| $displayId | $alias | $displayEndpoint | $type |"
+            } else {
+                $alias = "(not configured)".PadRight(17)
+                $displayEndpoint = "-".PadRight(32)
+                $type = "-".PadRight(22)
+
+                Write-Host "| $displayId | " -NoNewline
+                Write-Host $alias -ForegroundColor DarkGray -NoNewline
+                Write-Host " | " -NoNewline
+                Write-Host $displayEndpoint -ForegroundColor DarkGray -NoNewline
+                Write-Host " | " -NoNewline
+                Write-Host $type -ForegroundColor DarkGray -NoNewline
+                Write-Host " |"
+            }
+        }
+
+        Write-Host "+------+-------------------+----------------------------------+------------------------+" -ForegroundColor Gray
+        Write-Host ""
+        Write-Host "Enter slot number (1-10) to configure, or:" -ForegroundColor Cyan
+        Write-Host "  [T] Test all connections"
+        Write-Host "  [B] Back to main menu" -ForegroundColor Yellow
+        Write-Host ""
+        Write-Host "Choice: " -NoNewline
+        $choice = Read-Host
+
+        switch ($choice.ToUpper()) {
+            "B" { return $Config }
+            "T" {
+                Write-Host ""
+                Show-ConnectionsTable -Config $Config | Out-Null
+                Write-Host ""
+                Write-Host "Press Enter to continue..." -NoNewline
+                Read-Host
+            }
+            default {
+                $slotNum = 0
+                if ([int]::TryParse($choice, [ref]$slotNum) -and $slotNum -ge 1 -and $slotNum -le 10) {
+                    $Config = Show-ConnectionSlotMenu -SlotNumber $slotNum -Config $Config
+                }
+            }
+        }
+    }
+}
+
+# ============================================================================
+# Save Configuration
+# ============================================================================
+
+function Save-Configuration {
+    param(
+        [hashtable]$Config,
+        [hashtable]$Mcp
+    )
+
+    Write-Host ""
+    Write-Check "Saving configuration..."
+
+    try {
+        # Ensure config directory exists
+        if (-not (Test-Path $configDir)) {
+            New-Item -ItemType Directory -Path $configDir -Force | Out-Null
+        }
+
+        Save-Connections -Connections $Config.connections
+        Save-Credentials -Credentials $Config.credentials
+        Save-Roles -Roles $Config.roles
+
+        # Save MCP configuration if provided
+        if ($Mcp -and $Mcp.servers.Count -gt 0) {
+            Save-McpConfiguration -Mcp $Mcp
+            Write-Info ".mcp.json - MCP server configuration"
+        }
+
+        Write-Pass "Configuration saved!"
+        Write-Info "connections.json - AI connection definitions"
+        Write-Info "credentials.local.json - API keys (gitignored)"
+        Write-Info "roles.json - Role-to-connection mappings"
+        $script:hasUnsavedChanges = $false
+    } catch {
+        Write-Fail "Failed to save configuration: $_"
+    }
+}
+
+# ============================================================================
+# Main Menu
+# ============================================================================
+
+function Show-MainMenu {
+    param(
+        [hashtable]$Config,
+        [hashtable]$Mcp
+    )
+
+    while ($true) {
+        Write-Header "WOF CONFIGURATION WIZARD"
+
+        # Count configured connections
+        $configuredCount = 0
+        1..10 | ForEach-Object {
+            $endpointKey = "AI${_}_ENDPOINT"
+            if ($Config.credentials[$endpointKey]) {
+                $configuredCount++
+            }
+        }
+
+        # Check ADO status
+        $adoConfigured = $Mcp.servers["azure-devops"] -and $Mcp.servers["azure-devops"].env -and $Mcp.servers["azure-devops"].env["AZURE_DEVOPS_ORG_URL"]
+        $adoStatus = if ($adoConfigured) { "configured" } else { "not configured" }
+
+        Write-Host "  AI connections: $configuredCount/10" -ForegroundColor Gray
+        Write-Host "  Azure DevOps:   $adoStatus" -ForegroundColor Gray
+        if ($script:hasUnsavedChanges) {
+            Write-Host "  Unsaved changes: Yes" -ForegroundColor Yellow
+        }
+        Write-Host ""
+        Write-Host "Main Menu:" -ForegroundColor Cyan
+        Write-Host "  [1] Manage AI Connections"
+        Write-Host "  [2] Configure Role Mappings"
+        Write-Host "  [3] Configure Azure DevOps MCP"
+        Write-Host ""
+        Write-Host "  [4] Test All AI Connections"
+        Write-Host "  [5] View Current Configuration"
+        Write-Host ""
+        if ($script:hasUnsavedChanges) {
+            Write-Host "  [S] Save changes" -ForegroundColor Green
+        }
+        Write-Host "  [H] Run health check"
+        Write-Host "  [Q] Quit" -ForegroundColor Yellow
+        Write-Host ""
+        Write-Host "Choice: " -NoNewline
+        $choice = Read-Host
+
+        switch ($choice.ToUpper()) {
+            "1" { $Config = Show-ConnectionsMenu -Config $Config }
+            "2" { $Config = Show-RoleMenu -Config $Config }
+            "3" { $Mcp = Show-AdoMenu -Mcp $Mcp }
+            "4" {
+                Write-Host ""
+                Write-Host "Testing all AI connections..." -ForegroundColor Cyan
+                Show-ConnectionsTable -Config $Config | Out-Null
+                Write-Host ""
+                Write-Host "Press Enter to continue..." -NoNewline
+                Read-Host
+            }
+            "5" {
+                Write-Host ""
+                Show-RoleMappings -Config $Config
+
+                # Show ADO config too
+                if ($adoConfigured) {
+                    Write-Host "Azure DevOps MCP:" -ForegroundColor Cyan
+                    Write-Host "    Organization: $($Mcp.servers["azure-devops"].env["AZURE_DEVOPS_ORG_URL"])" -ForegroundColor Gray
+                    Write-Host ""
+                }
+
+                Write-Host "Press Enter to continue..." -NoNewline
+                Read-Host
+            }
+            "S" {
+                if ($script:hasUnsavedChanges) {
+                    Save-Configuration -Config $Config -Mcp $Mcp
+                    Write-Host ""
+                    Write-Host "Press Enter to continue..." -NoNewline
+                    Read-Host
+                }
+            }
+            "H" {
+                $healthScript = Join-Path $PSScriptRoot "check-orchestration-health.ps1"
+                if (Test-Path $healthScript) {
+                    & $healthScript
+                } else {
+                    Write-Warn "Health check script not found."
+                }
+                Write-Host ""
+                Write-Host "Press Enter to continue..." -NoNewline
+                Read-Host
+            }
+            "Q" {
+                if ($script:hasUnsavedChanges) {
+                    Write-Host ""
+                    Write-Host "You have unsaved changes. Save before quitting? [Y/n]: " -NoNewline
+                    $saveFirst = Read-Host
+                    if (-not $saveFirst -or $saveFirst.ToLower() -eq "y") {
+                        Save-Configuration -Config $Config -Mcp $Mcp
+                    }
+                }
+                Write-Host ""
+                Write-Pass "Configuration wizard closed."
+                Write-Host ""
+                return
+            }
+        }
+    }
+}
+
+# ============================================================================
+# Main Entry Point
+# ============================================================================
 
 # Load existing configuration
 Write-Check "Loading configuration..."
 $config = Load-Configuration
+$mcp = Load-McpConfiguration
 
 if ($TestOnly) {
-    Write-Host ""
-    Write-Host "Testing existing connections..." -ForegroundColor Cyan
+    Write-Header "WOF CONNECTION TEST"
+    Write-Host "Testing AI connections..." -ForegroundColor Cyan
     $count = Show-ConnectionsTable -Config $config
     Write-Host ""
-    Write-Host "Tested $count configured connections." -ForegroundColor Gray
+
+    # Also test ADO if configured
+    $adoConfig = $mcp.servers["azure-devops"]
+    if ($adoConfig -and $adoConfig.env -and $adoConfig.env["AZURE_DEVOPS_ORG_URL"]) {
+        Write-Host "Testing Azure DevOps..." -ForegroundColor Cyan
+        $adoResult = Test-AdoConnection -OrgUrl $adoConfig.env["AZURE_DEVOPS_ORG_URL"] -Pat $adoConfig.env["AZURE_DEVOPS_PAT"]
+        if ($adoResult.Status -eq "ONLINE") {
+            Write-Pass "ADO: ONLINE ($($adoResult.Latency)ms)"
+            if ($adoResult.User) {
+                Write-Info "  Authenticated as: $($adoResult.User)"
+            }
+        } elseif ($adoResult.Status -eq "AUTH_ERR") {
+            Write-Warn "ADO: AUTH ERROR - $($adoResult.Error)"
+        } else {
+            Write-Fail "ADO: OFFLINE - $($adoResult.Error)"
+        }
+    }
+
+    Write-Host ""
+    Write-Host "Tested $count AI connections." -ForegroundColor Gray
     exit 0
 }
 
-# Show current state
-Write-Host "Checking AI connections..." -ForegroundColor Cyan
-$configuredCount = Show-ConnectionsTable -Config $config
-
-# If no connections, prompt to add
-if ($configuredCount -eq 0) {
-    Write-Host "No AI connections configured. Add one now? [Y/n]: " -NoNewline
-    $addFirst = Read-Host
-    if (-not $addFirst -or $addFirst.ToLower() -eq "y") {
-        $config = Add-AIConnection -SlotNumber 1 -Config $config
-    }
-} else {
-    Write-Host "Add or modify a connection? [y/N]: " -NoNewline
-    $modify = Read-Host
-    if ($modify -and $modify.ToLower() -eq "y") {
-        Write-Host "Enter slot number (1-10): " -NoNewline
-        $slotInput = Read-Host
-        if ($slotInput) {
-            $slot = [int]$slotInput
-            if ($slot -ge 1 -and $slot -le 10) {
-                $config = Add-AIConnection -SlotNumber $slot -Config $config
-            }
-        }
-    }
-}
-
-# Loop to add more
-$addMore = $true
-while ($addMore) {
-    Write-Host ""
-    Write-Host "Add another connection? [y/N]: " -NoNewline
-    $response = Read-Host
-
-    if ($response -and $response.ToLower() -eq "y") {
-        # Find next available slot
-        $nextSlot = 0
-        1..10 | ForEach-Object {
-            $endpointKey = "AI${_}_ENDPOINT"
-            if (-not $config.credentials[$endpointKey] -and $nextSlot -eq 0) {
-                $nextSlot = $_
-            }
-        }
-
-        if ($nextSlot -eq 0) {
-            Write-Warn "All 10 AI slots are configured."
-            $addMore = $false
-        } else {
-            Write-Host "Enter slot number [$nextSlot]: " -NoNewline
-            $slotInput = Read-Host
-            $slot = if ($slotInput) { [int]$slotInput } else { $nextSlot }
-
-            if ($slot -ge 1 -and $slot -le 10) {
-                $config = Add-AIConnection -SlotNumber $slot -Config $config
-            }
-        }
-    } else {
-        $addMore = $false
-    }
-}
-
-# Show all configured connections
-Write-Host ""
-Write-Host "Final Connection Status:" -ForegroundColor Cyan
-Show-ConnectionsTable -Config $config | Out-Null
-
-# Role mapping
-Write-Host ""
-Write-Host "Configure role mappings? [Y/n]: " -NoNewline
-$doRoles = Read-Host
-if (-not $doRoles -or $doRoles.ToLower() -eq "y") {
-    $config = Start-RoleMappingWizard -Config $config
-}
-
-# Save configuration
-Write-Host ""
-Write-Check "Saving configuration..."
-
-try {
-    # Ensure config directory exists
-    if (-not (Test-Path $configDir)) {
-        New-Item -ItemType Directory -Path $configDir -Force | Out-Null
-    }
-
-    Save-Connections -Connections $config.connections
-    Save-Credentials -Credentials $config.credentials
-    Save-Roles -Roles $config.roles
-
-    Write-Pass "Configuration saved!"
-    Write-Info "connections.json - AI connection definitions"
-    Write-Info "credentials.local.json - API keys (gitignored)"
-    Write-Info "roles.json - Role-to-connection mappings"
-} catch {
-    Write-Fail "Failed to save configuration: $_"
-    exit 1
-}
-
-# Show final role mappings
-Show-RoleMappings -Config $config
-
-# Run health check
-Write-Host ""
-Write-Host "Run full health check? [Y/n]: " -NoNewline
-$doHealth = Read-Host
-if (-not $doHealth -or $doHealth.ToLower() -eq "y") {
-    $healthScript = Join-Path $PSScriptRoot "check-orchestration-health.ps1"
-    if (Test-Path $healthScript) {
-        & $healthScript
-    }
-}
-
-Write-Host ""
-Write-Pass "Configuration complete!"
-Write-Host ""
+# Start main menu
+Show-MainMenu -Config $config -Mcp $mcp

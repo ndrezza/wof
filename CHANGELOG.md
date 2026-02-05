@@ -5,6 +5,31 @@ All notable changes to the Workload Orchestration Framework (WOF) will be docume
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.2.1] - 2026-02-05
+
+### Added
+
+- **Azure DevOps MCP configuration** in `/wof configure`
+  - New menu option `[3] Configure Azure DevOps MCP`
+  - Set organization URL (dev.azure.com or visualstudio.com formats)
+  - Configure Personal Access Token (PAT) with inline testing
+  - Test ADO connection with user authentication display
+  - Saves to `.mcp.json` for Claude Code MCP server
+  - `-TestOnly` flag now also tests ADO connection
+
+### Improved
+
+- **`/wof configure` menu navigation** - Complete UX overhaul
+  - Hierarchical menu system with back navigation at every level
+  - Main menu: Manage Connections, Configure Roles, ADO MCP, Test All, View Config, Save, Quit
+  - Connection slot menu: Edit, Rename, Test, Delete, Back
+  - Role mapping menu: Select role to modify, Back to main
+  - ADO menu: Edit, Test, Delete, Back
+  - Unsaved changes tracking with save prompt on quit
+  - Fast connection list (no auto-testing) with explicit "Test All" option
+  - Consistent `[B] Back` option throughout all submenus
+  - Status display shows both AI connections and ADO status
+
 ## [3.2.0] - 2026-02-03
 
 ### Added
