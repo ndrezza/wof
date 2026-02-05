@@ -5,6 +5,15 @@ All notable changes to the Workload Orchestration Framework (WOF) will be docume
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.2.5] - 2026-02-05
+
+### Added
+
+- **Pre-Commit Workflow section in CLAUDE.md** (#2970)
+  - Mandatory test-before-commit sequence: Code → Build → Test → Review → Commit
+  - Explains why order matters (verified commits, no pollution)
+  - Defines what counts as "testing" for different change types
+
 ## [3.2.4] - 2026-02-05
 
 ### Added

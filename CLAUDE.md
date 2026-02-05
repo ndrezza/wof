@@ -151,6 +151,30 @@ Before committing and pushing to main, bump the version:
 $v = [version](Get-Content VERSION); "$($v.Major).$($v.Minor).$($v.Build + 1)" | Set-Content VERSION
 ```
 
+### Pre-Commit Workflow (MANDATORY)
+
+**Test BEFORE commit, not after.** This is the required sequence:
+
+```
+1. CODE    → Make your changes
+2. BUILD   → Verify compilation succeeds
+3. TEST    → Run relevant tests, verify they pass
+4. REVIEW  → Self-check: Does this meet requirements?
+5. COMMIT  → Only after steps 2-4 pass
+```
+
+**Why this order matters:**
+- Commits should represent verified, working states
+- Broken commits pollute history and waste CI resources
+- "I'll fix it in the next commit" is not acceptable
+- If tests fail, fix the issue before committing
+
+**What counts as "testing":**
+- Unit tests for the modified code
+- Integration tests if behavior changes
+- Manual verification for UI/UX changes
+- Syntax/lint checks for scripts
+
 ### Quality Gates
 
 Every deliverable must pass:
