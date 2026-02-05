@@ -52,6 +52,47 @@ This repository contains **WOF source code only**. No WOI is installed here.
 
 **Why no WOI here?** Installing WOI in the WOF repo creates an "inception paradox"—the same files exist as both source (in `core/`) and instance (in `.ai/`). This causes confusion about which files to edit. To keep WOF development clean, test WOI in separate projects or in `examples/`.
 
+## CRITICAL: WOF vs WOI Editing Rules
+
+**You are working on WOF (the framework source), NOT a WOI (instance).**
+
+### What to Edit
+
+| Want to change... | Edit this (WOF source) | NOT this (WOI path) |
+|-------------------|------------------------|---------------------|
+| Scripts | `core/scripts/*.ps1` | `.ai/scripts/*.ps1` |
+| Templates | `templates/*.template` | `.ai/config/*` |
+| SKILL.md | `templates/dot-claude/skills/wof/SKILL.md` | `.claude/skills/wof/SKILL.md` |
+| WOI-SECTION | `templates/WOI-SECTION.md` | CLAUDE.md (WOI section) |
+| Agents | `core/agents/*.md` | `.ai/agents/*.md` |
+
+### After Making Changes
+
+When you modify WOF source files, the changes don't automatically appear in WOI installations. Tell the user:
+
+1. **Commit and push** your WOF changes to the repository
+2. **In each WOI project**, run: `/wof update` (or `.\sync.ps1`)
+3. **Restart Claude Code** if the changes affect:
+   - SKILL.md (slash commands)
+   - MCP server configuration
+   - CLAUDE.md/WOI-SECTION content
+
+### Example Response After WOF Changes
+
+> "I've updated `core/scripts/configure-wizard.ps1` with the new menu system.
+>
+> To get these changes in your projects:
+> 1. The changes are committed to WOF (commit `abc123`)
+> 2. In each project with WOI installed, run `/wof update`
+> 3. Restart Claude Code to load the updated scripts"
+
+### Never Do This
+
+- ❌ Don't create `.ai/` or `.claude/` directories in this repo
+- ❌ Don't edit paths starting with `.ai/` (those are WOI paths)
+- ❌ Don't run `/wof` commands here (no WOI installed)
+- ❌ Don't assume changes are immediately available in WOI projects
+
 ## Development Guidelines
 
 ### Core Principles
