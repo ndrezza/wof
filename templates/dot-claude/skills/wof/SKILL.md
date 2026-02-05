@@ -9,6 +9,13 @@ allowed-tools:
   - AskUserQuestion
 ---
 
+<!-- ============================================================================
+     WOF MANAGED SKILL - CUSTOMIZATIONS MAY BE OVERWRITTEN
+     This file is managed by the Workload Orchestration Framework.
+     Local customizations are preserved during sync, but new WOF features
+     may require updates. Review changes after running /wof update.
+     ============================================================================ -->
+
 # WOF - Workload Orchestration Framework Commands
 
 Parse the arguments to determine which WOF command to run.

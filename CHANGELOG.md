@@ -5,6 +5,17 @@ All notable changes to the Workload Orchestration Framework (WOF) will be docume
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.2.3] - 2026-02-05
+
+### Added
+
+- **WOF managed file warnings** - Clear "DO NOT EDIT" notices (#2964)
+  - All 16 core scripts now have header warnings
+  - Warning explains files are overwritten on sync/update
+  - Directs users to use `.ai/config/` for customization
+  - SKILL.md has softer warning (customizations preserved but may need review)
+  - WOI-SECTION.md already had start/end markers
+
 ## [3.2.2] - 2026-02-05
 
 ### Improved

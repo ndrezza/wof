@@ -1,3 +1,10 @@
+# ============================================================================
+# WOF MANAGED FILE - DO NOT EDIT MANUALLY
+# This file is managed by the Workload Orchestration Framework.
+# Changes will be overwritten on the next WOF sync/update.
+# To customize behavior, use configuration files in .ai/config/
+# ============================================================================
+
 # PreToolUse Hook Script for Claude Code
 #
 # This script is called BEFORE any Bash command is executed.

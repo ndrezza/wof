@@ -1,3 +1,10 @@
+# ============================================================================
+# WOF MANAGED FILE - DO NOT EDIT MANUALLY
+# This file is managed by the Workload Orchestration Framework.
+# Changes will be overwritten on the next WOF sync/update.
+# To customize behavior, use configuration files in .ai/config/
+# ============================================================================
+
 # Autonomy Validation Script
 #
 # This script delegates a decision to the configured Validator AI to determine

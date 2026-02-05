@@ -1,3 +1,10 @@
+# ============================================================================
+# WOF MANAGED FILE - DO NOT EDIT MANUALLY
+# This file is managed by the Workload Orchestration Framework.
+# Changes will be overwritten on the next WOF sync/update.
+# To customize behavior, use configuration files in .ai/config/
+# ============================================================================
+
 # Interview Validator Script
 #
 # Conducts a conversational interview with the Validator AI.

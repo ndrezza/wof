@@ -1,3 +1,10 @@
+# ============================================================================
+# WOF MANAGED FILE - DO NOT EDIT MANUALLY
+# This file is managed by the Workload Orchestration Framework.
+# Changes will be overwritten on the next WOF sync/update.
+# To customize behavior, use configuration files in .ai/config/
+# ============================================================================
+
 # Bias Control Script - Quality Assurance via Critic AI
 #
 # This script implements a "devil's advocate" quality gate using the configured Critic AI.
