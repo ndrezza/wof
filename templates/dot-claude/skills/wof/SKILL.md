@@ -862,29 +862,39 @@ cat .mcp.json 2>/dev/null || echo "No MCP config found"
 
 #### Step 2: Ask for Connection Info
 
-Use AskUserQuestion to gather:
+Use AskUserQuestion to gather. **Every question must include a "Back/Cancel" option** to allow users to return to the previous menu without making changes.
 
 **Question 1: Organization URL**
 - Question: "What is your Azure DevOps organization URL?"
 - Header: "ADO Org"
 - Options:
-  1. "https://dev.azure.com/myorg" (example format)
-  2. "Other" (let user type)
+  1. "https://dev.azure.com/tdn" - Common format: https://dev.azure.com/<orgname>
+  2. "https://tdn.visualstudio.com" - Legacy format: https://<orgname>.visualstudio.com
+  3. "Back" - Return to configure menu without changes
+
+If user selects "Back", return to the main configure menu immediately.
+
+If user selects option 1 or 2, ask them to confirm/edit the URL. If they select "Other", let them type the full URL.
 
 **Question 2: Project Name**
 - Question: "What is your Azure DevOps project name?"
 - Header: "Project"
-- Let user type the project name
+- Options:
+  1. Type project name
+  2. "Back" - Return to previous question
 
 **Question 3: Personal Access Token**
 - Question: "Enter your Azure DevOps PAT (Personal Access Token)"
 - Header: "PAT"
-- Let user type the PAT value
+- Options:
+  1. Type PAT value
+  2. "Back" - Return to previous question
+  3. "Skip" - Keep existing PAT (if already configured)
 - Note: PAT is stored only in .mcp.json (gitignored), not in ado.json
 
 #### Step 3: Configure Filters
 
-Use AskUserQuestion with proposed defaults:
+Use AskUserQuestion with proposed defaults. **Include "Back" option in each question.**
 
 **Question 4: Value Area Filter**
 - Question: "Filter work items by Value Area?"
@@ -893,20 +903,23 @@ Use AskUserQuestion with proposed defaults:
   1. "Architectural (Recommended)" - Focus on architectural work items
   2. "Business" - Business value items
   3. "No filter" - Show all value areas
+  4. "Back" - Return to previous question
 
 **Question 5: Work Item Types**
 - Question: "Which work item types to include?"
 - Header: "Types"
 - MultiSelect: true
-- Options: "User Story", "Task", "Bug", "Feature"
-- Default: All selected
+- Options: "User Story", "Task", "Bug", "Feature", "Back"
+- Default: All types selected (not Back)
+- If only "Back" is selected, return to previous question
 
 **Question 6: Work Item States**
 - Question: "Which states to include?"
 - Header: "States"
 - MultiSelect: true
-- Options: "New", "Active", "Resolved", "Closed"
-- Default: New, Active, Resolved
+- Options: "New", "Active", "Resolved", "Closed", "Back"
+- Default: New, Active, Resolved selected (not Back)
+- If only "Back" is selected, return to previous question
 
 #### Step 4: Update Filter Config
 

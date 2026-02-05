@@ -5,6 +5,16 @@ All notable changes to the Workload Orchestration Framework (WOF) will be docume
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.2.2] - 2026-02-05
+
+### Improved
+
+- **`/wof configure-ado` back navigation** - Added "Back" option to all AskUserQuestion prompts
+  - Organization URL question: Back returns to configure menu
+  - Project name question: Back returns to previous question
+  - PAT question: Back returns to previous question, Skip keeps existing
+  - Filter questions (Value Area, Types, States): All include Back option
+
 ## [3.2.1] - 2026-02-05
 
 ### Added
