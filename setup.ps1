@@ -35,6 +35,10 @@
     Remove the WOF source directory after successful installation.
     Safe for temp directories; prompts for confirmation otherwise.
 
+.PARAMETER AllowInception
+    Allow running setup against the WOF source directory itself (inception mode).
+    Without this flag, setup will abort if TargetPath points to the WOF source directory.
+
 .EXAMPLE
     .\setup.ps1 -TargetPath "C:\code\MyProject" -SolutionName "MyProject"
 
@@ -79,7 +83,10 @@ param(
     [string]$ConfigFormat = "v2",
 
     [Parameter(Mandatory=$false)]
-    [switch]$Cleanup
+    [switch]$Cleanup,
+
+    [Parameter(Mandatory=$false)]
+    [switch]$AllowInception
 )
 
 $ErrorActionPreference = "Stop"
@@ -103,6 +110,32 @@ if (-not (Test-Path $TargetPath)) {
 if (-not $SolutionName) {
     $SolutionName = Split-Path $TargetPath -Leaf
     Write-Warn "No solution name provided, using directory name: $SolutionName"
+}
+
+# Inception mode detection
+$normalizedScriptRoot = (Resolve-Path $scriptRoot).Path.TrimEnd('\', '/')
+$normalizedTargetPath = (Resolve-Path $TargetPath).Path.TrimEnd('\', '/')
+
+if ($normalizedScriptRoot -eq $normalizedTargetPath) {
+    Write-Host ""
+    Write-Host "  +===================================================================+" -ForegroundColor Red
+    Write-Host "  |                    INCEPTION MODE DETECTED                         |" -ForegroundColor Red
+    Write-Host "  +===================================================================+" -ForegroundColor Red
+    Write-Host "  |  TargetPath points to the WOF source directory itself.             |" -ForegroundColor Yellow
+    Write-Host "  |  This will overwrite WOI files with current (possibly              |" -ForegroundColor Yellow
+    Write-Host "  |  uncommitted/untested) WOF source code.                            |" -ForegroundColor Yellow
+    Write-Host "  |                                                                    |" -ForegroundColor Yellow
+    Write-Host "  |  Use -AllowInception to proceed intentionally.                     |" -ForegroundColor Yellow
+    Write-Host "  +===================================================================+" -ForegroundColor Red
+    Write-Host ""
+
+    if (-not $AllowInception) {
+        Write-Host "[-] Aborting. Use -AllowInception to override." -ForegroundColor Red
+        exit 1
+    }
+
+    Write-Host "[!] Proceeding in inception mode (-AllowInception specified)..." -ForegroundColor Yellow
+    Write-Host ""
 }
 
 Write-Host ""

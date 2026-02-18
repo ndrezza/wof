@@ -5,6 +5,16 @@ All notable changes to the Workload Orchestration Framework (WOF) will be docume
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.2.6] - 2026-02-18
+
+### Added
+
+- **Inception mode protection for setup.ps1 and sync.ps1** (#2965)
+  - Detects when TargetPath points to the WOF source directory itself
+  - Displays prominent red/yellow warning box explaining the risk
+  - Requires `-AllowInception` flag to proceed (aborts by default)
+  - Prevents accidental WOI installation in the WOF framework repo
+
 ## [3.2.5] - 2026-02-05
 
 ### Added
