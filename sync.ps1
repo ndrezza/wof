@@ -15,6 +15,10 @@
 .PARAMETER Force
     Ignore customization markers and force update all eligible files.
 
+.PARAMETER AllowInception
+    Allow running sync against the WOF source directory itself (inception mode).
+    Without this flag, sync will abort if TargetPath points to the WOF source directory.
+
 .EXAMPLE
     .\sync.ps1 -TargetPath "C:\code\MyProject"
 
@@ -30,7 +34,10 @@ param(
     [switch]$DryRun,
 
     [Parameter(Mandatory=$false)]
-    [switch]$Force
+    [switch]$Force,
+
+    [Parameter(Mandatory=$false)]
+    [switch]$AllowInception
 )
 
 $ErrorActionPreference = "Stop"
@@ -102,6 +109,32 @@ function Process-ConditionalBlocks {
 if (-not (Test-Path $TargetPath)) {
     Write-Host "[-] Target path does not exist: $TargetPath" -ForegroundColor Red
     exit 1
+}
+
+# Inception mode detection
+$normalizedScriptRoot = (Resolve-Path $scriptRoot).Path.TrimEnd('\', '/')
+$normalizedTargetPath = (Resolve-Path $TargetPath).Path.TrimEnd('\', '/')
+
+if ($normalizedScriptRoot -eq $normalizedTargetPath) {
+    Write-Host ""
+    Write-Host "  +===================================================================+" -ForegroundColor Red
+    Write-Host "  |                    INCEPTION MODE DETECTED                         |" -ForegroundColor Red
+    Write-Host "  +===================================================================+" -ForegroundColor Red
+    Write-Host "  |  TargetPath points to the WOF source directory itself.             |" -ForegroundColor Yellow
+    Write-Host "  |  This will overwrite WOI files with current (possibly              |" -ForegroundColor Yellow
+    Write-Host "  |  uncommitted/untested) WOF source code.                            |" -ForegroundColor Yellow
+    Write-Host "  |                                                                    |" -ForegroundColor Yellow
+    Write-Host "  |  Use -AllowInception to proceed intentionally.                     |" -ForegroundColor Yellow
+    Write-Host "  +===================================================================+" -ForegroundColor Red
+    Write-Host ""
+
+    if (-not $AllowInception) {
+        Write-Host "[-] Aborting. Use -AllowInception to override." -ForegroundColor Red
+        exit 1
+    }
+
+    Write-Host "[!] Proceeding in inception mode (-AllowInception specified)..." -ForegroundColor Yellow
+    Write-Host ""
 }
 
 if (-not (Test-Path $manifestFile)) {

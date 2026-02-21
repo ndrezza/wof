@@ -5,6 +5,32 @@ All notable changes to the Workload Orchestration Framework (WOF) will be docume
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.3.0] - 2026-02-21
+
+### Added
+
+- **D-User Notification System (Teams Chat & Email)** (#2989)
+  - New `graph-auth.ps1` script for one-time device code flow authentication via MSAL.PS
+  - New `send-notification.ps1` script for sending notifications via Teams chat or email
+  - New `notifications.json.template` for d-user identity, target user, and notification preferences
+  - Uses Microsoft Graph PowerShell SDK client ID (no custom Azure AD app registration)
+  - Supports trigger-based filtering (needsInput, blocked, completed, progress)
+  - Graceful fallback from Teams to email if primary channel fails
+  - Silent token refresh via MSAL.PS cached tokens
+  - Teams messages include color-coded type badges (orange/red/green/blue)
+  - `setup.ps1` updated to deploy notifications.json template during WOI installation
+  - `sync-manifest.json` updated with notifications.json in template_only patterns
+
+## [3.2.6] - 2026-02-18
+
+### Added
+
+- **Inception mode protection for setup.ps1 and sync.ps1** (#2965)
+  - Detects when TargetPath points to the WOF source directory itself
+  - Displays prominent red/yellow warning box explaining the risk
+  - Requires `-AllowInception` flag to proceed (aborts by default)
+  - Prevents accidental WOI installation in the WOF framework repo
+
 ## [3.2.5] - 2026-02-05
 
 ### Added
