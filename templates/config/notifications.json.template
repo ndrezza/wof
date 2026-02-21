@@ -1,0 +1,32 @@
+{
+  "description": "D-user notification settings. Run /wof configure-notifications to set up.",
+
+  "dUser": {
+    "upn": "",
+    "displayName": ""
+  },
+
+  "targetUser": {
+    "upn": "",
+    "displayName": "",
+    "userId": ""
+  },
+
+  "tenantId": "",
+
+  "channels": {
+    "primary": "teams",
+    "fallback": "email"
+  },
+
+  "teams": {
+    "chatId": ""
+  },
+
+  "triggers": {
+    "needsInput": true,
+    "blocked": true,
+    "completed": true,
+    "progress": false
+  }
+}

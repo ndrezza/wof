@@ -559,6 +559,7 @@ if (-not $SkipTemplates) {
             "config\credentials.local.json.template",
             "config\ado.json.template",
             "config\finish.json.template",
+            "config\notifications.json.template",
             "config\models.yaml.template",
             "config\ai-rules.md.template"
         )
@@ -570,6 +571,7 @@ if (-not $SkipTemplates) {
             "config\models.yaml.template",
             "config\credentials.local.ps1.template",
             "config\ado.json.template",
+            "config\notifications.json.template",
             "config\ai-rules.md.template"
         )
         Write-Host "    Using legacy config format (YAML/PS1)" -ForegroundColor Yellow
@@ -581,7 +583,8 @@ if (-not $SkipTemplates) {
         "config/credentials.local.ps1",
         "config/connections.json",
         "config/roles.json",
-        "config/ado.json"
+        "config/ado.json",
+        "config/notifications.json"
     )
 
     foreach ($template in $configTemplates) {
@@ -669,6 +672,7 @@ $userdataPatterns = @(
     "config/roles.json",              # Customized role mappings (v2)
     "config/ado.json",                # Azure DevOps PAT, org, project, filters (v2)
     "config/finish.json",             # Finish workflow configuration (v2)
+    "config/notifications.json",      # D-user notification settings, cached tokens (v2)
     # Legacy config format (YAML/PS1)
     "config/credentials.local.ps1",   # API keys, connection strings - CRITICAL (legacy)
     "config/providers.yaml",          # Customized provider settings (legacy)
