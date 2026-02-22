@@ -198,6 +198,7 @@ mcp__azure-devops__list_work_items with:
 1. Read `.ai/config/ado.json` to get the configured project name
 2. Include `[System.TeamProject] = '<project>'` in WIQL
 3. Pass `projectId` parameter to MCP tools
+4. Apply `filters.tags` (add `CONTAINS '<tag>'` for each) and `behavior.skipBlockedItems` (add `NOT CONTAINS '<tags.blocked>'`) conditions
 {{/if}}
 {{#unless WOI_ADO_ENABLED}}
 **ADO is not configured.** Run `/wof configure-ado` to set up Azure DevOps integration.

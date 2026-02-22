@@ -32,6 +32,15 @@ param(
     [switch]$HasQuestions,
 
     [Parameter(Mandatory=$false)]
+    [string[]]$Tag = @(),
+
+    [Parameter(Mandatory=$false)]
+    [switch]$SkipBlocked,
+
+    [Parameter(Mandatory=$false)]
+    [string]$BlockedTag = 'Blocked',
+
+    [Parameter(Mandatory=$false)]
     [switch]$CurrentIteration,
 
     [Parameter(Mandatory=$false)]
@@ -144,6 +153,14 @@ if ($ValueArea) {
     $conditions += "[Microsoft.VSTS.Common.ValueArea] = '$ValueArea'"
 }
 
+foreach ($t in $Tag) {
+    $conditions += "[System.Tags] CONTAINS '$t'"
+}
+
+if ($SkipBlocked) {
+    $conditions += "[System.Tags] NOT CONTAINS '$BlockedTag'"
+}
+
 if ($CurrentIteration -or -not $IterationPath) {
     $currentIter = Get-CurrentIteration
     if ($currentIter) {
@@ -205,6 +222,7 @@ foreach ($item in $workItems) {
         Type = $item.fields.'System.WorkItemType'
         ValueArea = $item.fields.'Microsoft.VSTS.Common.ValueArea'
         IterationPath = $item.fields.'System.IterationPath'
+        Tags = $item.fields.'System.Tags'
         AssignedTo = $item.fields.'System.AssignedTo'.displayName
         ParentId = $item.fields.'System.Parent'
         Description = $item.fields.'System.Description'
@@ -240,6 +258,9 @@ Write-Host "========================================" -ForegroundColor Cyan
 foreach ($item in $results) {
     Write-Host "#$($item.Id) - $($item.Title)" -ForegroundColor White
     Write-Host "  State: $($item.State) | Type: $($item.Type)" -ForegroundColor Gray
+    if ($item.Tags) {
+        Write-Host "  Tags: $($item.Tags)" -ForegroundColor DarkCyan
+    }
     if ($item.ValueArea) {
         Write-Host "  Value Area: $($item.ValueArea)" -ForegroundColor Yellow
     }

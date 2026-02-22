@@ -5,6 +5,21 @@ All notable changes to the Workload Orchestration Framework (WOF) will be docume
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.4.0] - 2026-02-22
+
+### Added
+
+- **ADO Tag-Based Work Item Filtering** (#2988)
+  - New `filters.tags` array in `ado.json` for tag-based query filtering
+  - Empty array (default) = no filter, preserving backward compatibility
+  - Multiple tags use AND logic (all must be present on a work item)
+  - `behavior.skipBlockedItems` now enforced in WIQL with `NOT CONTAINS '<tags.blocked>'`
+  - `scan-workitems.ps1` updated with `-Tag`, `-SkipBlocked`, and `-BlockedTag` parameters
+  - Tags field added to scan results output
+  - New Question 7 in `/wof configure-ado` flow: "Filter work items by tags?"
+  - WIQL guidance updated with tag inclusion and blocked exclusion examples
+  - WOI-SECTION.md checklist updated with tag filter step
+
 ## [3.3.0] - 2026-02-21
 
 ### Added

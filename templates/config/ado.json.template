@@ -11,6 +11,7 @@
     "valueArea": "",
     "workItemTypes": ["User Story", "Task", "Bug", "Feature"],
     "states": ["New", "Active", "Resolved"],
+    "tags": [],
     "areaPath": "",
     "iterationPath": ""
   },

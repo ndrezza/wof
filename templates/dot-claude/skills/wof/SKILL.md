@@ -928,6 +928,22 @@ Use AskUserQuestion with proposed defaults. **Include "Back" option in each ques
 - Default: New, Active, Resolved selected (not Back)
 - If only "Back" is selected, return to previous question
 
+**Question 7: Tag Filters**
+- Question: "Filter work items by tags? (e.g., only pick up items tagged 'AI')"
+- Header: "Tags"
+- Options:
+  1. "AI" - Only show items tagged "AI" (common for PO approval gates)
+  2. "No tag filter" - Show all items regardless of tags
+  3. "Custom" - Enter one or more custom tags
+  4. "Back" - Return to previous question
+
+If user selects "AI", set `filters.tags` to `["AI"]`.
+If user selects "No tag filter", set `filters.tags` to `[]`.
+If user selects "Custom", ask for comma-separated tag names, then split into array.
+If user selects "Back", return to previous question.
+
+**Note:** Multiple tags use AND logic — all specified tags must be present on a work item for it to be included.
+
 #### Step 4: Update Filter Config
 
 **Update `.ai/config/ado.json`** (filters only, no credentials):
@@ -940,7 +956,8 @@ Use AskUserQuestion with proposed defaults. **Include "Back" option in each ques
   "filters": {
     "valueArea": "<selected>",
     "workItemTypes": ["<selected-types>"],
-    "states": ["<selected-states>"]
+    "states": ["<selected-states>"],
+    "tags": ["<selected-tags-or-empty>"]
   }
 }
 ```
@@ -1055,8 +1072,21 @@ Display the available commands table above and explain each option.
    ORDER BY [Microsoft.VSTS.Common.Priority] ASC, [System.ChangedDate] DESC
    ```
 
-3. **Skip items with "Blocked" tag** (if `behavior.skipBlockedItems` is true):
-   - Items tagged with the configured `tags.blocked` value should be deprioritized
+3. **Apply tag filters** (if `filters.tags` is non-empty):
+   - For each tag in the array, add: `AND [System.Tags] CONTAINS '<tag>'`
+   - Multiple tags use AND logic (all must be present)
+   - Example with `filters.tags: ["AI", "Sprint5"]`:
+     ```sql
+     AND [System.Tags] CONTAINS 'AI'
+     AND [System.Tags] CONTAINS 'Sprint5'
+     ```
+
+4. **Exclude blocked items** (if `behavior.skipBlockedItems` is true):
+   - Add: `AND [System.Tags] NOT CONTAINS '<tags.blocked>'`
+   - Example with `tags.blocked: "Blocked"`:
+     ```sql
+     AND [System.Tags] NOT CONTAINS 'Blocked'
+     ```
    - Inform user: "Skipping blocked items. Use 'show blocked' to include them."
 
 ### When Starting a Work Item
@@ -1104,3 +1134,5 @@ When user provides requested information:
 - Always show current status before asking for changes
 - After any config change, offer to run the health check
 - **Always apply ado.json filters** - never query without project and valueArea filters
+- **Apply tag filters from `filters.tags`** - when non-empty, add `[System.Tags] CONTAINS` for each tag (AND logic)
+- **Enforce `behavior.skipBlockedItems`** - when true, add `[System.Tags] NOT CONTAINS '<tags.blocked>'` to WIQL
