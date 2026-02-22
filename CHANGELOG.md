@@ -5,6 +5,21 @@ All notable changes to the Workload Orchestration Framework (WOF) will be docume
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.4.1] - 2026-02-22
+
+### Added
+
+- **Index Database Research Report** (#2971)
+  - Comprehensive analysis at `core/docs/research-index-database.md`
+  - Finding: Claude Code has no native index database (uses on-the-fly Glob/Grep)
+  - Competitor analysis: Cursor, GitHub Copilot, Continue.dev, Windsurf, RooCode
+  - Embedding models comparison: voyage-code-3, OpenAI, local models (MiniLM, nomic)
+  - MCP server landscape: 10 servers analyzed (Claude Context, CodeGrok, CocoIndex, etc.)
+  - Azure-native options: AI Search, Cosmos DB, PostgreSQL+pgvector with pricing
+  - Local options: sqlite-vec, ChromaDB, Qdrant, FAISS, LanceDB
+  - Tiered recommendation: Tier 1 (adopt MCP server), Tier 2 (WOF-native module), Tier 3 (Azure enterprise)
+  - Recommended quick win: Claude Context MCP (5.4k stars, hybrid BM25+vector search)
+
 ## [3.4.0] - 2026-02-22
 
 ### Added
