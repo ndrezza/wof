@@ -34,6 +34,7 @@ Parse the arguments to determine which WOF command to run.
 | `configure` | Interactive AI configuration (add connections, map roles) |
 | `configure --test-only` | Only test existing connections |
 | `configure-ado` | Configure Azure DevOps integration (MCP server, filters) |
+| `configure-index` | Configure code index (connect to Qdrant for semantic search) |
 | `model` | Show current backend and model info |
 | `model list` | List available Ollama models |
 | `model <name>` | Switch to a specific Ollama model |
@@ -1012,6 +1013,213 @@ Inform user:
 
 ---
 
+### If arguments contain "configure-index"
+
+Configure code indexing with an existing Qdrant vector database.
+
+#### Step 1: Check Current Configuration
+
+Check existing settings:
+```bash
+cat .ai/config/index.json 2>/dev/null || echo "No index config found"
+cat .mcp.json 2>/dev/null || echo "No MCP config found"
+```
+
+Display current status:
+- If index.json exists and `enabled: true`: "Code index is configured and enabled"
+- If index.json exists and `enabled: false`: "Code index template found but not configured"
+- If .mcp.json has `code-index` entry: "MCP server already configured"
+
+#### Step 2: Gather Qdrant Connection Info
+
+Use AskUserQuestion to gather. **Every question must include a "Back/Cancel" option.**
+
+**Question 1: Qdrant URL**
+- Question: "What is your Qdrant server URL?"
+- Header: "Qdrant URL"
+- Options:
+  1. "http://localhost:6333" - Local Qdrant instance
+  2. "Qdrant Cloud" - Enter Qdrant Cloud URL (https://xxx.cloud.qdrant.io)
+  3. "Back" - Return to configure menu without changes
+
+If user selects "Back", return to the main configure menu immediately.
+If user selects "Qdrant Cloud" or "Other", ask them to type the full URL.
+
+**Question 2: Qdrant API Key**
+- Question: "Enter your Qdrant API key (required for Qdrant Cloud, optional for local)"
+- Header: "Qdrant Key"
+- Options:
+  1. Type API key
+  2. "Skip" - No API key needed (local Qdrant without auth)
+  3. "Back" - Return to previous question
+
+If user selects "Back", go back to Question 1.
+
+**Question 3: Collection Name**
+- Question: "What is the Qdrant collection name to search?"
+- Header: "Collection"
+- Options:
+  1. Type collection name
+  2. "Back" - Return to previous question
+
+If user selects "Back", go back to Question 2.
+
+#### Step 3: Configure Embedding Provider
+
+The MCP server must generate query embeddings with the **same model** used to create the vectors in Qdrant, otherwise similarity search won't work.
+
+**Question 4: Embedding Provider**
+- Question: "Which embedding provider was used to create the vectors in Qdrant?"
+- Header: "Embeddings"
+- Options:
+  1. "Azure OpenAI" - Azure-hosted OpenAI embedding model
+  2. "OpenAI" - Direct OpenAI API
+  3. "Local Ollama" - Local embedding model via Ollama
+  4. "Back" - Return to previous question
+
+If user selects "Back", go back to Question 3.
+
+**Question 5: Embedding Endpoint URL**
+- Question: "Enter the embedding API endpoint URL"
+- Header: "Endpoint"
+- For Azure OpenAI: hint "https://<resource>.openai.azure.com" or "https://<resource>.cognitiveservices.azure.com"
+- For OpenAI: hint "https://api.openai.com" (default, can skip)
+- For Ollama: hint "http://localhost:11434"
+- Options:
+  1. Type endpoint URL
+  2. "Back" - Return to previous question
+
+If user selects "Back", go back to Question 4.
+
+**Question 6: Embedding API Key**
+- Question: "Enter the API key for the embedding service"
+- Header: "Embed Key"
+- Options:
+  1. Type API key
+  2. "Skip" - No key needed (Ollama or already set in env)
+  3. "Back" - Return to previous question
+
+If user selects "Back", go back to Question 5.
+
+**Question 7: Embedding Model Name**
+- Question: "Which embedding model is used? (must match the model that created the vectors)"
+- Header: "Model"
+- Options:
+  1. "text-embedding-3-large" - 3072 dimensions (most common for code search)
+  2. "text-embedding-3-small" - 1536 dimensions
+  3. "Back" - Return to previous question
+
+If user selects "Back", go back to Question 6.
+If user selects "Other", ask them to type the model name.
+
+For Azure OpenAI, the model name should be the **deployment name** (e.g., `roo-embeddings`), not the base model name.
+
+#### Step 4: Write Index Config
+
+**Update `.ai/config/index.json`** with non-sensitive settings:
+```json
+{
+  "description": "Code index configuration. Run /wof configure-index to set up. Credentials stored in .mcp.json.",
+  "version": "1.0.0",
+  "enabled": true,
+  "provider": "qdrant",
+  "qdrant": {
+    "url": "<qdrant-url>",
+    "collection": "<collection-name>"
+  },
+  "embedding": {
+    "provider": "<azure-openai|openai|ollama>",
+    "endpoint": "<endpoint-url>",
+    "model": "<model-name>",
+    "dimensions": 3072
+  }
+}
+```
+
+Set `dimensions` based on model:
+- `text-embedding-3-large`: 3072
+- `text-embedding-3-small`: 1536
+- Other: ask user or default to 3072
+
+#### Step 5: Write MCP Server Config
+
+**Update `.mcp.json`** to add the `code-index` MCP server entry.
+
+Read the existing `.mcp.json` first. If it exists, merge the new entry. If it doesn't exist, create it.
+
+Determine the `EMBEDDING_PROVIDER` value for `mcp-server-qdrant`:
+- Azure OpenAI → `"openai"` (uses OpenAI-compatible API with custom base URL)
+- OpenAI → `"openai"`
+- Ollama → `"ollama"`
+
+For Azure OpenAI, construct `OPENAI_BASE_URL` from the endpoint. The `mcp-server-qdrant` server uses the OpenAI SDK, so Azure OpenAI endpoints need the base URL format that the OpenAI SDK expects for Azure:
+- If endpoint is `https://<resource>.openai.azure.com`, set `OPENAI_BASE_URL` to `https://<resource>.openai.azure.com/openai/deployments/<model>/embeddings?api-version=2024-06-01` — **actually, set it to just the base**: `https://<resource>.openai.azure.com`
+
+On **Windows**, use `cmd /c` wrapper:
+```json
+{
+  "mcpServers": {
+    "code-index": {
+      "type": "stdio",
+      "command": "cmd",
+      "args": ["/c", "uvx", "mcp-server-qdrant"],
+      "env": {
+        "QDRANT_URL": "<qdrant-url>",
+        "QDRANT_API_KEY": "<qdrant-api-key-or-empty>",
+        "COLLECTION_NAME": "<collection-name>",
+        "EMBEDDING_PROVIDER": "<openai|ollama>",
+        "OPENAI_BASE_URL": "<embedding-endpoint>",
+        "OPENAI_API_KEY": "<embedding-api-key>",
+        "EMBEDDING_MODEL": "<model-name>"
+      }
+    }
+  }
+}
+```
+
+On **Linux/macOS**, use `uvx` directly:
+```json
+{
+  "mcpServers": {
+    "code-index": {
+      "type": "stdio",
+      "command": "uvx",
+      "args": ["mcp-server-qdrant"],
+      "env": {
+        "QDRANT_URL": "<qdrant-url>",
+        "QDRANT_API_KEY": "<qdrant-api-key-or-empty>",
+        "COLLECTION_NAME": "<collection-name>",
+        "EMBEDDING_PROVIDER": "<openai|ollama>",
+        "OPENAI_BASE_URL": "<embedding-endpoint>",
+        "OPENAI_API_KEY": "<embedding-api-key>",
+        "EMBEDDING_MODEL": "<model-name>"
+      }
+    }
+  }
+}
+```
+
+If `QDRANT_API_KEY` was skipped (local Qdrant), omit it or set to empty string.
+If `OPENAI_API_KEY` was skipped (Ollama), omit it or set to empty string.
+
+#### Step 6: Inform User
+
+Display completion message:
+```
+Code index configured successfully!
+
+  Qdrant:     <url> (collection: <collection>)
+  Embeddings: <provider> / <model>
+  MCP Server: code-index (via uvx mcp-server-qdrant)
+
+  ** RESTART Claude Code to activate the code-index MCP server **
+
+After restart, the `mcp__code-index__qdrant-find` tool will be available
+for semantic code search against your Qdrant collection.
+```
+
+---
+
 ### If arguments are empty
 
 Present an interactive menu using AskUserQuestion:
@@ -1031,7 +1239,7 @@ Based on user selection:
 - **Update WOF** → Execute the `update` command flow
 - **Manage models** → Execute the `model list` command flow
 - **Finish work** → Execute the `finish` command flow
-- **Configure** → Ask follow-up: "What would you like to configure?" with options: "AI connections", "Azure DevOps", "Finish workflow", then execute appropriate configure flow
+- **Configure** → Ask follow-up: "What would you like to configure?" with options: "AI connections", "Azure DevOps", "Code index", "Finish workflow", then execute appropriate configure flow
 - **Show help** → Display the Available Commands table
 
 ---
@@ -1048,6 +1256,7 @@ Display the available commands table above and explain each option.
 | `.ai/config/connections.json` | AI connection definitions |
 | `.ai/config/roles.json` | Role-to-connection mappings |
 | `.ai/config/ado.json` | Azure DevOps connection & filters (gitignored) |
+| `.ai/config/index.json` | Code index configuration (Qdrant, embeddings) |
 | `.mcp.json` | MCP server configuration (gitignored) |
 
 ## ADO Work Item Query Behavior

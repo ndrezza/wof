@@ -1,0 +1,16 @@
+{
+  "description": "Code index configuration. Run /wof configure-index to set up. Credentials stored in .mcp.json.",
+  "version": "1.0.0",
+  "enabled": false,
+  "provider": "qdrant",
+  "qdrant": {
+    "url": "",
+    "collection": ""
+  },
+  "embedding": {
+    "provider": "",
+    "endpoint": "",
+    "model": "",
+    "dimensions": 3072
+  }
+}

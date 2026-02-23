@@ -560,6 +560,7 @@ if (-not $SkipTemplates) {
             "config\ado.json.template",
             "config\finish.json.template",
             "config\notifications.json.template",
+            "config\index.json.template",
             "config\models.yaml.template",
             "config\ai-rules.md.template"
         )
@@ -584,7 +585,8 @@ if (-not $SkipTemplates) {
         "config/connections.json",
         "config/roles.json",
         "config/ado.json",
-        "config/notifications.json"
+        "config/notifications.json",
+        "config/index.json"
     )
 
     foreach ($template in $configTemplates) {

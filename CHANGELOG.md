@@ -5,6 +5,23 @@ All notable changes to the Workload Orchestration Framework (WOF) will be docume
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.4.2] - 2026-02-23
+
+### Added
+
+- **`/wof configure-index` command** - Configure code index for semantic search via Qdrant
+  - Interactive flow (7 questions) with Back navigation at every step
+  - Connects to existing Qdrant vector database (local or Qdrant Cloud)
+  - Supports Azure OpenAI, OpenAI, and local Ollama embedding providers
+  - Critical: uses the same embedding model that created the vectors (required for similarity search)
+  - Non-sensitive config stored in `.ai/config/index.json`
+  - MCP server credentials stored in `.mcp.json` (`code-index` entry via `uvx mcp-server-qdrant`)
+  - Platform-aware: Windows uses `cmd /c uvx`, Linux/macOS uses `uvx` directly
+  - New `index.json.template` deployed during WOI setup
+  - `setup.ps1` updated: deploys template, protected in `$neverOverwrite`
+  - `sync-manifest.json` updated: `index.json` in `template_only`
+  - After restart, `mcp__code-index__qdrant-find` tool available for semantic code search
+
 ## [3.4.1] - 2026-02-22
 
 ### Added

@@ -50,6 +50,7 @@
       ".ai/config/ado.json",
       ".ai/config/finish.json",
       ".ai/config/notifications.json",
+      ".ai/config/index.json",
       ".ai/scripts/ado-utils.ps1",
       ".ai/scripts/scan-workitems.ps1"
     ]
