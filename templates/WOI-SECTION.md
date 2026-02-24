@@ -256,7 +256,7 @@ mcp__azure-devops__list_work_items with:
 |---------|-------------|
 | `/wof status` | Check orchestration health |
 | `/wof update` | Update to latest WOF version |
-| `/wof configure` | Configure AI connections |
+| `/wof configure` | Configure AI connections (or import from another project) |
 | `/wof route <task>` | Classify task routing |
 | `/wof finish` | Complete work: update WI, commit, push |
 
