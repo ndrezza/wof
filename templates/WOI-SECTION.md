@@ -139,6 +139,41 @@ This happens because `claude mcp serve` instances don't have subagent types conf
 | Implementing your own plan | ✅ YES - validate the plan |
 | Before committing code | ✅ YES - run Critic quality gate |
 
+### CRITICAL: Work Item Start Protocol
+
+**Every new ADO work item MUST go through plan mode before implementation.**
+
+When starting a work item:
+1. Read full work item details (title, description, acceptance criteria, comments)
+2. Set to Active, create feature branch, tag with "Analysis" phase
+3. **Enter plan mode** (EnterPlanMode) — this is NOT optional
+4. Explore the codebase, analyze requirements, design approach
+5. Present plan to user (ExitPlanMode) and wait for approval
+6. Only then begin implementation (update tag to "Implementation")
+
+**Why:** Work items often have hidden complexity. Planning first prevents wasted effort,
+ensures alignment with requirements, and catches misunderstandings before code is written.
+
+### Question Escalation Order
+
+When questions arise during work, follow this escalation order:
+
+1. **Self-resolve** — Check the codebase, docs, and work item details
+2. **Ask Validator** — Use Validator MCP to verify your understanding or get input
+3. **Ask User** — Only if Validator cannot resolve, escalate to the end user
+
+Do NOT skip to asking the user when the Validator can answer the question.
+The Validator has independent tool access and can read files, check patterns,
+and verify assumptions.
+
+| Question Type | Ask |
+|---------------|-----|
+| "Is this the right file to modify?" | Validator (can read files) |
+| "Do tests pass after this change?" | Validator/Critic (can run tests) |
+| "Which approach is better?" | Validator (can analyze tradeoffs) |
+| "What is the business requirement?" | User (only they know intent) |
+| "Should we deploy to prod?" | User (business decision) |
+
 ### Multi-Agent Architecture
 
 ```

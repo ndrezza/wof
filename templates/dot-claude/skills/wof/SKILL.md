@@ -1300,19 +1300,43 @@ Display the available commands table above and explain each option.
 
 ### When Starting a Work Item
 
+When a user asks to work on an ADO work item (by ID or from a list):
+
+#### Step 1: Read Work Item Details
+- Fetch full work item using `mcp__azure-devops__get_work_item` (with expand: "all")
+- Read: title, description, acceptance criteria, comments, linked items
+- Display a concise summary to the user
+
+#### Step 2: Set Active and Create Branch
 If `behavior.setActiveOnStart` is true (default):
 1. **Set work item state to "Active"** using `mcp__azure-devops__update_work_item`
 2. **Create feature branch** with pattern: `feature/<id>-<short-title>`
-3. **Add phase tag** if configured: Start with "Implementation" phase by default
+3. **Add "Analysis" phase tag** (NOT "Implementation" — planning comes first)
+
+#### Step 3: Enter Plan Mode (MANDATORY)
+This step is NOT optional, even for seemingly simple work items.
+1. Use the `EnterPlanMode` tool to switch to plan mode
+2. In plan mode, analyze:
+   - Requirements from title + description + acceptance criteria
+   - Existing codebase impact (explore relevant files)
+   - Implementation approach and alternatives
+   - Testing strategy
+3. Write plan and present to user via `ExitPlanMode` for approval
+4. Wait for user to approve before proceeding
+
+#### Step 4: Implement After Approval
+Only after user approves the plan:
+1. Update phase tag from "Analysis" to "Implementation"
+2. Follow the standard 6-phase task execution workflow
 
 ### Tag Conventions
 
 | Tag | Purpose | When Applied |
 |-----|---------|--------------|
 | `Blocked` | Work item has questions pending user response | When questions are asked in comments |
-| `Analysis` | Understanding requirements phase | Initial work item review |
+| `Analysis` | Understanding requirements phase | When work item is first picked up (default start phase) |
 | `Design` | Planning implementation approach | After analysis, before coding |
-| `Implementation` | Active development | When coding starts |
+| `Implementation` | Active development | After plan mode approval |
 | `Validation` | Testing and verification | After implementation |
 | `QA` | Quality assurance review | Before completion |
 

@@ -5,6 +5,29 @@ All notable changes to the Workload Orchestration Framework (WOF) will be docume
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.4.3] - 2026-02-24
+
+### Changed
+
+- **Mandatory plan mode on ADO work item start** (#2999)
+  - "When Starting a Work Item" expanded from 3 steps to 4-step plan-mode-first flow
+  - Step 1: Read full work item details (title, description, acceptance criteria, comments)
+  - Step 2: Set Active, create branch, tag with "Analysis" (not "Implementation")
+  - Step 3: Enter plan mode (MANDATORY) — analyze requirements, design approach, get user approval
+  - Step 4: Implement only after plan approval (update tag to "Implementation")
+  - Tag Conventions updated: work items now start in "Analysis" phase, not "Implementation"
+
+- **Validator-first question escalation** (#2999)
+  - New "Question Escalation Order" in WOI-SECTION.md: self-resolve → Validator → User
+  - Validator has independent tool access and should be consulted before escalating to user
+  - Question type table shows which questions go to Validator vs User
+  - CLAUDE.md.base.template updated with validator-first escalation rule after validation section
+  - Phase 1 INTAKE now includes mandatory plan mode step for ADO work items
+
+- **Work Item Start Protocol** added to WOI-SECTION.md
+  - CRITICAL section documenting the 6-step plan-mode-first protocol
+  - Explains why planning first prevents wasted effort and catches misunderstandings
+
 ## [3.4.2] - 2026-02-23
 
 ### Added
