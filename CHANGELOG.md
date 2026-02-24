@@ -5,6 +5,21 @@ All notable changes to the Workload Orchestration Framework (WOF) will be docume
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.4.4] - 2026-02-24
+
+### Added
+
+- **Import config from another project** in `/wof configure` (#2997)
+  - New menu option "Import config from another project" in the configure wizard
+  - Copies `connections.json`, `roles.json`, and optionally `ado.json` from an existing WOI installation
+  - 7-step interactive flow: source path → validate → preview → scope → ADO handling → execute → summary
+  - Preview shows all connections, role mappings, and ADO settings before import
+  - ADO import prompts for this project's project name (keeps org URL and filters)
+  - Security: never copies credentials (`credentials.local.json`, `.mcp.json`, `local-ai.json`, `index.json`, `finish.json`)
+  - Explicit warnings about missing credentials at preview and summary steps
+  - Back navigation at every step
+  - Edge cases: same-project detection, missing files, no configured connections, different ADO org
+
 ## [3.4.3] - 2026-02-24
 
 ### Changed
