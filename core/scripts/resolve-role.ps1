@@ -201,6 +201,16 @@ if ($roleConfig.restrictions) {
     $resolvedConnection.restrictions = @($roleConfig.restrictions)
 }
 
+# Add delegation method if present (native, mcp, process, script)
+if ($roleConfig.delegation) {
+    $resolvedConnection.delegation = $roleConfig.delegation
+}
+
+# Add script path if present (for script delegation)
+if ($roleConfig.script) {
+    $resolvedConnection.script = $roleConfig.script
+}
+
 # Add available models (list of model names from the models object)
 if ($connectionConfig.models) {
     $resolvedConnection.available_models = @($connectionConfig.models.PSObject.Properties.Name)

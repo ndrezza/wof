@@ -256,8 +256,9 @@ Recommended: qwen3-coder:30b (High quality, code generation)
 
 ```
 "How should Worker-Heavy be invoked?"
-  1. MCP Server (Recommended) - Separate Claude Code process, parallel execution
-  2. PS Script delegation - Sequential, simpler, uses delegate-to-local-worker.ps1
+  1. MCP Server (Recommended) - Separate Claude Code process, parallel execution, tool access
+  2. Process delegation - Claude CLI (claude --print), quick queries, no tool access
+  3. PS Script delegation - Sequential, simpler, uses delegate-to-local-worker.ps1
 ```
 
 **Repeat for each role:**
@@ -394,6 +395,12 @@ Update `.ai/config/connections.json`:
   }
 }
 ```
+
+**Delegation types reference:**
+- `mcp` — MCP server (parallel, tool access) — best for Worker-Heavy, Validator, Critic
+- `process` — Claude CLI `--print` (quick queries, no tools) — good for lightweight Claude queries
+- `script` — PowerShell script with `-InputJson` (custom logic) — good for local models, custom APIs
+- `native` — Orchestrator only (handled by Claude Code directly)
 
 ##### Step B7: Save Configuration
 
