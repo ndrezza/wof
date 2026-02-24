@@ -181,6 +181,14 @@ This ensures `credentials.local.json` stays gitignored even after removing WOF.
 ### Post-Setup
 
 1. **Configure credentials:**
+
+   **Option A: Import from an existing project** (fastest if you already have WOF configured elsewhere):
+   ```
+   /wof configure → "Import config from another project" → enter path to existing project
+   ```
+   This copies `connections.json`, `roles.json`, and optionally `ado.json`. You'll still need to enter API keys separately (credentials are never copied for security).
+
+   **Option B: Manual setup:**
    ```json
    // Edit .ai/config/credentials.local.json
    {

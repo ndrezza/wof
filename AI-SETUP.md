@@ -417,5 +417,6 @@ Next steps:
 
 Optional:
 - Run /wof configure to set up AI connections interactively
+- Run /wof configure → "Import config from another project" to reuse config from an existing WOI
 - Run /wof status to see component status
 ```

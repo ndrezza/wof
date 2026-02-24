@@ -115,7 +115,8 @@ Use AskUserQuestion to ask:
   1. "Add/modify an AI connection" - Add a new AI or update existing
   2. "Configure role mappings" - Map roles to AI connections
   3. "Local AI (Ollama)" - Configure local Ollama instance and generate launcher
-  4. "Done" - Finish configuration
+  4. "Import config from another project" - Copy connections and roles from an existing WOI
+  5. "Done" - Finish configuration
 
 #### Step 3a: If Adding/Modifying AI Connection
 
@@ -461,6 +462,156 @@ Then update `.ai/config/roles.json`:
   }
 }
 ```
+
+#### Step 3e: If Importing Config From Another Project
+
+Copy connections and roles from an existing WOI installation into this project.
+
+##### Step E1: Ask for Source Path
+
+Use AskUserQuestion:
+- Question: "Enter the path to the project with WOI installed (the project root, not the .ai folder):"
+- Header: "Source path"
+- Options:
+  1. "Type path" - Enter the full path to the source project
+  2. "Back" - Return to configure menu
+
+If user selects "Back", loop back to Step 2.
+
+##### Step E2: Validate Source Path
+
+Read the following files from the source project:
+- `<source>/.ai/config/connections.json`
+- `<source>/.ai/config/roles.json`
+- Optionally check for `<source>/.ai/config/ado.json`
+
+**Validation checks:**
+1. Both `connections.json` and `roles.json` must exist
+2. Both must parse as valid JSON
+3. `connections.json` must have a `connections` key
+4. `roles.json` must have a `roles` key
+5. Detect if `<source>` is the same as the current project root — if so, show error: "Source is the same as the current project. Please specify a different project."
+
+**On failure:** Show the specific error, then use AskUserQuestion:
+- Question: "Could not read config from that path. What would you like to do?"
+- Header: "Retry"
+- Options:
+  1. "Try a different path" - Go back to Step E1
+  2. "Back" - Return to configure menu (Step 2)
+
+##### Step E3: Preview Import
+
+Display a preview of what will be imported.
+
+**Show configured connections** (non-empty aliases from ai1-ai10):
+```
+Source: <source-path>
+
+Connections found:
+| Slot | Alias              | Type                        |
+|------|--------------------|-----------------------------|
+| ai1  | Azure Anthropic    | azure_ai_foundry_anthropic  |
+| ai3  | Azure OpenAI       | azure_openai                |
+| ai4  | Local Ollama       | ollama                      |
+
+Role mappings:
+| Role         | Connection |
+|--------------|------------|
+| worker-heavy | ai1        |
+| worker-lite  | ai4        |
+| validator    | ai3        |
+| critic       | ai3        |
+```
+
+If source has `ado.json`, also show:
+```
+ADO settings:
+  Organization: https://dev.azure.com/contoso
+  Project: MyProject
+  Filters: valueArea=Architectural, types=[User Story, Task, Bug]
+```
+
+**Always show this warning:**
+```
+⚠ Will NOT be copied (contain secrets):
+  - credentials.local.json (API keys and endpoints)
+  - .mcp.json (PATs and MCP server credentials)
+  You will need to set up credentials separately after import.
+```
+
+##### Step E4: Confirm Import Scope
+
+Use AskUserQuestion:
+- Question: "What would you like to import?"
+- Header: "Import scope"
+- Options (show option 2 only if source has ado.json):
+  1. "Connections + Roles" - Import connections.json and roles.json
+  2. "Connections + Roles + ADO settings" - Also import ado.json (only if source has ADO configured)
+  3. "Connections only" - Import only connections.json
+  4. "Back" - Return to configure menu
+
+If user selects "Back", loop back to Step 2.
+
+##### Step E5: Handle ADO Partial Import (if ADO selected in Step E4)
+
+If the user chose to import ADO settings:
+
+Use AskUserQuestion:
+- Question: "Is this project in the SAME Azure DevOps organization as the source?"
+- Header: "ADO org"
+- Options:
+  1. "Yes, same organization" - Copy ado.json, only change project name
+  2. "No, different organization" - Skip ADO import, suggest /wof configure-ado
+  3. "Back" - Return to Step E4
+
+**If Yes (same org):**
+- Ask: "What is THIS project's Azure DevOps project name?"
+- Header: "ADO project"
+- Options:
+  1. Type project name
+  2. "Back" - Return to ADO org question
+
+Read the source `ado.json`, replace `project.name` with the user's answer. Keep everything else (organizationUrl, filters, behavior, tags) unchanged.
+
+**If No (different org):**
+- Skip ADO import entirely
+- Inform user: "ADO settings skipped (different organization). Run `/wof configure-ado` to set up ADO for this project."
+
+##### Step E6: Execute Import
+
+Write the imported files to this project's `.ai/config/` directory:
+
+1. Write source `connections.json` → `.ai/config/connections.json`
+2. Write source `roles.json` → `.ai/config/roles.json`
+3. Write modified `ado.json` → `.ai/config/ado.json` (only if selected and same org)
+
+**NEVER copy any of these files (they contain secrets or project-specific settings):**
+- `credentials.local.json`
+- `.mcp.json`
+- `local-ai.json`
+- `index.json`
+- `finish.json`
+
+##### Step E7: Post-Import Summary
+
+Display:
+```
+Import complete!
+  ✓ connections.json — N AI connections imported
+  ✓ roles.json — N role mappings imported
+  ✓ ado.json — ADO settings imported (project: <name>)
+    OR
+  — ado.json — not imported
+
+Next steps:
+  1. Set up credentials: /wof configure → "Add/modify an AI connection" (enter API keys)
+  2. If using ADO: /wof configure-ado to enter your PAT
+  3. Test connections: /wof configure --test-only
+```
+
+Where N is the count of non-empty connection aliases (for connections) or role entries (for roles).
+
+Loop back to Step 2 to ask if the user wants to do more.
 
 #### Step 4: Run Health Check
 
