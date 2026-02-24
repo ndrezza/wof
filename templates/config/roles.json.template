@@ -1,12 +1,43 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "version": "3.1.0",
+  "version": "3.2.0",
   "description": "Role-to-connection mapping. Defines which AI connection, model, and delegation method each role uses.",
   "_delegation_types": [
-    "mcp    - Separate Claude Code process via MCP server (parallel, independent)",
-    "script - Sequential delegation via PowerShell script",
-    "native - Direct invocation (orchestrator only)"
+    "native  - Direct invocation (orchestrator only, handled by Claude Code)",
+    "mcp     - Separate Claude Code process via MCP server (parallel, independent, tool access)",
+    "process - Claude CLI process delegation (claude --print, quick queries, no tool access)",
+    "script  - Sequential delegation via PowerShell script with -InputJson contract"
   ],
+  "_script_contract": {
+    "description": "When delegation is 'script', invoke-ai.ps1 calls the script with -InputJson parameter.",
+    "input": {
+      "parameter": "-InputJson <JSON string>",
+      "format": {
+        "prompt": "The user prompt (required)",
+        "systemPrompt": "Optional system prompt",
+        "model": "Model name from role config",
+        "maxTokens": "Max tokens (integer)",
+        "connection": {
+          "id": "Connection ID from connections.json",
+          "type": "Connection type (anthropic, azure-openai, openai-compatible)",
+          "endpoint": "Resolved endpoint URL",
+          "apiKey": "Resolved API key",
+          "deployment": "Azure OpenAI deployment name (if applicable)",
+          "apiVersion": "API version (if applicable)"
+        }
+      }
+    },
+    "output": {
+      "description": "Script should return JSON (or raw text). Preferred format:",
+      "format": {
+        "Success": "boolean",
+        "Content": "response text",
+        "Model": "model used (optional)",
+        "TokensUsed": "integer (optional)",
+        "Error": "error message if Success is false (optional)"
+      }
+    }
+  },
   "roles": {
     "primary": {
       "description": "Orchestrator - understands requirements, delegates work",

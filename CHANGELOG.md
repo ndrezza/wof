@@ -5,6 +5,53 @@ All notable changes to the Workload Orchestration Framework (WOF) will be docume
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.5.0] - 2026-02-24
+
+### Added
+
+- **Unified AI invocation script** `invoke-ai.ps1` (#2991)
+  - Single entry point for all AI API calls — consolidates duplicated logic from 5 scripts
+  - Supports 3 connection types: `anthropic`, `azure-openai`, `openai-compatible`
+  - Supports 4 delegation methods: `native`, `mcp`, `process`, `script`
+  - Standardized JSON response format: `{Success, Content, Model, TokensUsed, ConnectionType, ConnectionId, Latency, Error}`
+  - Invoke by `-Role` (resolves via roles.json) or `-ConnectionId` (direct connection)
+  - Parameters: `-Prompt`, `-SystemPrompt`, `-Model` (override), `-MaxTokens`, `-Temperature`, `-AsJson`
+
+- **Process delegation method** (#2991)
+  - New delegation type: `"delegation": "process"` in roles.json
+  - Spawns `claude --print --prompt "..." --model <model>` for quick AI queries
+  - No tool access, no MCP overhead — lighter than MCP, heavier than REST
+  - Uses Claude Code's own authentication — no API key management needed
+  - Supports `--system-prompt` and `--max-tokens` flags
+
+- **Generic script delegation contract** (#2991)
+  - Scripts can accept `-InputJson` parameter with standardized payload
+  - Payload includes: prompt, systemPrompt, model, maxTokens, connection details
+  - Scripts return JSON: `{Success, Content, Model, TokensUsed, Error}`
+  - `delegate-to-local-worker.ps1` updated to support `-InputJson` alongside existing `-Task`
+  - Backward compatible — existing callers unaffected
+
+- **Flexible AI connections documentation** (#2991)
+  - New `core/docs/flexible-ai-connections.md` — comprehensive guide to invoke-ai.ps1
+  - Covers all delegation methods, connection types, OpenAI API compatibility
+  - Documents generic script delegation contract (input/output JSON format)
+  - Migration guide from duplicated API calls to invoke-ai.ps1
+  - OpenAI compatibility matrix: OpenAI, Ollama 0.14+, vLLM, llama.cpp, LM Studio
+
+### Changed
+
+- **resolve-role.ps1** now includes `delegation` and `script` fields in resolved output (#2991)
+- **roles.json.template** bumped to v3.2.0 (#2991)
+  - Documents all 4 delegation types: native, mcp, process, script
+  - Includes `_script_contract` documentation key with input/output JSON format
+- **agent-communication-methods.md** updated to v1.5.0 (#2991)
+  - New Method 3: Claude Process Delegation (architecture, pros/cons, WOF files)
+  - Methods renumbered: SSH Remote → 4, Task Tool → 5, Message Queue → 6, etc.
+  - Comparison matrix updated with Process Delegation row
+- **SKILL.md** — `/wof configure` wizard now offers process delegation (#2991)
+  - Step B3 delegation choice expanded: MCP Server, Process delegation, PS Script
+  - Delegation types reference added after roles.json example
+
 ## [3.4.4] - 2026-02-24
 
 ### Added

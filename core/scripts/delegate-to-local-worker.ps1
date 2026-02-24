@@ -14,6 +14,11 @@
     Used for T1 lightweight tasks: file search, simple formatting, code navigation.
     Falls back gracefully if local model is unavailable.
 
+    Supports two invocation modes:
+    1. Legacy: -Task "description" (existing callers)
+    2. Generic script contract: -InputJson '{"prompt":"...", "connection":{...}}'
+       Used by invoke-ai.ps1 for standardized script delegation.
+
 .PARAMETER Task
     The task description to send to the local model.
 
@@ -23,30 +28,97 @@
 .PARAMETER SystemPrompt
     Optional system prompt override.
 
+.PARAMETER InputJson
+    JSON string following the WOF script delegation contract.
+    When provided, overrides Task, MaxTokens, SystemPrompt, and connection settings.
+    Expected format: {"prompt":"...", "systemPrompt":"...", "model":"...", "maxTokens":N,
+                      "connection":{"endpoint":"...", "apiKey":"...", ...}}
+
 .EXAMPLE
     .\delegate-to-local-worker.ps1 -Task "Find all files containing 'ILogger'"
 
 .EXAMPLE
     .\delegate-to-local-worker.ps1 -Task "Format this code snippet" -MaxTokens 1024
+
+.EXAMPLE
+    .\delegate-to-local-worker.ps1 -InputJson '{"prompt":"Hello","maxTokens":256}'
 #>
 
 param(
-    [Parameter(Mandatory = $true)]
+    [Parameter(Mandatory = $false)]
     [string]$Task,
 
     [Parameter(Mandatory = $false)]
     [int]$MaxTokens = 2048,
 
     [Parameter(Mandatory = $false)]
-    [string]$SystemPrompt = "You are a helpful coding assistant. Keep responses concise and focused."
+    [string]$SystemPrompt = "You are a helpful coding assistant. Keep responses concise and focused.",
+
+    [Parameter(Mandatory = $false)]
+    [string]$InputJson
 )
 
 $ErrorActionPreference = "Stop"
 
+# =============================================================================
+# INPUT JSON CONTRACT (generic script delegation)
+# =============================================================================
+# When -InputJson is provided, parse it and override parameters.
+# This enables invoke-ai.ps1 to call this script with standardized input.
+
+if ($InputJson) {
+    try {
+        $input = $InputJson | ConvertFrom-Json
+        $Task = $input.prompt
+        if ($input.systemPrompt) { $SystemPrompt = $input.systemPrompt }
+        if ($input.maxTokens -and $input.maxTokens -gt 0) { $MaxTokens = $input.maxTokens }
+    }
+    catch {
+        return (@{
+            Success = $false
+            Content = $null
+            Error = "Failed to parse InputJson: $_"
+        } | ConvertTo-Json -Depth 5)
+    }
+}
+
+# Validate that Task is provided (required for both modes)
+if (-not $Task) {
+    return (@{
+        Success = $false
+        Content = $null
+        Error = "No task specified. Provide -Task or -InputJson with a 'prompt' field."
+    } | ConvertTo-Json -Depth 5)
+}
+
+# =============================================================================
+# CONNECTION CONFIGURATION
+# =============================================================================
+# If InputJson provided connection details, use them. Otherwise use defaults/env.
+
+$inputConnection = $null
+if ($InputJson) {
+    try {
+        $parsedInput = $InputJson | ConvertFrom-Json
+        $inputConnection = $parsedInput.connection
+    } catch { }
+}
+
 # Configuration
-$baseEndpoint = if ($env:LOCAL_WORKER_ENDPOINT) { $env:LOCAL_WORKER_ENDPOINT } else { "http://127.0.0.1:1234" }
+$baseEndpoint = if ($inputConnection -and $inputConnection.endpoint) {
+    $inputConnection.endpoint.TrimEnd('/')
+} elseif ($env:LOCAL_WORKER_ENDPOINT) {
+    $env:LOCAL_WORKER_ENDPOINT
+} else {
+    "http://127.0.0.1:1234"
+}
 $endpoint = "$baseEndpoint/v1/chat/completions"
-$model = "deepseek-coder-v2-lite-instruct"
+$model = if ($InputJson) {
+    $parsedForModel = $InputJson | ConvertFrom-Json
+    if ($parsedForModel.model) { $parsedForModel.model } else { "deepseek-coder-v2-lite-instruct" }
+} else {
+    "deepseek-coder-v2-lite-instruct"
+}
 $timeout = 60  # seconds
 
 function Test-LocalModelAvailable {

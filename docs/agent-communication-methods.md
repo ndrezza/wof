@@ -155,7 +155,85 @@ $response = Invoke-RestMethod -Uri "$endpoint/v1/messages" `
 
 ---
 
-## Method 3: SSH Remote Terminal
+## Method 3: Claude Process Delegation
+
+**Status:** ✅ Implemented in WOF (v3.5.0+)
+
+### Architecture
+
+```
+┌──────────────────┐                              ┌──────────────────┐
+│                  │    claude --print             │                  │
+│  Primary Agent   │  ──────────────────────────►  │  Claude CLI      │
+│  (Claude Code)   │    --prompt "..."             │  Process         │
+│                  │    --model <model>            │  (ephemeral)     │
+│                  │  ◄──────────────────────────  │                  │
+└──────────────────┘    stdout (text response)     └──────────────────┘
+        │
+        │ invoke-ai.ps1
+        │ (delegation: "process")
+        ▼
+┌──────────────────┐
+│  Standardized    │
+│  JSON response   │
+│  {Success, ...}  │
+└──────────────────┘
+```
+
+### How It Works
+
+1. `invoke-ai.ps1` detects `delegation: "process"` in the role config
+2. Builds a `claude --print --prompt "..." --model <model>` command
+3. Spawns the process and captures stdout
+4. Wraps output in WOF's standardized response format
+
+### Configuration
+
+```json
+// roles.json
+{
+  "worker-lite": {
+    "connection": "native",
+    "model": "claude-sonnet-4-5",
+    "delegation": "process"
+  }
+}
+```
+
+### Pros
+| Advantage | Description |
+|-----------|-------------|
+| No API keys | Uses Claude Code's own authentication |
+| Simple | No MCP server setup, no REST endpoints |
+| Model selection | Can specify any model via `--model` flag |
+| System prompts | Supports `--system-prompt` for role context |
+| Lightweight | No persistent process — spawn on demand |
+
+### Cons
+| Disadvantage | Description |
+|--------------|-------------|
+| No tool access | Cannot read files, run commands, or verify claims |
+| Process overhead | Each call spawns a new process |
+| Claude only | Only works with Claude models (not local LLMs) |
+| No streaming | Must wait for full response |
+| No context | Each call starts fresh |
+
+### When to Use
+
+Process delegation is ideal for:
+- Quick AI queries that don't need tool access
+- Roles where MCP overhead isn't justified
+- Scenarios where you want Claude Code's auth but don't need MCP capabilities
+- Validation/critique of text-only decisions (no file verification needed)
+
+### WOF Files
+- `core/scripts/invoke-ai.ps1` - Process delegation handler
+- `templates/config/roles.json.template` - Role configuration
+- `core/docs/flexible-ai-connections.md` - Detailed documentation
+
+---
+
+## Method 4: SSH Remote Terminal
 
 **Status:** 🔶 Conceptual (not yet implemented)
 
@@ -219,7 +297,7 @@ return $result | ConvertFrom-Json
 
 ---
 
-## Method 4: Claude Code Task Tool (Subagents)
+## Method 5: Claude Code Task Tool (Subagents)
 
 **Status:** ✅ Available via Claude Code
 
@@ -286,7 +364,7 @@ Primary ──► Task Tool ──► Subagent formats JSON
 
 ---
 
-## Method 5: Message Queues (Asynchronous)
+## Method 6: Message Queues (Asynchronous)
 
 **Status:** 🔶 Conceptual (not yet implemented)
 
@@ -343,7 +421,7 @@ while ($true) {
 
 ---
 
-## Method 6: File-Based Communication (Memory Bank)
+## Method 7: File-Based Communication (Memory Bank)
 
 **Status:** ✅ Implemented in WOF
 
@@ -399,7 +477,7 @@ while ($true) {
 
 ---
 
-## Method 7: WebSockets (Real-Time Bidirectional)
+## Method 8: WebSockets (Real-Time Bidirectional)
 
 **Status:** 🔶 Conceptual (not yet implemented)
 
@@ -458,7 +536,7 @@ ws.on('message', (result) => handleResult(JSON.parse(result)));
 
 ---
 
-## Method 8: Shared Database
+## Method 9: Shared Database
 
 **Status:** 🔶 Conceptual (not yet implemented)
 
@@ -509,6 +587,7 @@ ws.on('message', (result) => handleResult(JSON.parse(result)));
 |--------|---------|------------|-------------|-------|----------------|
 | **PowerShell REST** | Low | Low | Medium | Stateless | ✅ Implemented |
 | **MCP Server** | Low | Medium | Low | Stateful | ✅ Implemented |
+| **Process Delegation** | Low | Low | Low | Stateless | ✅ Implemented |
 | **SSH Remote** | Medium | High | High | Stateful | 🔶 Conceptual |
 | **Task Tool** | Low | Low | Low | Shared | ✅ Available |
 | **Message Queue** | Medium | High | High | Async | 🔶 Conceptual |
@@ -1168,8 +1247,8 @@ This section summarizes the recommended communication method for each agent role
 
 ---
 
-*Document Version: 1.4.0*
-*Last Updated: 2026-01-31*
+*Document Version: 1.5.0*
+*Last Updated: 2026-02-24*
 
 ## Changelog
 
@@ -1180,3 +1259,4 @@ This section summarizes the recommended communication method for each agent role
 | 1.2.0 | 2026-01-31 | Added worker delegation strategy |
 | 1.3.0 | 2026-01-31 | Updated Validator recommendation from REST to MCP for independent verification |
 | 1.4.0 | 2026-01-31 | Renamed agents (Orchestrator Claude, Worker Claude Heavy/Lite, Validator Claude, Critic Claude). Updated Critic to MCP for independent verification. |
+| 1.5.0 | 2026-02-24 | Added Method 3: Claude Process Delegation. Renumbered methods 3-8 → 4-9. Updated comparison matrix. |
