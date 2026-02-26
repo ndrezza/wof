@@ -11,8 +11,9 @@
 
 .DESCRIPTION
     Performs one-time interactive device code flow authentication using MSAL.PS.
-    Uses the Microsoft Graph PowerShell SDK's well-known client ID (no custom
-    Azure AD app registration required).
+    Uses the custom app registration clientId from notifications.json, or falls
+    back to the Microsoft Graph PowerShell SDK's well-known client ID.
+    Tokens are persisted to a file-based cache for silent auth across sessions.
 
     After authentication:
     - Resolves the target user's Graph ID
@@ -71,9 +72,7 @@ function Write-Err { param([string]$Message) Write-Host "[-] $Message" -Foregrou
 # CONFIGURATION
 # ============================================================================
 
-# Microsoft Graph PowerShell SDK well-known client ID (no app registration needed)
-$graphClientId = "14d82eec-204b-4c2f-b7e8-296a70dab67e"
-$graphScopes = @("Chat.ReadWrite", "Mail.Send", "User.Read", "offline_access")
+$graphScopes = @("Chat.ReadWrite", "Mail.Send", "User.Read", "User.ReadBasic.All", "offline_access")
 
 Write-Host ""
 Write-Host "================================================================================" -ForegroundColor Cyan
@@ -110,9 +109,14 @@ if ($missingFields.Count -gt 0) {
     exit 1
 }
 
+# Use custom app registration from config if available, otherwise fall back
+# to the Microsoft Graph PowerShell SDK well-known client ID.
+$graphClientId = if ($config.clientId) { $config.clientId } else { "14d82eec-204b-4c2f-b7e8-296a70dab67e" }
+
 Write-Host "  D-User:       $($config.dUser.upn)" -ForegroundColor Gray
 Write-Host "  Target User:  $($config.targetUser.upn)" -ForegroundColor Gray
 Write-Host "  Tenant ID:    $($config.tenantId)" -ForegroundColor Gray
+Write-Host "  Client ID:    $graphClientId" -ForegroundColor Gray
 
 # ============================================================================
 # STEP 2: Check/Install MSAL.PS
@@ -138,35 +142,97 @@ if (-not (Get-Module -ListAvailable -Name MSAL.PS)) {
 Import-Module MSAL.PS -ErrorAction Stop
 
 # ============================================================================
-# STEP 3: Device Code Authentication
+# STEP 3: Device Code Authentication (with persistent file cache)
 # ============================================================================
-Write-Step "Starting device code authentication..."
-Write-Host ""
-Write-Host "  You will be prompted to sign in as the d-user ($($config.dUser.upn))." -ForegroundColor Yellow
-Write-Host "  A browser window will open - sign in with the d-user account." -ForegroundColor Yellow
-Write-Host ""
+Write-Step "Setting up persistent token cache..."
 
-Write-Log "Starting device code flow for tenant $($config.tenantId)"
+$msalApp = New-MsalClientApplication -ClientId $graphClientId -TenantId $config.tenantId
+$tokenCachePath = Join-Path $configDir "msal-token-cache.bin"
 
+# Register file-based cache persistence (works on both PS5 and PS7)
+# Uses env var to pass cache path into callbacks (scriptblocks can't close over variables)
+$msalApp.UserTokenCache.SetBeforeAccess([Microsoft.Identity.Client.TokenCacheCallback]{
+    param([Microsoft.Identity.Client.TokenCacheNotificationArgs]$a)
+    $fullPath = [System.Environment]::GetEnvironmentVariable("WOF_MSAL_CACHE_PATH")
+    if ($fullPath -and [System.IO.File]::Exists($fullPath)) {
+        $a.TokenCache.DeserializeMsalV3([System.IO.File]::ReadAllBytes($fullPath))
+    }
+})
+$msalApp.UserTokenCache.SetAfterAccess([Microsoft.Identity.Client.TokenCacheCallback]{
+    param([Microsoft.Identity.Client.TokenCacheNotificationArgs]$a)
+    if ($a.HasStateChanged) {
+        $fullPath = [System.Environment]::GetEnvironmentVariable("WOF_MSAL_CACHE_PATH")
+        if ($fullPath) {
+            [System.IO.File]::WriteAllBytes($fullPath, $a.TokenCache.SerializeMsalV3())
+        }
+    }
+})
+[System.Environment]::SetEnvironmentVariable("WOF_MSAL_CACHE_PATH", $tokenCachePath)
+
+Write-Success "Persistent token cache enabled ($tokenCachePath)"
+Write-Log "MSAL app created with file cache at $tokenCachePath"
+
+# Try silent first (cached token from previous session)
+$tokenResult = $null
 try {
     $tokenResult = Get-MsalToken `
-        -ClientId $graphClientId `
-        -TenantId $config.tenantId `
+        -PublicClientApplication $msalApp `
         -Scopes $graphScopes `
-        -DeviceCode
+        -Silent
 
-    if (-not $tokenResult -or -not $tokenResult.AccessToken) {
-        Write-Err "Authentication failed - no access token received."
-        Write-Log "ERROR: No access token received from device code flow"
+    if ($tokenResult -and $tokenResult.AccessToken) {
+        Write-Success "Authenticated from cached token (no login required)."
+        Write-Log "Silent auth successful. Token expires: $($tokenResult.ExpiresOn)"
+    }
+} catch {
+    Write-Log "No cached token available, will use device code flow."
+}
+
+# Fall back to device code if silent failed
+if (-not $tokenResult -or -not $tokenResult.AccessToken) {
+    Write-Step "Starting device code authentication..."
+    Write-Host ""
+    Write-Host "  You will be prompted to sign in as the d-user ($($config.dUser.upn))." -ForegroundColor Yellow
+    Write-Host "  A browser window will open - sign in with the d-user account." -ForegroundColor Yellow
+    Write-Host ""
+
+    Write-Log "Starting device code flow for tenant $($config.tenantId)"
+
+    try {
+        # Use MSAL.NET API directly instead of Get-MsalToken -DeviceCode.
+        # The MSAL.PS wrapper has a known "Sequence contains no elements" error
+        # when combined with custom cache serialization callbacks.
+        $deviceCodeCallback = [System.Func[Microsoft.Identity.Client.DeviceCodeResult, System.Threading.Tasks.Task]]{
+            param([Microsoft.Identity.Client.DeviceCodeResult]$dcr)
+            Write-Host ""
+            Write-Host "  $($dcr.Message)" -ForegroundColor Yellow
+            Write-Host ""
+            return [System.Threading.Tasks.Task]::CompletedTask
+        }
+
+        $authResult = $msalApp.AcquireTokenWithDeviceCode($graphScopes, $deviceCodeCallback).ExecuteAsync().GetAwaiter().GetResult()
+
+        if (-not $authResult -or -not $authResult.AccessToken) {
+            Write-Err "Authentication failed - no access token received."
+            Write-Log "ERROR: No access token received from device code flow"
+            exit 1
+        }
+
+        # Wrap in a PSObject with the same properties MSAL.PS would return
+        $tokenResult = [PSCustomObject]@{
+            AccessToken = $authResult.AccessToken
+            ExpiresOn   = $authResult.ExpiresOn
+            Account     = $authResult.Account
+            Scopes      = $authResult.Scopes
+        }
+
+        Write-Success "Authenticated successfully. Token cached to disk."
+        Write-Log "Authentication successful. Token expires: $($tokenResult.ExpiresOn)"
+    } catch {
+        Write-Err "Authentication failed: $_"
+        Write-Log "ERROR: Authentication failed: $_"
         exit 1
     }
-
-    Write-Success "Authenticated successfully."
-    Write-Log "Authentication successful. Token expires: $($tokenResult.ExpiresOn)"
-} catch {
-    Write-Err "Authentication failed: $_"
-    Write-Log "ERROR: Authentication failed: $_"
-    exit 1
 }
 
 $authHeader = @{
@@ -223,21 +289,22 @@ try {
     }
 
     # Create or get existing 1:1 chat
-    $chatBody = @{
-        chatType = "oneOnOne"
-        members  = @(
-            @{
-                "@odata.type"     = "#microsoft.graph.aadUserConversationMember"
-                roles             = @("owner")
-                "user@odata.bind" = "https://graph.microsoft.com/v1.0/users('$dUserId')"
-            },
-            @{
-                "@odata.type"     = "#microsoft.graph.aadUserConversationMember"
-                roles             = @("owner")
-                "user@odata.bind" = "https://graph.microsoft.com/v1.0/users('$targetUserId')"
-            }
-        )
-    } | ConvertTo-Json -Depth 10
+    # Build members with explicit bracket notation to preserve @ keys in JSON
+    $member1 = [ordered]@{}
+    $member1['@odata.type'] = '#microsoft.graph.aadUserConversationMember'
+    $member1['roles'] = @('owner')
+    $member1['user@odata.bind'] = "https://graph.microsoft.com/v1.0/users('$dUserId')"
+
+    $member2 = [ordered]@{}
+    $member2['@odata.type'] = '#microsoft.graph.aadUserConversationMember'
+    $member2['roles'] = @('owner')
+    $member2['user@odata.bind'] = "https://graph.microsoft.com/v1.0/users('$targetUserId')"
+
+    $chatPayload = [ordered]@{
+        chatType = 'oneOnOne'
+        members  = @($member1, $member2)
+    }
+    $chatBody = [System.Text.Encoding]::UTF8.GetBytes(($chatPayload | ConvertTo-Json -Depth 10))
 
     $chatResponse = Invoke-RestMethod `
         -Uri "https://graph.microsoft.com/v1.0/chats" `
@@ -280,12 +347,13 @@ if ($config.teams.chatId) {
                 content     = "<b>WOF Notification System</b><br/>Connected successfully. Notifications from <em>$($config.dUser.upn)</em> will appear here."
             }
         } | ConvertTo-Json -Depth 5
+        $testMessageBytes = [System.Text.Encoding]::UTF8.GetBytes($testMessageBody)
 
         Invoke-RestMethod `
             -Uri "https://graph.microsoft.com/v1.0/chats/$($config.teams.chatId)/messages" `
             -Headers $authHeader `
             -Method POST `
-            -Body $testMessageBody | Out-Null
+            -Body $testMessageBytes | Out-Null
 
         Write-Success "Test message sent via Teams!"
         Write-Log "Test message sent via Teams"

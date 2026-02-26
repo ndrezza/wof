@@ -91,9 +91,7 @@ function Write-Log {
     Add-Content -Path $logFile -Value "[$timestamp] [send-notification] $Message" -ErrorAction SilentlyContinue
 }
 
-# Microsoft Graph PowerShell SDK well-known client ID
-$graphClientId = "14d82eec-204b-4c2f-b7e8-296a70dab67e"
-$graphScopes = @("Chat.ReadWrite", "Mail.Send", "User.Read", "offline_access")
+$graphScopes = @("Chat.ReadWrite", "Mail.Send", "User.Read", "User.ReadBasic.All", "offline_access")
 
 # ============================================================================
 # STEP 1: Load Configuration
@@ -112,6 +110,9 @@ try {
     exit 1
 }
 
+# Use custom app registration from config if available, otherwise fall back
+$graphClientId = if ($config.clientId) { $config.clientId } else { "14d82eec-204b-4c2f-b7e8-296a70dab67e" }
+
 # ============================================================================
 # STEP 2: Check Trigger Filter
 # ============================================================================
@@ -124,7 +125,53 @@ if ($Type -and $config.triggers.PSObject.Properties[$Type]) {
 }
 
 # ============================================================================
-# STEP 3: Validate Configuration
+# STEP 3: Rate Limiting
+# ============================================================================
+$rateLimitStateFile = Join-Path $logDir "notification-ratelimit.json"
+
+if ($config.rateLimit -and $config.rateLimit.enabled) {
+    # Determine cooldown for this notification type
+    $cooldownKey = if ($Type) { $Type } else { "default" }
+    $cooldownSeconds = $null
+
+    if ($config.rateLimit.cooldownSeconds.PSObject.Properties[$cooldownKey]) {
+        $cooldownSeconds = [int]$config.rateLimit.cooldownSeconds.$cooldownKey
+    } elseif ($config.rateLimit.cooldownSeconds.PSObject.Properties["default"]) {
+        $cooldownSeconds = [int]$config.rateLimit.cooldownSeconds.default
+    }
+
+    # A cooldown of 0 means no rate limiting for this type
+    if ($cooldownSeconds -and $cooldownSeconds -gt 0) {
+        $now = [DateTimeOffset]::UtcNow
+
+        # Load existing rate limit state
+        $rateState = @{}
+        if (Test-Path $rateLimitStateFile) {
+            try {
+                $rateStateRaw = Get-Content $rateLimitStateFile -Raw | ConvertFrom-Json
+                foreach ($prop in $rateStateRaw.PSObject.Properties) {
+                    $rateState[$prop.Name] = [DateTimeOffset]::Parse($prop.Value)
+                }
+            } catch {
+                Write-Log "WARNING: Failed to parse rate limit state, resetting: $_"
+                $rateState = @{}
+            }
+        }
+
+        $lastSent = $rateState[$cooldownKey]
+        if ($lastSent) {
+            $elapsed = ($now - $lastSent).TotalSeconds
+            if ($elapsed -lt $cooldownSeconds) {
+                $remaining = [math]::Ceiling($cooldownSeconds - $elapsed)
+                Write-Log "Rate limited: '$cooldownKey' sent ${elapsed}s ago, cooldown is ${cooldownSeconds}s (${remaining}s remaining)"
+                exit 0
+            }
+        }
+    }
+}
+
+# ============================================================================
+# STEP 4: Validate Configuration (tenantId, channel resolution)
 # ============================================================================
 if (-not $config.tenantId) {
     Write-Log "ERROR: tenantId not configured"
@@ -141,7 +188,7 @@ if ($Channel -eq "auto") {
 $fallbackChannel = if ($config.channels.fallback) { $config.channels.fallback } else { "email" }
 
 # ============================================================================
-# STEP 4: Acquire Token Silently
+# STEP 5: Acquire Token Silently (from persistent file cache)
 # ============================================================================
 Write-Log "Acquiring token silently..."
 
@@ -152,9 +199,30 @@ try {
         Import-Module MSAL.PS -ErrorAction Stop
     }
 
+    # Use persistent file cache so tokens survive across processes
+    $msalApp = New-MsalClientApplication -ClientId $graphClientId -TenantId $config.tenantId
+    $tokenCachePath = Join-Path $configDir "msal-token-cache.bin"
+
+    $msalApp.UserTokenCache.SetBeforeAccess([Microsoft.Identity.Client.TokenCacheCallback]{
+        param([Microsoft.Identity.Client.TokenCacheNotificationArgs]$a)
+        $fullPath = [System.Environment]::GetEnvironmentVariable("WOF_MSAL_CACHE_PATH")
+        if ($fullPath -and [System.IO.File]::Exists($fullPath)) {
+            $a.TokenCache.DeserializeMsalV3([System.IO.File]::ReadAllBytes($fullPath))
+        }
+    })
+    $msalApp.UserTokenCache.SetAfterAccess([Microsoft.Identity.Client.TokenCacheCallback]{
+        param([Microsoft.Identity.Client.TokenCacheNotificationArgs]$a)
+        if ($a.HasStateChanged) {
+            $fullPath = [System.Environment]::GetEnvironmentVariable("WOF_MSAL_CACHE_PATH")
+            if ($fullPath) {
+                [System.IO.File]::WriteAllBytes($fullPath, $a.TokenCache.SerializeMsalV3())
+            }
+        }
+    })
+    [System.Environment]::SetEnvironmentVariable("WOF_MSAL_CACHE_PATH", $tokenCachePath)
+
     $tokenResult = Get-MsalToken `
-        -ClientId $graphClientId `
-        -TenantId $config.tenantId `
+        -PublicClientApplication $msalApp `
         -Scopes $graphScopes `
         -Silent
 
@@ -164,35 +232,9 @@ try {
 
     Write-Log "Token acquired (expires: $($tokenResult.ExpiresOn))"
 } catch {
-    Write-Log "WARNING: Silent token acquisition failed: $_"
-
-    # If primary was teams and we have a fallback, try fallback
-    if ($primaryChannel -eq "teams" -and $fallbackChannel -eq "email") {
-        Write-Log "Token refresh failed. Attempting fallback channel: email"
-        $primaryChannel = "email"
-    } else {
-        Write-Warning "Authentication expired. Run graph-auth.ps1 to re-authenticate."
-        exit 1
-    }
-
-    # Retry token acquisition for fallback
-    try {
-        $tokenResult = Get-MsalToken `
-            -ClientId $graphClientId `
-            -TenantId $config.tenantId `
-            -Scopes $graphScopes `
-            -Silent
-
-        if (-not $tokenResult -or -not $tokenResult.AccessToken) {
-            Write-Log "ERROR: Token acquisition failed for fallback too"
-            Write-Warning "Authentication expired. Run graph-auth.ps1 to re-authenticate."
-            exit 1
-        }
-    } catch {
-        Write-Log "ERROR: Token acquisition failed completely: $_"
-        Write-Warning "Authentication expired. Run graph-auth.ps1 to re-authenticate."
-        exit 1
-    }
+    Write-Log "ERROR: Silent token acquisition failed: $_"
+    Write-Warning "Authentication expired. Run graph-auth.ps1 to re-authenticate."
+    exit 1
 }
 
 $authHeader = @{
@@ -201,7 +243,7 @@ $authHeader = @{
 }
 
 # ============================================================================
-# STEP 5: Send Notification
+# STEP 6: Send Notification
 # ============================================================================
 
 function Send-TeamsMessage {
@@ -239,12 +281,13 @@ function Send-TeamsMessage {
                 content     = $htmlContent
             }
         } | ConvertTo-Json -Depth 5
+        $bodyBytes = [System.Text.Encoding]::UTF8.GetBytes($body)
 
         Invoke-RestMethod `
             -Uri "https://graph.microsoft.com/v1.0/chats/$($config.teams.chatId)/messages" `
             -Headers $authHeader `
             -Method POST `
-            -Body $body | Out-Null
+            -Body $bodyBytes | Out-Null
 
         Write-Log "Sent via Teams: $Text"
         return $true
@@ -283,12 +326,13 @@ function Send-Email {
             }
             saveToSentItems = $false
         } | ConvertTo-Json -Depth 10
+        $bodyBytes = [System.Text.Encoding]::UTF8.GetBytes($body)
 
         Invoke-RestMethod `
             -Uri "https://graph.microsoft.com/v1.0/me/sendMail" `
             -Headers $authHeader `
             -Method POST `
-            -Body $body | Out-Null
+            -Body $bodyBytes | Out-Null
 
         Write-Log "Sent via email to $($config.targetUser.upn): $EmailSubject"
         return $true
@@ -317,6 +361,28 @@ if ($primaryChannel -eq "teams") {
 
 if ($sent) {
     Write-Log "Notification delivered successfully"
+
+    # Update rate limit state
+    if ($config.rateLimit -and $config.rateLimit.enabled) {
+        $cooldownKey = if ($Type) { $Type } else { "default" }
+        try {
+            # Reload state to avoid clobbering concurrent writes
+            $rateState = @{}
+            if (Test-Path $rateLimitStateFile) {
+                try {
+                    $rateStateRaw = Get-Content $rateLimitStateFile -Raw | ConvertFrom-Json
+                    foreach ($prop in $rateStateRaw.PSObject.Properties) {
+                        $rateState[$prop.Name] = $prop.Value
+                    }
+                } catch { }
+            }
+            $rateState[$cooldownKey] = [DateTimeOffset]::UtcNow.ToString("o")
+            $rateState | ConvertTo-Json | Set-Content -Path $rateLimitStateFile -Encoding UTF8
+            Write-Log "Rate limit state updated for '$cooldownKey'"
+        } catch {
+            Write-Log "WARNING: Failed to update rate limit state: $_"
+        }
+    }
 } else {
     Write-Log "ERROR: Notification delivery failed on all channels"
     Write-Warning "Failed to send notification. Check $logFile for details."
