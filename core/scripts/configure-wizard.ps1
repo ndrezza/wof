@@ -143,7 +143,8 @@ The wizard will guide you through:
 1. Managing AI connections (AI1-AI10)
 2. Configuring role mappings
 3. Setting up Azure DevOps MCP server
-4. Testing connectivity
+4. Setting up Notifications (Teams/email)
+5. Testing connectivity
 
 AI Connection Types:
     azure_ai_foundry_anthropic  - Claude on Azure (key required)
@@ -152,6 +153,7 @@ AI Connection Types:
 
 MCP Servers:
     azure-devops                - Azure DevOps work items, repos, PRs
+    wof-notifications           - Teams chat and email notifications
 
 "@
     exit 0
@@ -1280,6 +1282,282 @@ function Remove-AdoConfiguration {
 }
 
 # ============================================================================
+# Notification MCP Configuration
+# ============================================================================
+
+function Show-NotificationMenu {
+    param([hashtable]$Mcp)
+
+    $notificationsJsonPath = Join-Path $configDir "notifications.json"
+
+    while ($true) {
+        Write-Host ""
+        Write-Host "--- Notification Configuration ---" -ForegroundColor Cyan
+        Write-Host ""
+
+        # Check current configuration
+        $notifyMcpConfig = $Mcp.servers["wof-notifications"]
+        $isConfigured = $notifyMcpConfig -and $notifyMcpConfig.env -and $notifyMcpConfig.env["WOF_NOTIFICATIONS_CONFIG"]
+
+        # Also check if notifications.json exists and has content
+        $hasNotificationsJson = Test-Path $notificationsJsonPath
+        $notifyDetails = $null
+
+        if ($hasNotificationsJson) {
+            try {
+                $notifyDetails = Get-Content $notificationsJsonPath -Raw | ConvertFrom-Json
+            } catch { }
+        }
+
+        if ($isConfigured -and $notifyDetails) {
+            $dUser = if ($notifyDetails.dUser.upn) { $notifyDetails.dUser.upn } else { "(not set)" }
+            $targetUser = if ($notifyDetails.targetUser.upn) { $notifyDetails.targetUser.upn } else { "(not set)" }
+            $tenantId = if ($notifyDetails.tenantId) { $notifyDetails.tenantId } else { "(not set)" }
+            $clientId = if ($notifyDetails.clientId) { $notifyDetails.clientId } else { "(not set)" }
+            $primaryChannel = if ($notifyDetails.channels.primary) { $notifyDetails.channels.primary } else { "teams" }
+
+            Write-Host "  D-User:          $dUser" -ForegroundColor Gray
+            Write-Host "  Target User:     $targetUser" -ForegroundColor Gray
+            Write-Host "  Tenant ID:       $tenantId" -ForegroundColor Gray
+            Write-Host "  Client ID:       $clientId" -ForegroundColor Gray
+            Write-Host "  Primary Channel: $primaryChannel" -ForegroundColor Gray
+            Write-Host "  MCP Server:      configured" -ForegroundColor Gray
+            Write-Host ""
+        } elseif ($hasNotificationsJson) {
+            Write-Host "  notifications.json exists but MCP server not configured" -ForegroundColor Yellow
+            Write-Host ""
+        } else {
+            Write-Host "  (not configured)" -ForegroundColor DarkGray
+            Write-Host ""
+        }
+
+        Write-Host "Options:" -ForegroundColor Cyan
+        if ($isConfigured -and $hasNotificationsJson) {
+            Write-Host "  [1] Edit notification settings"
+            Write-Host "  [2] Run graph-auth.ps1 (authenticate d-user)"
+            Write-Host "  [3] Send test notification"
+            Write-Host "  [4] Delete configuration" -ForegroundColor Red
+        } else {
+            Write-Host "  [1] Configure notifications"
+        }
+        Write-Host ""
+        Write-Host "  [B] Back to main menu" -ForegroundColor Yellow
+        Write-Host ""
+        Write-Host "Choice: " -NoNewline
+        $choice = Read-Host
+
+        switch ($choice.ToUpper()) {
+            "B" { return $Mcp }
+            "1" { $Mcp = Edit-NotificationConfiguration -Mcp $Mcp }
+            "2" {
+                if ($isConfigured -and $hasNotificationsJson) {
+                    Write-Host ""
+                    $authScript = Join-Path $PSScriptRoot "graph-auth.ps1"
+                    if (Test-Path $authScript) {
+                        & $authScript -ConfigPath $notificationsJsonPath
+                    } else {
+                        Write-Fail "graph-auth.ps1 not found at $authScript"
+                    }
+                    Write-Host ""
+                    Write-Host "Press Enter to continue..." -NoNewline
+                    Read-Host
+                }
+            }
+            "3" {
+                if ($isConfigured -and $hasNotificationsJson) {
+                    Write-Host ""
+                    $sendScript = Join-Path $PSScriptRoot "send-notification.ps1"
+                    if (Test-Path $sendScript) {
+                        Write-Check "Sending test notification..."
+                        & $sendScript -Message "Test notification from WOF configuration wizard." -Type "completed" -ConfigPath $notificationsJsonPath
+                        Write-Host ""
+                    } else {
+                        Write-Fail "send-notification.ps1 not found at $sendScript"
+                    }
+                    Write-Host ""
+                    Write-Host "Press Enter to continue..." -NoNewline
+                    Read-Host
+                }
+            }
+            "4" {
+                if ($isConfigured) {
+                    $Mcp = Remove-NotificationConfiguration -Mcp $Mcp
+                }
+            }
+        }
+
+        # Refresh state
+        $notifyMcpConfig = $Mcp.servers["wof-notifications"]
+        $isConfigured = $notifyMcpConfig -and $notifyMcpConfig.env -and $notifyMcpConfig.env["WOF_NOTIFICATIONS_CONFIG"]
+        $hasNotificationsJson = Test-Path $notificationsJsonPath
+    }
+}
+
+function Edit-NotificationConfiguration {
+    param([hashtable]$Mcp)
+
+    $notificationsJsonPath = Join-Path $configDir "notifications.json"
+    $templatePath = Join-Path $PSScriptRoot "..\..\templates\config\notifications.json.template"
+
+    # Load existing or create from template
+    $notifyConfig = $null
+    if (Test-Path $notificationsJsonPath) {
+        try {
+            $notifyConfig = Get-Content $notificationsJsonPath -Raw | ConvertFrom-Json
+        } catch {
+            Write-Warn "Failed to parse existing notifications.json: $_"
+        }
+    }
+
+    if (-not $notifyConfig) {
+        if (Test-Path $templatePath) {
+            $notifyConfig = Get-Content $templatePath -Raw | ConvertFrom-Json
+            Write-Info "Created from template"
+        } else {
+            Write-Fail "notifications.json template not found"
+            return $Mcp
+        }
+    }
+
+    Write-Host ""
+    Write-Host "--- Configure Notifications ---" -ForegroundColor Cyan
+    Write-Host ""
+    Write-Host "The notification system sends messages from a d-user (AI service account)" -ForegroundColor Gray
+    Write-Host "to the target user (you) via Teams chat or email." -ForegroundColor Gray
+    Write-Host ""
+
+    # Tenant ID
+    $existingTenant = $notifyConfig.tenantId
+    if ($existingTenant) {
+        Write-Host "Azure AD Tenant ID [$existingTenant]: " -NoNewline
+    } else {
+        Write-Host "Azure AD Tenant ID: " -NoNewline
+    }
+    $tenantId = Read-Host
+    if (-not $tenantId -and $existingTenant) { $tenantId = $existingTenant }
+
+    if (-not $tenantId) {
+        Write-Warn "Tenant ID is required."
+        return $Mcp
+    }
+    $notifyConfig.tenantId = $tenantId
+
+    # D-User UPN
+    $existingDUser = $notifyConfig.dUser.upn
+    if ($existingDUser) {
+        Write-Host "D-User UPN (e.g. d-anr@company.com) [$existingDUser]: " -NoNewline
+    } else {
+        Write-Host "D-User UPN (e.g. d-anr@company.com): " -NoNewline
+    }
+    $dUserUpn = Read-Host
+    if (-not $dUserUpn -and $existingDUser) { $dUserUpn = $existingDUser }
+
+    if (-not $dUserUpn) {
+        Write-Warn "D-User UPN is required."
+        return $Mcp
+    }
+    $notifyConfig.dUser.upn = $dUserUpn
+
+    # Target User UPN
+    $existingTarget = $notifyConfig.targetUser.upn
+    if ($existingTarget) {
+        Write-Host "Target User UPN (e.g. anr@company.com) [$existingTarget]: " -NoNewline
+    } else {
+        Write-Host "Target User UPN (e.g. anr@company.com): " -NoNewline
+    }
+    $targetUpn = Read-Host
+    if (-not $targetUpn -and $existingTarget) { $targetUpn = $existingTarget }
+
+    if (-not $targetUpn) {
+        Write-Warn "Target User UPN is required."
+        return $Mcp
+    }
+    $notifyConfig.targetUser.upn = $targetUpn
+
+    # Client ID (optional)
+    $existingClientId = $notifyConfig.clientId
+    Write-Host ""
+    Write-Host "Custom App Client ID (optional - leave blank to use default):" -ForegroundColor Gray
+    Write-Host "  Run register-notification-app.ps1 to create a custom app." -ForegroundColor DarkGray
+    if ($existingClientId) {
+        Write-Host "Client ID [$existingClientId]: " -NoNewline
+    } else {
+        Write-Host "Client ID: " -NoNewline
+    }
+    $clientId = Read-Host
+    if (-not $clientId -and $existingClientId) { $clientId = $existingClientId }
+    $notifyConfig.clientId = if ($clientId) { $clientId } else { "" }
+
+    # Primary channel
+    Write-Host ""
+    $existingChannel = if ($notifyConfig.channels.primary) { $notifyConfig.channels.primary } else { "teams" }
+    Write-Host "Primary channel (teams/email) [$existingChannel]: " -NoNewline
+    $channel = Read-Host
+    if (-not $channel) { $channel = $existingChannel }
+    if ($channel -ne "teams" -and $channel -ne "email") { $channel = "teams" }
+    $notifyConfig.channels.primary = $channel
+    $notifyConfig.channels.fallback = if ($channel -eq "teams") { "email" } else { "teams" }
+
+    # Save notifications.json
+    Write-Host ""
+    Write-Check "Saving notifications.json..."
+
+    if (-not (Test-Path $configDir)) {
+        New-Item -ItemType Directory -Path $configDir -Force | Out-Null
+    }
+
+    $notifyConfig | ConvertTo-Json -Depth 10 | Set-Content -Path $notificationsJsonPath -Encoding UTF8
+    Write-Pass "notifications.json saved"
+
+    # Configure MCP server entry
+    $mcpServerPath = Join-Path $PSScriptRoot "..\mcp\wof-notifications\dist\index.js"
+    $resolvedMcpPath = if (Test-Path $mcpServerPath) { (Resolve-Path $mcpServerPath).Path } else { $mcpServerPath }
+
+    $Mcp.servers["wof-notifications"] = @{
+        type = "stdio"
+        command = "node"
+        args = @($resolvedMcpPath)
+        env = @{
+            "WOF_NOTIFICATIONS_CONFIG" = (Resolve-Path $notificationsJsonPath).Path
+        }
+    }
+
+    Write-Pass "MCP server configured"
+    $script:hasUnsavedChanges = $true
+
+    Write-Host ""
+    Write-Host "Next steps:" -ForegroundColor Cyan
+    Write-Host "  1. Save configuration (S from main menu)" -ForegroundColor Gray
+    Write-Host "  2. Run graph-auth.ps1 to authenticate the d-user" -ForegroundColor Gray
+    Write-Host "  3. Restart Claude Code to load the MCP server" -ForegroundColor Gray
+    Write-Host ""
+    Write-Host "Press Enter to continue..." -NoNewline
+    Read-Host
+
+    return $Mcp
+}
+
+function Remove-NotificationConfiguration {
+    param([hashtable]$Mcp)
+
+    Write-Host ""
+    Write-Host "Delete notification configuration? This removes the MCP server entry." -ForegroundColor Yellow
+    Write-Host "notifications.json will be preserved." -ForegroundColor Gray
+    Write-Host "Type 'DELETE' to confirm: " -NoNewline
+    $confirm = Read-Host
+
+    if ($confirm -eq "DELETE") {
+        $Mcp.servers.Remove("wof-notifications")
+        Write-Pass "Notification MCP configuration deleted"
+        $script:hasUnsavedChanges = $true
+    } else {
+        Write-Info "Deletion cancelled."
+    }
+
+    return $Mcp
+}
+
+# ============================================================================
 # Connection Slot Menu (for individual AI slot)
 # ============================================================================
 
@@ -1513,8 +1791,13 @@ function Show-MainMenu {
         $adoConfigured = $Mcp.servers["azure-devops"] -and $Mcp.servers["azure-devops"].env -and $Mcp.servers["azure-devops"].env["AZURE_DEVOPS_ORG_URL"]
         $adoStatus = if ($adoConfigured) { "configured" } else { "not configured" }
 
-        Write-Host "  AI connections: $configuredCount/10" -ForegroundColor Gray
-        Write-Host "  Azure DevOps:   $adoStatus" -ForegroundColor Gray
+        # Check Notification status
+        $notifyConfigured = $Mcp.servers["wof-notifications"] -and $Mcp.servers["wof-notifications"].env -and $Mcp.servers["wof-notifications"].env["WOF_NOTIFICATIONS_CONFIG"]
+        $notifyStatus = if ($notifyConfigured) { "configured" } else { "not configured" }
+
+        Write-Host "  AI connections:  $configuredCount/10" -ForegroundColor Gray
+        Write-Host "  Azure DevOps:    $adoStatus" -ForegroundColor Gray
+        Write-Host "  Notifications:   $notifyStatus" -ForegroundColor Gray
         if ($script:hasUnsavedChanges) {
             Write-Host "  Unsaved changes: Yes" -ForegroundColor Yellow
         }
@@ -1523,9 +1806,10 @@ function Show-MainMenu {
         Write-Host "  [1] Manage AI Connections"
         Write-Host "  [2] Configure Role Mappings"
         Write-Host "  [3] Configure Azure DevOps MCP"
+        Write-Host "  [4] Configure Notifications"
         Write-Host ""
-        Write-Host "  [4] Test All AI Connections"
-        Write-Host "  [5] View Current Configuration"
+        Write-Host "  [5] Test All AI Connections"
+        Write-Host "  [6] View Current Configuration"
         Write-Host ""
         if ($script:hasUnsavedChanges) {
             Write-Host "  [S] Save changes" -ForegroundColor Green
@@ -1540,7 +1824,8 @@ function Show-MainMenu {
             "1" { $Config = Show-ConnectionsMenu -Config $Config }
             "2" { $Config = Show-RoleMenu -Config $Config }
             "3" { $Mcp = Show-AdoMenu -Mcp $Mcp }
-            "4" {
+            "4" { $Mcp = Show-NotificationMenu -Mcp $Mcp }
+            "5" {
                 Write-Host ""
                 Write-Host "Testing all AI connections..." -ForegroundColor Cyan
                 Show-ConnectionsTable -Config $Config | Out-Null
@@ -1548,15 +1833,30 @@ function Show-MainMenu {
                 Write-Host "Press Enter to continue..." -NoNewline
                 Read-Host
             }
-            "5" {
+            "6" {
                 Write-Host ""
                 Show-RoleMappings -Config $Config
 
-                # Show ADO config too
+                # Show ADO config
                 if ($adoConfigured) {
                     Write-Host "Azure DevOps MCP:" -ForegroundColor Cyan
                     Write-Host "    Organization: $($Mcp.servers["azure-devops"].env["AZURE_DEVOPS_ORG_URL"])" -ForegroundColor Gray
                     Write-Host ""
+                }
+
+                # Show Notification config
+                if ($notifyConfigured) {
+                    $notifyJsonPath = Join-Path $configDir "notifications.json"
+                    if (Test-Path $notifyJsonPath) {
+                        try {
+                            $nd = Get-Content $notifyJsonPath -Raw | ConvertFrom-Json
+                            Write-Host "Notifications MCP:" -ForegroundColor Cyan
+                            Write-Host "    D-User:      $($nd.dUser.upn)" -ForegroundColor Gray
+                            Write-Host "    Target User: $($nd.targetUser.upn)" -ForegroundColor Gray
+                            Write-Host "    Channel:     $($nd.channels.primary)" -ForegroundColor Gray
+                            Write-Host ""
+                        } catch { }
+                    }
                 }
 
                 Write-Host "Press Enter to continue..." -NoNewline
@@ -1628,6 +1928,22 @@ if ($TestOnly) {
             Write-Warn "ADO: AUTH ERROR - $($adoResult.Error)"
         } else {
             Write-Fail "ADO: OFFLINE - $($adoResult.Error)"
+        }
+    }
+
+    # Also check notification config
+    $notifyMcpConfig = $mcp.servers["wof-notifications"]
+    if ($notifyMcpConfig -and $notifyMcpConfig.env -and $notifyMcpConfig.env["WOF_NOTIFICATIONS_CONFIG"]) {
+        $notifyJsonPath = $notifyMcpConfig.env["WOF_NOTIFICATIONS_CONFIG"]
+        if (Test-Path $notifyJsonPath) {
+            try {
+                $nd = Get-Content $notifyJsonPath -Raw | ConvertFrom-Json
+                Write-Pass "Notifications: configured ($($nd.dUser.upn) -> $($nd.targetUser.upn))"
+            } catch {
+                Write-Warn "Notifications: config file exists but failed to parse"
+            }
+        } else {
+            Write-Warn "Notifications: MCP configured but config file not found at $notifyJsonPath"
         }
     }
 

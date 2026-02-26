@@ -81,38 +81,46 @@ This framework provides:
 │                                                               │
 │      PRIMARY DOES NOT CODE                                    │
 └───────────────────────────────────────────────────────────────┘
-            │                         │                    │
-            ▼                         ▼                    ▼
-┌──────────────────┐  ┌───────────────────────────────────────────┐
-│ VALIDATOR        │  │           DUAL-WORKER SYSTEM              │
-│                  │  │  ┌─────────────────┬─────────────────┐    │
-│ Decision valid.  │  │  │ WORKER-HEAVY    │ WORKER-LITE     │    │
-│ >0.7 confidence  │  │  │                 │                 │    │
-│                  │  │  │ T2+ Complex:    │ T1 Lightweight: │    │
-│                  │  │  │ • Code gen      │ • File search   │    │
-│                  │  │  │ • Testing       │ • Formatting    │    │
-│                  │  │  │ • Refactoring   │ • Navigation    │    │
-│                  │  │  └─────────────────┴─────────────────┘    │
-└──────────────────┘  └───────────────────────────────────────────┘
-                                          │
-                                          ▼
-                              ┌──────────────────┐
-                              │ CRITIC           │
-                              │ Skeptical Q&A    │
-                              │ ≥80% viability   │
-                              └──────────────────┘
+        │               │               │               │
+        ▼               ▼               ▼               ▼
+┌──────────────┐ ┌─────────────────────────────┐ ┌──────────────┐
+│ VALIDATOR    │ │    DUAL-WORKER SYSTEM        │ │ CRITIC       │
+│              │ │ ┌────────────┬────────────┐  │ │              │
+│ Decision     │ │ │WORKER-HEAVY│WORKER-LITE │  │ │ Skeptical    │
+│ validation   │ │ │            │            │  │ │ Q&A          │
+│ >0.7 conf.   │ │ │T2+ Complex │T1 Light    │  │ │ ≥80% viable  │
+│              │ │ │• Code gen  │• File srch │  │ │              │
+│              │ │ │• Testing   │• Formatting│  │ │              │
+│              │ │ │• Refactor  │• Navigation│  │ │              │
+│              │ │ └────────────┴────────────┘  │ │              │
+└──────────────┘ └─────────────────────────────┘ └──────────────┘
+                         │
+        ┌────────────────┼────────────────┐
+        ▼                                 ▼
+┌──────────────────┐            ┌──────────────────┐
+│ MCP: Azure DevOps│            │ MCP: Notifications│
+│                  │            │                   │
+│ • Work items     │            │ • Teams chat      │
+│ • Repositories   │            │ • Email (Outlook) │
+│ • Pull requests  │            │ • Read messages   │
+│ • Pipelines      │            │ • Rate limiting   │
+│ • Wiki           │            │ • Trigger filters │
+└──────────────────┘            └──────────────────┘
 ```
 
-| Role | Description | Config |
-|------|-------------|--------|
-| **Primary** | Orchestrator (NO coding) | See `roles.json` |
-| **Worker-Heavy** | T2+ complex tasks (code gen, testing) | See `roles.json` |
-| **Worker-Lite** | T1 lightweight tasks (search, format) | See `roles.json` |
-| **Validator** | Decision validation (>0.7 threshold) | See `roles.json` |
-| **Critic** | Quality gate (≥80% threshold) | See `roles.json` |
+| Component | Description | Config |
+|-----------|-------------|--------|
+| **Primary** | Orchestrator (NO coding) | `roles.json` |
+| **Worker-Heavy** | T2+ complex tasks (code gen, testing) | `roles.json` |
+| **Worker-Lite** | T1 lightweight tasks (search, format) | `roles.json` |
+| **Validator** | Decision validation (>0.7 threshold) | `roles.json` |
+| **Critic** | Quality gate (≥80% threshold) | `roles.json` |
+| **MCP: Azure DevOps** | Work items, repos, PRs, pipelines, wiki | `.mcp.json` |
+| **MCP: Notifications** | Teams chat, email, read messages | `.mcp.json` + `notifications.json` |
 
 > **Configuration:** Role-to-connection mappings are defined in `.ai/config/roles.json`.
 > AI connections are defined in `.ai/config/connections.json`.
+> MCP servers are defined in `.mcp.json` at the project root.
 
 ## Installation
 
@@ -201,18 +209,29 @@ This ensures `credentials.local.json` stays gitignored even after removing WOF.
    }
    ```
 
-2. **Set up MCP server:**
+2. **Set up MCP servers:**
    ```bash
    claude mcp add --scope local validator-claude -- claude mcp serve
    claude mcp add --scope local critic-claude -- claude mcp serve
    claude mcp add --scope local worker-claude-heavy -- claude mcp serve
    ```
 
-3. **Configure Worker-Lite (optional):**
+3. **Configure Azure DevOps (optional):**
+   ```
+   /wof configure → [3] Configure Azure DevOps MCP
+   ```
+
+4. **Configure Notifications (optional):**
+   ```
+   /wof configure → [4] Configure Notifications
+   ```
+   Requires a d-user account with Microsoft E5 license. See the [Notifications](#notifications) section.
+
+5. **Configure Worker-Lite (optional):**
    - Worker-Lite can use local models (Ollama recommended, or vLLM/llama.cpp with proxy)
    - See [docs/ollama-setup.md](docs/ollama-setup.md) for Ollama installation and configuration
 
-4. **Verify setup:**
+6. **Verify setup:**
    ```powershell
    .\.ai\scripts\check-orchestration-health.ps1
    ```
@@ -224,6 +243,7 @@ After installation, your project will have:
 ```
 your-project/
 ├── CLAUDE.md                      # Main orchestration document
+├── .mcp.json                      # MCP server configuration
 ├── .claude/
 │   └── settings.json              # Claude Code hooks
 └── .ai/
@@ -232,15 +252,24 @@ your-project/
     │   ├── validate-autonomy.ps1
     │   ├── bias-control.ps1
     │   ├── resolve-role.ps1
-    │   ├── migrate-config.ps1
+    │   ├── graph-auth.ps1         # Graph API authentication
+    │   ├── send-notification.ps1  # Send Teams/email notifications
+    │   ├── read-notification.ps1  # Read inbound Teams messages
+    │   ├── register-notification-app.ps1  # Entra ID app setup
     │   └── ...
     ├── config/
-    │   ├── connections.json       # AI connection definitions (v2)
-    │   ├── roles.json             # Role-to-connection mappings (v2)
-    │   ├── credentials.local.json # Secrets (gitignored, v2)
+    │   ├── connections.json       # AI connection definitions
+    │   ├── roles.json             # Role-to-connection mappings
+    │   ├── credentials.local.json # Secrets (gitignored)
+    │   ├── notifications.json     # Notification settings
     │   ├── routing-rules.md       # T1/T2+ routing guidelines
     │   ├── risk-rules.yaml        # Command risk classification
     │   └── models.yaml            # Model tier definitions
+    ├── mcp/
+    │   └── wof-notifications/     # Notification MCP server
+    │       ├── src/               # TypeScript source
+    │       ├── dist/              # Compiled JS (ready to run)
+    │       └── package.json
     ├── memory/
     │   ├── architecture.md        # System architecture
     │   ├── conventions.md         # Coding standards
@@ -268,6 +297,11 @@ your-project/
 | `approve-command.ps1` | Bash command risk classification |
 | `approve-write.ps1` | File write validation |
 | `log-worker-operation.ps1` | Worker operation audit logging |
+| `graph-auth.ps1` | Microsoft Graph device code authentication |
+| `send-notification.ps1` | Send Teams chat or email notifications |
+| `read-notification.ps1` | Read inbound Teams messages from target user |
+| `register-notification-app.ps1` | Register Entra ID app for notifications |
+| `configure-wizard.ps1` | Interactive configuration wizard |
 
 ## Task Routing
 
@@ -324,20 +358,66 @@ Verify your framework configuration:
 .\.ai\scripts\check-orchestration-health.ps1
 ```
 
-## Extensions
+## MCP Servers
 
-### Azure DevOps Integration
+### Azure DevOps
 
-For ADO work item management:
+Provides work item management, repository browsing, pull request operations, pipelines, and wiki access via the `@tiberriver256/mcp-server-azure-devops` MCP server.
 
-```powershell
-# Copy template to your project
-Copy-Item "extensions\azure-devops\ado-utils.ps1.template" ".ai\scripts\ado-utils.ps1"
-
-# Edit and replace placeholders:
-# {{ADO_ORGANIZATION}} → your-org
-# {{ADO_PROJECT}} → your-project
+Configure via the wizard:
 ```
+/wof configure → [3] Configure Azure DevOps MCP
+```
+
+Or manually in `.mcp.json`:
+```json
+{
+  "mcpServers": {
+    "azure-devops": {
+      "type": "stdio",
+      "command": "cmd",
+      "args": ["/c", "npx", "-y", "@tiberriver256/mcp-server-azure-devops"],
+      "env": {
+        "AZURE_DEVOPS_ORG_URL": "https://dev.azure.com/your-org",
+        "AZURE_DEVOPS_AUTH_METHOD": "pat",
+        "AZURE_DEVOPS_PAT": "your-pat-here"
+      }
+    }
+  }
+}
+```
+
+### Notifications
+
+Sends notifications from the d-user (AI service account) to the target user via Teams chat or email. The MCP server exposes 4 tools: `authenticate`, `send_notification`, `read_messages`, `get_status`.
+
+Configure via the wizard:
+```
+/wof configure → [4] Configure Notifications
+```
+
+Setup steps:
+1. **Register app** (one-time, requires admin): `register-notification-app.ps1` creates an Entra ID app with minimum permissions
+2. **Authenticate**: `graph-auth.ps1` performs device code flow and caches tokens to disk
+3. **Configure wizard**: Sets d-user UPN, target user UPN, tenant ID, and channel preferences
+
+The MCP server is bundled at `core/mcp/wof-notifications/` and configured in `.mcp.json`:
+```json
+{
+  "mcpServers": {
+    "wof-notifications": {
+      "type": "stdio",
+      "command": "node",
+      "args": [".ai/mcp/wof-notifications/dist/index.js"],
+      "env": {
+        "WOF_NOTIFICATIONS_CONFIG": ".ai/config/notifications.json"
+      }
+    }
+  }
+}
+```
+
+Notification types with colored badges: `needsInput` (orange), `blocked` (red), `completed` (green), `progress` (blue). Each type can be independently enabled/disabled and rate-limited in `notifications.json`.
 
 ## Requirements
 
