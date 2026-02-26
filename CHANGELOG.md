@@ -5,6 +5,19 @@ All notable changes to the Workload Orchestration Framework (WOF) will be docume
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.6.1] - 2026-02-26
+
+### Added
+
+- **Notification menu in configuration wizard** — New `[4] Configure Notifications` option with full CRUD: edit settings, run graph-auth, send test notification, delete config
+- **Architecture diagram updated** — README now shows ADO and Notification MCP servers in the overview drawing
+- **MCP Servers documentation** — New section in README replacing old Extensions, with setup instructions for both Azure DevOps and Notifications MCP servers
+
+### Changed
+
+- Configuration wizard main menu renumbered: Test → `[5]`, View → `[6]`
+- README project structure, core scripts table, and post-setup steps updated with notification files
+
 ## [3.6.0] - 2026-02-26
 
 ### Added
