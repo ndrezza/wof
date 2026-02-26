@@ -1,6 +1,8 @@
 {
   "description": "D-user notification settings. Run /wof configure-notifications to set up.",
 
+  "clientId": "",
+
   "dUser": {
     "upn": "",
     "displayName": ""
@@ -28,5 +30,16 @@
     "blocked": true,
     "completed": true,
     "progress": false
+  },
+
+  "rateLimit": {
+    "enabled": true,
+    "cooldownSeconds": {
+      "needsInput": 300,
+      "blocked": 600,
+      "completed": 0,
+      "progress": 120,
+      "default": 60
+    }
   }
 }
