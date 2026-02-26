@@ -5,6 +5,36 @@ All notable changes to the Workload Orchestration Framework (WOF) will be docume
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.6.0] - 2026-02-26
+
+### Added
+
+- **MCP notification server** (`core/mcp/wof-notifications`) (#2989)
+  - Node.js/TypeScript MCP server with 4 tools: `authenticate`, `send_notification`, `read_messages`, `get_status`
+  - Enables AI agents to send Teams/email notifications and read inbound messages natively via MCP
+  - Device code authentication with in-memory token caching and silent refresh
+  - Rate limiting, trigger filtering, and channel fallback support
+
+- **App registration script** `register-notification-app.ps1` (#2989)
+  - Automates custom Entra ID app registration with minimum delegated permissions
+  - Creates service principal and grants tenant-wide admin consent
+  - Updates `notifications.json` with the new client ID
+
+- **Read notification script** `read-notification.ps1` (#2989)
+  - Reads inbound Teams messages from the target user
+  - Timestamp-based state tracking for incremental reads
+  - HTML stripping for plain text output
+
+### Fixed
+
+- **`graph-auth.ps1`** — Persistent MSAL file cache for cross-session silent auth, custom `clientId` support from config, direct MSAL.NET device code API (fixes "Sequence contains no elements" error), UTF-8 encoded request bodies, bracket notation for `@odata` keys in chat member payloads (#2989)
+- **`send-notification.ps1`** — Persistent file cache for silent auth, rate limiting with per-type cooldowns, UTF-8 encoded request bodies, custom `clientId` support (#2989)
+
+### Changed
+
+- `notifications.json.template` — Added `clientId` field and `rateLimit` configuration block
+- Graph scopes now include `User.ReadBasic.All` for user resolution
+
 ## [3.5.0] - 2026-02-24
 
 ### Added
