@@ -5,6 +5,24 @@ All notable changes to the Workload Orchestration Framework (WOF) will be docume
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.7.0] - 2026-02-27
+
+### Added
+
+- **Native Azure DevOps MCP server** (`core/mcp/wof-azure-devops`) (#2972)
+  - 44 tools across 9 categories: identity, projects, repositories, git, work items, pull requests, pipelines, wiki, search
+  - Two-layer architecture: `src/api/` (REST client) + `src/tools/` (MCP registration)
+  - Single runtime dependency (`@modelcontextprotocol/sdk`) — no external repos needed
+  - PAT-based auth via env vars or config file
+  - Supports core, VSSPS, and search API hosts
+
+### Changed
+
+- Replaced `@tiberriver256/mcp-server-azure-devops` third-party dependency with native WOF server
+- Configure wizard now prompts for org name and default project (instead of full URL)
+- Updated README, SKILL.md template, and docs to reference native server
+- Added `node_modules/` to `.gitignore`
+
 ## [3.6.1] - 2026-02-26
 
 ### Added
