@@ -362,7 +362,7 @@ Verify your framework configuration:
 
 ### Azure DevOps
 
-Provides work item management, repository browsing, pull request operations, pipelines, and wiki access via the `@tiberriver256/mcp-server-azure-devops` MCP server.
+WOF includes a native Azure DevOps MCP server (`core/mcp/wof-azure-devops/`) with 44 tools covering work items, repositories, pull requests, pipelines, wiki, and search. No external dependencies required - only `@modelcontextprotocol/sdk`.
 
 Configure via the wizard:
 ```
@@ -375,11 +375,11 @@ Or manually in `.mcp.json`:
   "mcpServers": {
     "azure-devops": {
       "type": "stdio",
-      "command": "cmd",
-      "args": ["/c", "npx", "-y", "@tiberriver256/mcp-server-azure-devops"],
+      "command": "node",
+      "args": ["core/mcp/wof-azure-devops/dist/index.js"],
       "env": {
-        "AZURE_DEVOPS_ORG_URL": "https://dev.azure.com/your-org",
-        "AZURE_DEVOPS_AUTH_METHOD": "pat",
+        "AZURE_DEVOPS_ORG": "your-org",
+        "AZURE_DEVOPS_DEFAULT_PROJECT": "Your Project",
         "AZURE_DEVOPS_PAT": "your-pat-here"
       }
     }

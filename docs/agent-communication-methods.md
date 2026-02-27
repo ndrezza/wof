@@ -124,8 +124,8 @@ $response = Invoke-RestMethod -Uri "$endpoint/v1/messages" `
     },
     "azure-devops": {
       "type": "stdio",
-      "command": "npx",
-      "args": ["-y", "@tiberriver256/mcp-server-azure-devops"]
+      "command": "node",
+      "args": ["core/mcp/wof-azure-devops/dist/index.js"]
     }
   }
 }

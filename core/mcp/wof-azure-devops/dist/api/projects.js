@@ -1,0 +1,71 @@
+import { coreApi } from "../client.js";
+export async function listProjects(org, options) {
+    return coreApi(org, "_apis/projects", {
+        params: {
+            $top: options?.top,
+            $skip: options?.skip,
+            stateFilter: options?.stateFilter,
+            continuationToken: options?.continuationToken,
+        },
+    });
+}
+export async function getProject(org, projectId) {
+    return coreApi(org, `_apis/projects/${encodeURIComponent(projectId)}`);
+}
+export async function getProjectDetails(org, projectId, options) {
+    // Get project with capabilities
+    const project = await coreApi(org, `_apis/projects/${encodeURIComponent(projectId)}`, { params: { includeCapabilities: true } });
+    const result = { project };
+    // Get process info if requested
+    if (options?.includeProcess) {
+        try {
+            const processes = await coreApi(org, `_apis/process/processes`, { apiVersion: "7.1-preview.1" });
+            // Try to match from project capabilities
+            const caps = project.capabilities;
+            const processTemplateId = caps?.processTemplate?.templateTypeId;
+            if (processTemplateId) {
+                result.process = processes.value.find((p) => p.id === processTemplateId);
+            }
+        }
+        catch {
+            // Process info is optional
+        }
+    }
+    // Get teams if requested
+    if (options?.includeTeams) {
+        try {
+            const teams = await coreApi(org, `_apis/projects/${encodeURIComponent(projectId)}/teams`, {
+                params: {
+                    $expandIdentity: options?.expandTeamIdentity,
+                },
+                apiVersion: "7.1-preview.3",
+            });
+            result.teams = teams.value;
+        }
+        catch {
+            // Teams info is optional
+        }
+    }
+    // Get work item types if requested
+    if (options?.includeWorkItemTypes) {
+        try {
+            const types = await coreApi(org, `${encodeURIComponent(projectId)}/_apis/wit/workitemtypes`);
+            if (options?.includeFields) {
+                // Types already include fields in the response
+                result.workItemTypes = types.value;
+            }
+            else {
+                // Strip fields to reduce payload
+                result.workItemTypes = types.value.map((t) => ({
+                    name: t.name,
+                    description: t.description,
+                    states: t.states,
+                }));
+            }
+        }
+        catch {
+            // WIT info is optional
+        }
+    }
+    return result;
+}
