@@ -1087,10 +1087,10 @@ function Show-AdoMenu {
 
         # Check current configuration
         $adoConfig = $Mcp.servers["azure-devops"]
-        $isConfigured = $adoConfig -and $adoConfig.env -and $adoConfig.env["AZURE_DEVOPS_ORG_URL"]
+        $isConfigured = $adoConfig -and $adoConfig.env -and ($adoConfig.env["AZURE_DEVOPS_ORG"] -or $adoConfig.env["AZURE_DEVOPS_ORG_URL"])
 
         if ($isConfigured) {
-            $orgUrl = $adoConfig.env["AZURE_DEVOPS_ORG_URL"]
+            $orgUrl = ($adoConfig.env["AZURE_DEVOPS_ORG"] -or $adoConfig.env["AZURE_DEVOPS_ORG_URL"])
             $hasPat = $adoConfig.env["AZURE_DEVOPS_PAT"] -and $adoConfig.env["AZURE_DEVOPS_PAT"].Length -gt 0
             $patDisplay = if ($hasPat) { "(configured)" } else { "(not set)" }
 
@@ -1124,7 +1124,7 @@ function Show-AdoMenu {
                 if ($isConfigured) {
                     Write-Host ""
                     Write-Check "Testing ADO connection..."
-                    $testResult = Test-AdoConnection -OrgUrl $adoConfig.env["AZURE_DEVOPS_ORG_URL"] -Pat $adoConfig.env["AZURE_DEVOPS_PAT"]
+                    $testResult = Test-AdoConnection -OrgUrl ($adoConfig.env["AZURE_DEVOPS_ORG"] -or $adoConfig.env["AZURE_DEVOPS_ORG_URL"]) -Pat $adoConfig.env["AZURE_DEVOPS_PAT"]
 
                     if ($testResult.Status -eq "ONLINE") {
                         Write-Pass "ONLINE - $($testResult.Latency)ms"
@@ -1150,7 +1150,7 @@ function Show-AdoMenu {
 
         # Refresh state
         $adoConfig = $Mcp.servers["azure-devops"]
-        $isConfigured = $adoConfig -and $adoConfig.env -and $adoConfig.env["AZURE_DEVOPS_ORG_URL"]
+        $isConfigured = $adoConfig -and $adoConfig.env -and ($adoConfig.env["AZURE_DEVOPS_ORG"] -or $adoConfig.env["AZURE_DEVOPS_ORG_URL"])
     }
 }
 
@@ -1158,36 +1158,46 @@ function Edit-AdoConnection {
     param([hashtable]$Mcp)
 
     $existingConfig = $Mcp.servers["azure-devops"]
+    # Support both old and new env var formats
+    $existingOrg = if ($existingConfig -and $existingConfig.env) { $existingConfig.env["AZURE_DEVOPS_ORG"] } else { "" }
     $existingOrgUrl = if ($existingConfig -and $existingConfig.env) { $existingConfig.env["AZURE_DEVOPS_ORG_URL"] } else { "" }
     $existingPat = if ($existingConfig -and $existingConfig.env) { $existingConfig.env["AZURE_DEVOPS_PAT"] } else { "" }
+    $existingProject = if ($existingConfig -and $existingConfig.env) { $existingConfig.env["AZURE_DEVOPS_DEFAULT_PROJECT"] } else { "" }
 
     Write-Host ""
     Write-Host "--- Configure Azure DevOps MCP Server ---" -ForegroundColor Cyan
     Write-Host ""
 
-    # Organization URL
-    Write-Host "Organization URL formats:" -ForegroundColor Gray
-    Write-Host "  https://dev.azure.com/your-org" -ForegroundColor DarkGray
-    Write-Host "  https://your-org.visualstudio.com" -ForegroundColor DarkGray
+    # Organization name
+    Write-Host "Organization name (e.g., 'myorg' from https://dev.azure.com/myorg):" -ForegroundColor Gray
     Write-Host ""
 
-    if ($existingOrgUrl) {
-        Write-Host "Organization URL [$existingOrgUrl]: " -NoNewline
-    } else {
-        Write-Host "Organization URL: " -NoNewline
-    }
-    $orgUrl = Read-Host
-    if (-not $orgUrl -and $existingOrgUrl) {
-        $orgUrl = $existingOrgUrl
+    # Derive existing org name from URL if we only have old format
+    if (-not $existingOrg -and $existingOrgUrl) {
+        if ($existingOrgUrl -match "dev\.azure\.com/([^/]+)") {
+            $existingOrg = $Matches[1]
+        } elseif ($existingOrgUrl -match "^https?://([^.]+)\.visualstudio\.com") {
+            $existingOrg = $Matches[1]
+        }
     }
 
-    if (-not $orgUrl) {
-        Write-Warn "Organization URL is required. Aborting."
+    if ($existingOrg) {
+        Write-Host "Organization [$existingOrg]: " -NoNewline
+    } else {
+        Write-Host "Organization: " -NoNewline
+    }
+    $org = Read-Host
+    if (-not $org -and $existingOrg) {
+        $org = $existingOrg
+    }
+
+    if (-not $org) {
+        Write-Warn "Organization name is required. Aborting."
         return $Mcp
     }
 
-    # Normalize URL (remove trailing slash)
-    $orgUrl = $orgUrl.TrimEnd('/')
+    # Build org URL for connection testing
+    $orgUrl = "https://dev.azure.com/$org"
 
     # PAT
     Write-Host ""
@@ -1240,19 +1250,34 @@ function Edit-AdoConnection {
         }
     }
 
-    # Build MCP server configuration
+    # Default project
+    Write-Host ""
+    Write-Host "Default project (optional, saves typing project name each time):" -ForegroundColor Gray
+    if ($existingProject) {
+        Write-Host "Default project [$existingProject]: " -NoNewline
+    } else {
+        Write-Host "Default project: " -NoNewline
+    }
+    $defaultProject = Read-Host
+    if (-not $defaultProject -and $existingProject) {
+        $defaultProject = $existingProject
+    }
+
+    # Build MCP server configuration (native WOF server)
     $Mcp.servers["azure-devops"] = @{
         type = "stdio"
-        command = "cmd"
-        args = @("/c", "npx", "-y", "@tiberriver256/mcp-server-azure-devops")
+        command = "node"
+        args = @("core/mcp/wof-azure-devops/dist/index.js")
         env = @{
-            "AZURE_DEVOPS_ORG_URL" = $orgUrl
-            "AZURE_DEVOPS_AUTH_METHOD" = "pat"
+            "AZURE_DEVOPS_ORG" = $org
         }
     }
 
     if ($pat) {
         $Mcp.servers["azure-devops"].env["AZURE_DEVOPS_PAT"] = $pat
+    }
+    if ($defaultProject) {
+        $Mcp.servers["azure-devops"].env["AZURE_DEVOPS_DEFAULT_PROJECT"] = $defaultProject
     }
 
     Write-Host ""
@@ -1916,9 +1941,9 @@ if ($TestOnly) {
 
     # Also test ADO if configured
     $adoConfig = $mcp.servers["azure-devops"]
-    if ($adoConfig -and $adoConfig.env -and $adoConfig.env["AZURE_DEVOPS_ORG_URL"]) {
+    if ($adoConfig -and $adoConfig.env -and ($adoConfig.env["AZURE_DEVOPS_ORG"] -or $adoConfig.env["AZURE_DEVOPS_ORG_URL"])) {
         Write-Host "Testing Azure DevOps..." -ForegroundColor Cyan
-        $adoResult = Test-AdoConnection -OrgUrl $adoConfig.env["AZURE_DEVOPS_ORG_URL"] -Pat $adoConfig.env["AZURE_DEVOPS_PAT"]
+        $adoResult = Test-AdoConnection -OrgUrl ($adoConfig.env["AZURE_DEVOPS_ORG"] -or $adoConfig.env["AZURE_DEVOPS_ORG_URL"]) -Pat $adoConfig.env["AZURE_DEVOPS_PAT"]
         if ($adoResult.Status -eq "ONLINE") {
             Write-Pass "ADO: ONLINE ($($adoResult.Latency)ms)"
             if ($adoResult.User) {

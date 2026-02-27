@@ -21,6 +21,9 @@ logs/
 *.tmp
 *.temp
 
+# Node.js
+node_modules/
+
 # WOI artifacts (if someone installs WOI here despite recommendations)
 # These directories contain instance-specific files, not framework source
 /.ai/
