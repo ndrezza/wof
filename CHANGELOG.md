@@ -5,6 +5,24 @@ All notable changes to the Workload Orchestration Framework (WOF) will be docume
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.10.0] - 2026-03-29
+
+### Added
+
+- **Orchestration mode selection** in configure wizard (#2998)
+  - New submenu "Orchestration & Roles" with mode selection (Autonomy/Cost/Quality/Other)
+  - Automatic role mapping recommendations using model-capabilities v2.0.0 recommendation engine
+  - Fuzzy model-to-connection matching (exact, date-suffix stripping, prefix matching)
+  - Recommendation display table with color-coded scores
+  - Accept/Modify/Back workflow for applying recommendations
+  - Orchestration mode persisted in `roles.json` (`orchestration_mode`, `orchestration_custom_priority`)
+  - Mode displayed in role mappings view
+
+### Changed
+
+- Configure wizard main menu option `[2]` renamed from "Configure Role Mappings" to "Orchestration & Roles"
+- `roles.json.template` updated to v3.3.0 with orchestration mode fields
+
 ## [3.9.0] - 2026-03-29
 
 ### Added

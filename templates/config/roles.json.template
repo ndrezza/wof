@@ -1,7 +1,9 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "version": "3.2.0",
+  "version": "3.3.0",
   "description": "Role-to-connection mapping. Defines which AI connection, model, and delegation method each role uses.",
+  "orchestration_mode": null,
+  "orchestration_custom_priority": null,
   "_delegation_types": [
     "native  - Direct invocation (orchestrator only, handled by Claude Code)",
     "mcp     - Separate Claude Code process via MCP server (parallel, independent, tool access)",
