@@ -1,0 +1,5 @@
+{
+  "version": "1.0.0",
+  "description": "Tracks installed agents from WOF agent library. Managed by manage-agents.ps1.",
+  "installed": []
+}

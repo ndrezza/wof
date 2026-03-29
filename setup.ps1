@@ -528,6 +528,153 @@ if (-not $SkipTemplates) {
         }
     }
 
+    # Agent library deployment
+    $agentLibrarySource = Join-Path $coreDir "agents\library"
+    $agentCatalogSource = Join-Path $agentLibrarySource "catalog.json"
+    if (Test-Path $agentCatalogSource) {
+        Write-Step "Setting up agent library..."
+
+        # Copy catalog.json to .ai/agents-catalog.json
+        $catalogDest = Join-Path $aiDir "agents-catalog.json"
+        Copy-Item -Path $agentCatalogSource -Destination $catalogDest -Force
+        Write-Host "    Created: .ai/agents-catalog.json" -ForegroundColor Gray
+
+        # Copy full agent library to .ai/agents-library/
+        $agentLibraryDest = Join-Path $aiDir "agents-library"
+        if (Test-Path $agentLibraryDest) {
+            Remove-Item -Path $agentLibraryDest -Recurse -Force
+        }
+        Copy-Item -Path $agentLibrarySource -Destination $agentLibraryDest -Recurse -Force
+        # Remove catalog.json from the library copy (already at .ai/agents-catalog.json)
+        $catalogInLib = Join-Path $agentLibraryDest "catalog.json"
+        if (Test-Path $catalogInLib) { Remove-Item $catalogInLib -Force }
+        $libAgentCount = (Get-ChildItem $agentLibraryDest -Filter "*.md" -Recurse).Count
+        Write-Host "    Created: .ai/agents-library/ ($libAgentCount agents)" -ForegroundColor Gray
+
+        # Create agents-selection.json from template if it doesn't exist
+        $selectionDest = Join-Path $configTarget "agents-selection.json"
+        $selectionTemplate = Join-Path $templatesDir "config\agents-selection.json.template"
+        if (-not (Test-Path $selectionDest)) {
+            if (Test-Path $selectionTemplate) {
+                Copy-Item -Path $selectionTemplate -Destination $selectionDest -Force
+            } else {
+                # Fallback: create inline
+                $selectionJson = @{
+                    version = "1.0.0"
+                    description = "Tracks installed agents from WOF agent library. Managed by manage-agents.ps1."
+                    installed = @()
+                } | ConvertTo-Json -Depth 5
+                Set-Content -Path $selectionDest -Value $selectionJson -Encoding UTF8
+            }
+            Write-Host "    Created: .ai/config/agents-selection.json" -ForegroundColor Gray
+        } else {
+            Write-Host "    Preserved: .ai/config/agents-selection.json (existing)" -ForegroundColor Green
+        }
+
+        # Auto-detect and suggest agents based on project files
+        $catalog = Get-Content $agentCatalogSource -Raw | ConvertFrom-Json
+        $detectedAgents = @()
+
+        foreach ($category in $catalog.categories) {
+            foreach ($agent in $category.agents) {
+                if ($agent.detect -and $agent.detect.files) {
+                    foreach ($markerFile in $agent.detect.files) {
+                        $markerPath = Join-Path $TargetPath $markerFile
+                        # Support glob patterns (e.g., *.csproj)
+                        if ($markerFile -match '\*') {
+                            $matches = Get-ChildItem -Path $TargetPath -Filter $markerFile -ErrorAction SilentlyContinue
+                            if ($matches) {
+                                $detectedAgents += @{
+                                    name = $agent.name
+                                    category = $category.name
+                                    categoryDir = $category.directory
+                                    model = $agent.model
+                                    description = $agent.description
+                                    marker = $markerFile
+                                }
+                                break
+                            }
+                        } elseif (Test-Path $markerPath) {
+                            $detectedAgents += @{
+                                name = $agent.name
+                                category = $category.name
+                                categoryDir = $category.directory
+                                model = $agent.model
+                                description = $agent.description
+                                marker = $markerFile
+                            }
+                            break
+                        }
+                    }
+                }
+            }
+        }
+
+        # De-duplicate (some agents may match multiple markers)
+        $detectedAgents = $detectedAgents | Sort-Object { $_.name } -Unique
+
+        if ($detectedAgents.Count -gt 0) {
+            Write-Host ""
+            Write-Host "    Detected $($detectedAgents.Count) recommended agents based on project files:" -ForegroundColor Cyan
+            foreach ($da in $detectedAgents) {
+                Write-Host "      - $($da.name) ($($da.category)) [matched: $($da.marker)]" -ForegroundColor White
+            }
+            Write-Host ""
+
+            # Install detected agents
+            $agentsClaudeTargetDir = Join-Path $TargetPath ".claude\agents"
+            if (-not (Test-Path $agentsClaudeTargetDir)) {
+                New-Item -ItemType Directory -Path $agentsClaudeTargetDir -Force | Out-Null
+            }
+
+            $installedAgentsList = @()
+            foreach ($da in $detectedAgents) {
+                $agentSourceFile = Join-Path $agentLibraryDest "$($da.categoryDir)\$($da.name).md"
+                $agentDestFile = Join-Path $agentsClaudeTargetDir "$($da.name).md"
+
+                if ((Test-Path $agentDestFile) -and -not $Force) {
+                    Write-Warn "    Skipping (exists): .claude/agents/$($da.name).md"
+                } else {
+                    if (Test-Path $agentSourceFile) {
+                        Copy-Item -Path $agentSourceFile -Destination $agentDestFile -Force
+                        Write-Host "    Installed: .claude/agents/$($da.name).md" -ForegroundColor Green
+                    }
+                }
+
+                $installedAgentsList += @{
+                    name = $da.name
+                    category = $da.category
+                    categoryDir = $da.categoryDir
+                    model = $da.model
+                    installedAt = (Get-Date -Format "yyyy-MM-ddTHH:mm:ssZ")
+                }
+            }
+
+            # Update agents-selection.json with installed agents
+            if ($installedAgentsList.Count -gt 0) {
+                $selection = Get-Content $selectionDest -Raw | ConvertFrom-Json
+                $existingNames = @()
+                if ($selection.installed) {
+                    $existingNames = $selection.installed | ForEach-Object { $_.name }
+                }
+
+                foreach ($agent in $installedAgentsList) {
+                    if ($agent.name -notin $existingNames) {
+                        $selection.installed += [PSCustomObject]$agent
+                    }
+                }
+
+                $selectionJson = $selection | ConvertTo-Json -Depth 5
+                Set-Content -Path $selectionDest -Value $selectionJson -Encoding UTF8
+            }
+
+            Write-Host ""
+            Write-Host "    Use '/wof agents' in Claude Code to manage agents after setup." -ForegroundColor Cyan
+        } else {
+            Write-Host "    No agents auto-detected. Use '/wof agents detect' or '/wof agents catalog' later." -ForegroundColor Gray
+        }
+    }
+
     # Memory templates
     $memoryTemplates = @(
         "memory\architecture.md.template",
@@ -586,7 +733,8 @@ if (-not $SkipTemplates) {
         "config/roles.json",
         "config/ado.json",
         "config/notifications.json",
-        "config/index.json"
+        "config/index.json",
+        "config/agents-selection.json"
     )
 
     foreach ($template in $configTemplates) {
@@ -675,6 +823,7 @@ $userdataPatterns = @(
     "config/ado.json",                # Azure DevOps PAT, org, project, filters (v2)
     "config/finish.json",             # Finish workflow configuration (v2)
     "config/notifications.json",      # D-user notification settings, cached tokens (v2)
+    "config/agents-selection.json",   # Installed agent library selections
     # Legacy config format (YAML/PS1)
     "config/credentials.local.ps1",   # API keys, connection strings - CRITICAL (legacy)
     "config/providers.yaml",          # Customized provider settings (legacy)
@@ -707,6 +856,8 @@ foreach ($file in $installedFiles) {
 # .ai/ metadata files (framework)
 $frameworkFiles += "/.ai/.framework-version"
 $frameworkFiles += "/.ai/.installed-files.json"
+$frameworkFiles += "/.ai/agents-catalog.json"
+$frameworkFiles += "/.ai/agents-library/"
 
 # .claude/ files (framework)
 $claudeDir = Join-Path $TargetPath ".claude"

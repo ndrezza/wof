@@ -5,6 +5,25 @@ All notable changes to the Workload Orchestration Framework (WOF) will be docume
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.8.0] - 2026-03-29
+
+### Added
+
+- **Agent library** with 129 specialized Claude Code subagents across 10 categories (#2990)
+  - Core Development, Language Specialists, Infrastructure, Quality & Security, Data & AI, Developer Experience, Specialized Domains, Business & Product, Meta-Orchestration, Research & Analysis
+  - Machine-readable `catalog.json` with metadata, tags, and 62 auto-detection rules
+  - Sourced from [awesome-claude-code-subagents](https://github.com/VoltAgent/awesome-claude-code-subagents)
+- **Agent management script** (`manage-agents.ps1`) — list, add, remove, detect, and browse agents
+- **`/wof agents` commands** — `agents`, `agents add`, `agents remove`, `agents detect`, `agents catalog`
+- **Auto-detection during setup** — `setup.ps1` scans project files and installs matching agents automatically
+- **`agents-selection.json`** — tracks installed agents per WOI, preserved across sync/updates
+
+### Changed
+
+- `setup.ps1` deploys agent catalog and library to `.ai/` during WOI installation
+- `sync-manifest.json` adds `agents-selection.json` to `always_preserve`
+- Meta-orchestration agents include WOF integration preambles clarifying relationship to WOF's core role system
+
 ## [3.7.0] - 2026-02-27
 
 ### Added

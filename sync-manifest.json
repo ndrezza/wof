@@ -31,6 +31,7 @@
       ".ai/config/credentials.local.ps1",
       ".ai/config/credentials.local.json",
       ".ai/memory/local-dev-setup.md",
+      ".ai/config/agents-selection.json",
       ".ai/.deprecated/*"
     ]
   },
