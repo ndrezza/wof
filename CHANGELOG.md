@@ -5,6 +5,28 @@ All notable changes to the Workload Orchestration Framework (WOF) will be docume
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.9.0] - 2026-03-29
+
+### Added
+
+- **Model capabilities v2.0.0** with numeric scoring and cloud model support (#2992)
+  - 5 cloud models: Claude Opus 4.6, Claude Sonnet 4.6, Claude Haiku 4.5, GPT-4o, GPT-4o-mini
+  - Provider metadata (`provider`, `type`, `model_id`) and pricing data for all 26 models
+  - Numeric 0-10 `scores` on 6 dimensions: coding, reasoning, speed, cost_efficiency, instruction_following, context_handling
+  - Pre-computed `role_fitness` (0-10) for all 5 WOF roles per model
+  - `scoring_dimensions` documentation and `last_updated` tracking
+  - Updated `role_requirements` with `priority_dimensions` and `minimum_scores`; renamed `orchestrator` to `primary`
+- **Model recommendation engine** (`get-model-recommendation.ps1`)
+  - `-Role` / `-RecommendAll` for ranking models by weighted score + role fitness
+  - `-Mode` strategies: autonomy, cost, quality, balanced
+  - `-Provider` / `-AvailableModels` filtering
+  - Diversity bonus for validator/critic provider independence
+  - `-JsonOutput` for machine-readable output (entry point for #2998 wizard)
+
+### Changed
+
+- `sync-manifest.json` adds `data/*.json` to overwrite patterns for WOI sync
+
 ## [3.8.0] - 2026-03-29
 
 ### Added
