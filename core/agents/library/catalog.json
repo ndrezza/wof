@@ -1,0 +1,1866 @@
+{
+  "version": "1.0.0",
+  "description": "WOF Agent Library - Specialized Claude Code subagents for software development",
+  "source": "https://github.com/VoltAgent/awesome-claude-code-subagents",
+  "categories": [
+    {
+      "id": "core-development",
+      "name": "Core Development",
+      "directory": "01-core-development",
+      "description": "Full-stack, frontend, backend, mobile, and API development agents",
+      "agents": [
+        {
+          "name": "api-designer",
+          "file": "01-core-development/api-designer.md",
+          "description": "Use this agent when designing new APIs, creating API specifications, or refactoring existing API architecture for scalability and developer experience. Invoke when you need REST/GraphQL endpoint design, OpenAPI documentation, authentication patterns, or API versioning strategies.",
+          "model": "sonnet",
+          "tags": [
+            "api",
+            "designer"
+          ],
+          "detect": {
+            "files": [
+              "openapi.yaml",
+              "swagger.json",
+              "openapi.json"
+            ]
+          }
+        },
+        {
+          "name": "backend-developer",
+          "file": "01-core-development/backend-developer.md",
+          "description": "Use this agent when building server-side APIs, microservices, and backend systems that require robust architecture, scalability planning, and production-ready implementation.",
+          "model": "sonnet",
+          "tags": [
+            "backend",
+            "developer"
+          ],
+          "detect": {
+            "files": [
+              "package.json",
+              "requirements.txt",
+              "go.mod",
+              "Cargo.toml"
+            ]
+          }
+        },
+        {
+          "name": "electron-pro",
+          "file": "01-core-development/electron-pro.md",
+          "description": "Use this agent when building Electron desktop applications that require native OS integration, cross-platform distribution, security hardening, and performance optimization. Use electron-pro for complete desktop app development from architecture to signed, distributable installers.",
+          "model": "sonnet",
+          "tags": [
+            "electron",
+            "pro"
+          ],
+          "detect": {
+            "files": [
+              "electron.js",
+              "electron-builder.yml"
+            ],
+            "patterns": [
+              "src/main/**",
+              "src/renderer/**"
+            ]
+          }
+        },
+        {
+          "name": "frontend-developer",
+          "file": "01-core-development/frontend-developer.md",
+          "description": "Use when building complete frontend applications across React, Vue, and Angular frameworks requiring multi-framework expertise and full-stack integration.",
+          "model": "sonnet",
+          "tags": [
+            "frontend",
+            "developer"
+          ],
+          "detect": {
+            "files": [
+              "package.json",
+              "tsconfig.json"
+            ],
+            "patterns": [
+              "src/components/**",
+              "src/pages/**"
+            ]
+          }
+        },
+        {
+          "name": "fullstack-developer",
+          "file": "01-core-development/fullstack-developer.md",
+          "description": "Use this agent when you need to build complete features spanning database, API, and frontend layers together as a cohesive unit.",
+          "model": "sonnet",
+          "tags": [
+            "fullstack",
+            "developer"
+          ],
+          "detect": {
+            "files": [
+              "package.json",
+              "docker-compose.yml"
+            ]
+          }
+        },
+        {
+          "name": "graphql-architect",
+          "file": "01-core-development/graphql-architect.md",
+          "description": "Use this agent when designing or evolving GraphQL schemas across microservices, implementing federation architectures, or optimizing query performance in distributed graphs.",
+          "model": "opus",
+          "tags": [
+            "graphql",
+            "architect"
+          ],
+          "detect": {
+            "files": [
+              "schema.graphql",
+              ".graphqlrc.yml",
+              "codegen.yml"
+            ]
+          }
+        },
+        {
+          "name": "microservices-architect",
+          "file": "01-core-development/microservices-architect.md",
+          "description": "Use when designing distributed system architecture, decomposing monolithic applications into independent microservices, or establishing communication patterns between services at scale.",
+          "model": "opus",
+          "tags": [
+            "microservices",
+            "architect"
+          ],
+          "detect": {
+            "files": [
+              "docker-compose.yml",
+              "kubernetes/",
+              "helm/"
+            ]
+          }
+        },
+        {
+          "name": "mobile-developer",
+          "file": "01-core-development/mobile-developer.md",
+          "description": "Use this agent when building cross-platform mobile applications requiring native performance optimization, platform-specific features, and offline-first architecture. Use for React Native and Flutter projects where code sharing must exceed 80% while maintaining iOS and Android native excellence.",
+          "model": "sonnet",
+          "tags": [
+            "mobile",
+            "developer"
+          ],
+          "detect": {
+            "files": [
+              "android/build.gradle",
+              "ios/Podfile",
+              "app.json"
+            ]
+          }
+        },
+        {
+          "name": "ui-designer",
+          "file": "01-core-development/ui-designer.md",
+          "description": "Use this agent when designing visual interfaces, creating design systems, building component libraries, or refining user-facing aesthetics requiring expert visual design, interaction patterns, and accessibility considerations.",
+          "model": "sonnet",
+          "tags": [
+            "ui",
+            "designer"
+          ],
+          "detect": {
+            "files": [
+              "figma.config.js",
+              "tailwind.config.js",
+              "postcss.config.js"
+            ]
+          }
+        },
+        {
+          "name": "websocket-engineer",
+          "file": "01-core-development/websocket-engineer.md",
+          "description": "Use this agent when implementing real-time bidirectional communication features using WebSockets, Socket.IO, or similar technologies at scale.",
+          "model": "sonnet",
+          "tags": [
+            "websocket",
+            "engineer"
+          ],
+          "detect": {
+            "files": [
+              "socket.io",
+              "ws"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "language-specialists",
+      "name": "Language Specialists",
+      "directory": "02-language-specialists",
+      "description": "Framework and language-specific development experts",
+      "agents": [
+        {
+          "name": "angular-architect",
+          "file": "02-language-specialists/angular-architect.md",
+          "description": "Use when architecting enterprise Angular 15+ applications with complex state management, optimizing RxJS patterns, designing micro-frontend systems, or solving performance and scalability challenges in large codebases.",
+          "model": "sonnet",
+          "tags": [
+            "angular",
+            "architect"
+          ],
+          "detect": {
+            "files": [
+              "angular.json",
+              "ng-package.json"
+            ]
+          }
+        },
+        {
+          "name": "cpp-pro",
+          "file": "02-language-specialists/cpp-pro.md",
+          "description": "Use this agent when building high-performance C++ systems requiring modern C++20/23 features, template metaprogramming, or zero-overhead abstractions for systems programming, embedded systems, or performance-critical applications.",
+          "model": "sonnet",
+          "tags": [
+            "cpp",
+            "pro"
+          ],
+          "detect": {
+            "files": [
+              "CMakeLists.txt",
+              "*.cpp",
+              "Makefile"
+            ],
+            "patterns": [
+              "**/*.cpp",
+              "**/*.h"
+            ]
+          }
+        },
+        {
+          "name": "csharp-developer",
+          "file": "02-language-specialists/csharp-developer.md",
+          "description": "Use this agent when building ASP.NET Core web APIs, cloud-native .NET solutions, or modern C# applications requiring async patterns, dependency injection, Entity Framework optimization, and clean architecture.",
+          "model": "sonnet",
+          "tags": [
+            "csharp",
+            "developer"
+          ],
+          "detect": {
+            "files": [
+              "*.csproj",
+              "*.sln"
+            ],
+            "patterns": [
+              "**/*.cs"
+            ]
+          }
+        },
+        {
+          "name": "django-developer",
+          "file": "02-language-specialists/django-developer.md",
+          "description": "Use when building Django 4+ web applications, REST APIs, or modernizing existing Django projects with async views and enterprise patterns.",
+          "model": "sonnet",
+          "tags": [
+            "django",
+            "developer"
+          ],
+          "detect": {
+            "files": [
+              "manage.py",
+              "django/",
+              "settings.py"
+            ]
+          }
+        },
+        {
+          "name": "dotnet-core-expert",
+          "file": "02-language-specialists/dotnet-core-expert.md",
+          "description": "Use when building .NET Core applications requiring cloud-native architecture, high-performance microservices, modern C# patterns, or cross-platform deployment with minimal APIs and advanced ASP.NET Core features.",
+          "model": "sonnet",
+          "tags": [
+            "dotnet",
+            "core",
+            "expert"
+          ],
+          "detect": {
+            "files": [
+              "*.csproj",
+              "global.json",
+              "Directory.Build.props"
+            ],
+            "patterns": [
+              "**/*.cs"
+            ]
+          }
+        },
+        {
+          "name": "dotnet-framework-4.8-expert",
+          "file": "02-language-specialists/dotnet-framework-4.8-expert.md",
+          "description": "Use this agent when working on legacy .NET Framework 4.8 enterprise applications that require maintenance, modernization, or integration with Windows-based infrastructure.",
+          "model": "sonnet",
+          "tags": [
+            "dotnet",
+            "framework",
+            "4.8",
+            "expert"
+          ],
+          "detect": {
+            "files": [
+              "*.csproj",
+              "web.config",
+              "packages.config"
+            ]
+          }
+        },
+        {
+          "name": "elixir-expert",
+          "file": "02-language-specialists/elixir-expert.md",
+          "description": "Use this agent when you need to build fault-tolerant, concurrent systems leveraging OTP patterns, GenServer architectures, and Phoenix framework for real-time applications.",
+          "model": "sonnet",
+          "tags": [
+            "elixir",
+            "expert"
+          ],
+          "detect": {
+            "files": [
+              "mix.exs",
+              "config/config.exs"
+            ]
+          }
+        },
+        {
+          "name": "flutter-expert",
+          "file": "02-language-specialists/flutter-expert.md",
+          "description": "Use when building cross-platform mobile applications with Flutter 3+ that require custom UI implementation, complex state management, native platform integrations, or performance optimization across iOS/Android/Web.",
+          "model": "sonnet",
+          "tags": [
+            "flutter",
+            "expert"
+          ],
+          "detect": {
+            "files": [
+              "pubspec.yaml",
+              "lib/main.dart"
+            ]
+          }
+        },
+        {
+          "name": "golang-pro",
+          "file": "02-language-specialists/golang-pro.md",
+          "description": "Use when building Go applications requiring concurrent programming, high-performance systems, microservices, or cloud-native architectures where idiomatic patterns, error handling excellence, and efficiency are critical.",
+          "model": "sonnet",
+          "tags": [
+            "golang",
+            "pro"
+          ],
+          "detect": {
+            "files": [
+              "go.mod",
+              "go.sum"
+            ],
+            "patterns": [
+              "**/*.go"
+            ]
+          }
+        },
+        {
+          "name": "java-architect",
+          "file": "02-language-specialists/java-architect.md",
+          "description": "Use this agent when designing enterprise Java architectures, migrating Spring Boot applications, or establishing microservices patterns for scalable cloud-native systems.",
+          "model": "sonnet",
+          "tags": [
+            "java",
+            "architect"
+          ],
+          "detect": {
+            "files": [
+              "pom.xml",
+              "build.gradle",
+              "build.gradle.kts"
+            ]
+          }
+        },
+        {
+          "name": "javascript-pro",
+          "file": "02-language-specialists/javascript-pro.md",
+          "description": "Use this agent when you need to build, optimize, or refactor modern JavaScript code for browser, Node.js, or full-stack applications requiring ES2023+ features, async patterns, or performance-critical implementations.",
+          "model": "sonnet",
+          "tags": [
+            "javascript",
+            "pro"
+          ],
+          "detect": {
+            "files": [
+              "package.json",
+              ".eslintrc.js"
+            ],
+            "patterns": [
+              "**/*.js"
+            ]
+          }
+        },
+        {
+          "name": "kotlin-specialist",
+          "file": "02-language-specialists/kotlin-specialist.md",
+          "description": "Use when building Kotlin applications requiring advanced coroutine patterns, multiplatform code sharing, or Android/server-side development with functional programming principles.",
+          "model": "sonnet",
+          "tags": [
+            "kotlin",
+            "specialist"
+          ],
+          "detect": {
+            "files": [
+              "build.gradle.kts"
+            ],
+            "patterns": [
+              "**/*.kt"
+            ]
+          }
+        },
+        {
+          "name": "laravel-specialist",
+          "file": "02-language-specialists/laravel-specialist.md",
+          "description": "Use when building Laravel 10+ applications, architecting Eloquent models with complex relationships, implementing queue systems for async processing, or optimizing API performance.",
+          "model": "sonnet",
+          "tags": [
+            "laravel",
+            "specialist"
+          ],
+          "detect": {
+            "files": [
+              "artisan",
+              "composer.json",
+              "routes/web.php"
+            ]
+          }
+        },
+        {
+          "name": "nextjs-developer",
+          "file": "02-language-specialists/nextjs-developer.md",
+          "description": "Use this agent when building production Next.js 14+ applications that require full-stack development with App Router, server components, and advanced performance optimization. Invoke when you need to architect or implement complete Next.js applications, optimize Core Web Vitals, implement server actions and mutations, or deploy SEO-optimized applications.",
+          "model": "sonnet",
+          "tags": [
+            "nextjs",
+            "developer"
+          ],
+          "detect": {
+            "files": [
+              "next.config.js",
+              "next.config.mjs",
+              "next.config.ts"
+            ]
+          }
+        },
+        {
+          "name": "php-pro",
+          "file": "02-language-specialists/php-pro.md",
+          "description": "Use this agent when working with PHP 8.3+ projects that require strict typing, modern language features, and enterprise framework expertise (Laravel or Symfony). Use when building scalable applications, optimizing performance, or requiring async/Fiber patterns.",
+          "model": "sonnet",
+          "tags": [
+            "php",
+            "pro"
+          ],
+          "detect": {
+            "files": [
+              "composer.json",
+              "index.php"
+            ],
+            "patterns": [
+              "**/*.php"
+            ]
+          }
+        },
+        {
+          "name": "powershell-5.1-expert",
+          "file": "02-language-specialists/powershell-5.1-expert.md",
+          "description": "Use when automating Windows infrastructure tasks requiring PowerShell 5.1 scripts with RSAT modules for Active Directory, DNS, DHCP, GPO management, or when building safe, enterprise-grade automation workflows in legacy .NET Framework environments.",
+          "model": "sonnet",
+          "tags": [
+            "powershell",
+            "5.1",
+            "expert"
+          ],
+          "detect": {
+            "patterns": [
+              "**/*.ps1",
+              "**/*.psm1"
+            ]
+          }
+        },
+        {
+          "name": "powershell-7-expert",
+          "file": "02-language-specialists/powershell-7-expert.md",
+          "description": "Use when building cross-platform cloud automation scripts, Azure infrastructure orchestration, or CI/CD pipelines requiring PowerShell 7+ with modern .NET interop, idempotent operations, and enterprise-grade error handling.",
+          "model": "sonnet",
+          "tags": [
+            "powershell",
+            "7",
+            "expert"
+          ],
+          "detect": {
+            "patterns": [
+              "**/*.ps1",
+              "**/*.psm1"
+            ]
+          }
+        },
+        {
+          "name": "python-pro",
+          "file": "02-language-specialists/python-pro.md",
+          "description": "Use this agent when you need to build type-safe, production-ready Python code for web APIs, system utilities, or complex applications requiring modern async patterns and extensive type coverage.",
+          "model": "sonnet",
+          "tags": [
+            "python",
+            "pro"
+          ],
+          "detect": {
+            "files": [
+              "requirements.txt",
+              "pyproject.toml",
+              "setup.py",
+              "Pipfile"
+            ]
+          }
+        },
+        {
+          "name": "rails-expert",
+          "file": "02-language-specialists/rails-expert.md",
+          "description": "Use when building or modernizing Rails applications requiring full-stack development, Hotwire reactivity, real-time features, or Rails-idiomatic patterns for maximum productivity.",
+          "model": "sonnet",
+          "tags": [
+            "rails",
+            "expert"
+          ],
+          "detect": {
+            "files": [
+              "Gemfile",
+              "config/routes.rb",
+              "Rakefile"
+            ]
+          }
+        },
+        {
+          "name": "react-specialist",
+          "file": "02-language-specialists/react-specialist.md",
+          "description": "Use when optimizing existing React applications for performance, implementing advanced React 18+ features, or solving complex state management and architectural challenges within React codebases.",
+          "model": "sonnet",
+          "tags": [
+            "react",
+            "specialist"
+          ],
+          "detect": {
+            "files": [
+              "package.json"
+            ],
+            "patterns": [
+              "src/**/*.jsx",
+              "src/**/*.tsx"
+            ]
+          }
+        },
+        {
+          "name": "rust-engineer",
+          "file": "02-language-specialists/rust-engineer.md",
+          "description": "Use when building Rust systems where memory safety, ownership patterns, zero-cost abstractions, and performance optimization are critical for systems programming, embedded development, async applications, or high-performance services.",
+          "model": "sonnet",
+          "tags": [
+            "rust",
+            "engineer"
+          ],
+          "detect": {
+            "files": [
+              "Cargo.toml",
+              "Cargo.lock"
+            ],
+            "patterns": [
+              "**/*.rs"
+            ]
+          }
+        },
+        {
+          "name": "spring-boot-engineer",
+          "file": "02-language-specialists/spring-boot-engineer.md",
+          "description": "Use this agent when building enterprise Spring Boot 3+ applications requiring microservices architecture, cloud-native deployment, or reactive programming patterns.",
+          "model": "sonnet",
+          "tags": [
+            "spring",
+            "boot",
+            "engineer"
+          ],
+          "detect": {
+            "files": [
+              "pom.xml",
+              "build.gradle"
+            ],
+            "patterns": [
+              "**/Application.java"
+            ]
+          }
+        },
+        {
+          "name": "sql-pro",
+          "file": "02-language-specialists/sql-pro.md",
+          "description": "Use this agent when you need to optimize complex SQL queries, design efficient database schemas, or solve performance issues across PostgreSQL, MySQL, SQL Server, and Oracle requiring advanced query optimization, index strategies, or data warehouse patterns.",
+          "model": "sonnet",
+          "tags": [
+            "sql",
+            "pro"
+          ],
+          "detect": {
+            "patterns": [
+              "**/*.sql",
+              "migrations/**"
+            ]
+          }
+        },
+        {
+          "name": "swift-expert",
+          "file": "02-language-specialists/swift-expert.md",
+          "description": "Use this agent when building native iOS, macOS, or server-side Swift applications requiring advanced concurrency patterns, protocol-oriented architecture, and Swift-specific optimizations. Invoke for SwiftUI modernization, async/await implementation, actor-based state management, or memory safety concerns.",
+          "model": "sonnet",
+          "tags": [
+            "swift",
+            "expert"
+          ],
+          "detect": {
+            "files": [
+              "Package.swift",
+              "*.xcodeproj"
+            ],
+            "patterns": [
+              "**/*.swift"
+            ]
+          }
+        },
+        {
+          "name": "typescript-pro",
+          "file": "02-language-specialists/typescript-pro.md",
+          "description": "Use when implementing TypeScript code requiring advanced type system patterns, complex generics, type-level programming, or end-to-end type safety across full-stack applications.",
+          "model": "sonnet",
+          "tags": [
+            "typescript",
+            "pro"
+          ],
+          "detect": {
+            "files": [
+              "tsconfig.json"
+            ],
+            "patterns": [
+              "**/*.ts",
+              "**/*.tsx"
+            ]
+          }
+        },
+        {
+          "name": "vue-expert",
+          "file": "02-language-specialists/vue-expert.md",
+          "description": "Use this agent when building Vue 3 applications that require Composition API mastery, reactivity optimization, or Nuxt 3 development with enterprise-scale performance concerns.",
+          "model": "sonnet",
+          "tags": [
+            "vue",
+            "expert"
+          ],
+          "detect": {
+            "files": [
+              "vue.config.js",
+              "nuxt.config.ts"
+            ],
+            "patterns": [
+              "**/*.vue"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "infrastructure",
+      "name": "Infrastructure",
+      "directory": "03-infrastructure",
+      "description": "Cloud, DevOps, networking, and platform engineering agents",
+      "agents": [
+        {
+          "name": "azure-infra-engineer",
+          "file": "03-infrastructure/azure-infra-engineer.md",
+          "description": "Use when designing, deploying, or managing Azure infrastructure with focus on network architecture, Entra ID integration, PowerShell automation, and Bicep IaC.",
+          "model": "sonnet",
+          "tags": [
+            "azure",
+            "infra",
+            "engineer"
+          ],
+          "detect": {
+            "files": [
+              "azure-pipelines.yml",
+              "bicep/",
+              "*.bicep"
+            ]
+          }
+        },
+        {
+          "name": "cloud-architect",
+          "file": "03-infrastructure/cloud-architect.md",
+          "description": "Use this agent when you need to design, evaluate, or optimize cloud infrastructure architecture at scale. Invoke when designing multi-cloud strategies, planning cloud migrations, implementing disaster recovery, optimizing cloud costs, or ensuring security/compliance across cloud platforms.",
+          "model": "opus",
+          "tags": [
+            "cloud",
+            "architect"
+          ],
+          "detect": {
+            "files": [
+              "terraform/",
+              "cloudformation/",
+              "cdk.json"
+            ]
+          }
+        },
+        {
+          "name": "database-administrator",
+          "file": "03-infrastructure/database-administrator.md",
+          "description": "Use this agent when optimizing database performance, implementing high-availability architectures, setting up disaster recovery, or managing database infrastructure for production systems.",
+          "model": "sonnet",
+          "tags": [
+            "database",
+            "administrator"
+          ],
+          "detect": {
+            "patterns": [
+              "**/*.sql",
+              "migrations/**"
+            ]
+          }
+        },
+        {
+          "name": "deployment-engineer",
+          "file": "03-infrastructure/deployment-engineer.md",
+          "description": "Use this agent when designing, building, or optimizing CI/CD pipelines and deployment automation strategies.",
+          "model": "haiku",
+          "tags": [
+            "deployment",
+            "engineer"
+          ],
+          "detect": {
+            "files": [
+              "Dockerfile",
+              "docker-compose.yml",
+              ".github/workflows/"
+            ]
+          }
+        },
+        {
+          "name": "devops-engineer",
+          "file": "03-infrastructure/devops-engineer.md",
+          "description": "Use this agent when building or optimizing infrastructure automation, CI/CD pipelines, containerization strategies, and deployment workflows to accelerate software delivery while maintaining reliability and security.",
+          "model": "sonnet",
+          "tags": [
+            "devops",
+            "engineer"
+          ],
+          "detect": {
+            "files": [
+              "Jenkinsfile",
+              "azure-pipelines.yml",
+              ".github/workflows/",
+              ".gitlab-ci.yml"
+            ]
+          }
+        },
+        {
+          "name": "devops-incident-responder",
+          "file": "03-infrastructure/devops-incident-responder.md",
+          "description": "Use when actively responding to production incidents, diagnosing critical service failures, or conducting incident postmortems to implement permanent fixes and preventative measures.",
+          "model": "sonnet",
+          "tags": [
+            "devops",
+            "incident",
+            "responder"
+          ]
+        },
+        {
+          "name": "docker-expert",
+          "file": "03-infrastructure/docker-expert.md",
+          "description": "Use this agent when you need to build, optimize, or secure Docker container images and orchestration for production environments.",
+          "model": "sonnet",
+          "tags": [
+            "docker",
+            "expert"
+          ],
+          "detect": {
+            "files": [
+              "Dockerfile",
+              "docker-compose.yml",
+              ".dockerignore"
+            ]
+          }
+        },
+        {
+          "name": "incident-responder",
+          "file": "03-infrastructure/incident-responder.md",
+          "description": "Use this agent when an active security breach, service outage, or operational incident requires immediate response, evidence preservation, and coordinated recovery.",
+          "model": "sonnet",
+          "tags": [
+            "incident",
+            "responder"
+          ]
+        },
+        {
+          "name": "kubernetes-specialist",
+          "file": "03-infrastructure/kubernetes-specialist.md",
+          "description": "Use this agent when you need to design, deploy, configure, or troubleshoot Kubernetes clusters and workloads in production environments.",
+          "model": "sonnet",
+          "tags": [
+            "kubernetes",
+            "specialist"
+          ],
+          "detect": {
+            "files": [
+              "k8s/",
+              "kubernetes/",
+              "kustomization.yaml",
+              "helm/"
+            ]
+          }
+        },
+        {
+          "name": "network-engineer",
+          "file": "03-infrastructure/network-engineer.md",
+          "description": "Use this agent when designing, optimizing, or troubleshooting cloud and hybrid network infrastructures, or when addressing network security, performance, or reliability challenges.",
+          "model": "sonnet",
+          "tags": [
+            "network",
+            "engineer"
+          ]
+        },
+        {
+          "name": "platform-engineer",
+          "file": "03-infrastructure/platform-engineer.md",
+          "description": "Use when building or improving internal developer platforms (IDPs), designing self-service infrastructure, or optimizing developer workflows to reduce friction and accelerate delivery. The platform-engineer agent specializes in designing platform architecture, implementing golden paths, and maximizing developer self-service capabilities.",
+          "model": "opus",
+          "tags": [
+            "platform",
+            "engineer"
+          ]
+        },
+        {
+          "name": "security-engineer",
+          "file": "03-infrastructure/security-engineer.md",
+          "description": "Use this agent when implementing comprehensive security solutions across infrastructure, building automated security controls into CI/CD pipelines, or establishing compliance and vulnerability management programs. Invoke for threat modeling, zero-trust architecture design, security automation implementation, and shifting security left into development workflows.",
+          "model": "opus",
+          "tags": [
+            "security",
+            "engineer"
+          ]
+        },
+        {
+          "name": "sre-engineer",
+          "file": "03-infrastructure/sre-engineer.md",
+          "description": "Use this agent when you need to establish or improve system reliability through SLO definition, error budget management, and automation. Invoke when implementing SLI/SLO frameworks, reducing operational toil, designing fault-tolerant systems, conducting chaos engineering, or optimizing incident response processes.",
+          "model": "sonnet",
+          "tags": [
+            "sre",
+            "engineer"
+          ]
+        },
+        {
+          "name": "terraform-engineer",
+          "file": "03-infrastructure/terraform-engineer.md",
+          "description": "Use when building, refactoring, or scaling infrastructure as code using Terraform with focus on multi-cloud deployments, module architecture, and enterprise-grade state management.",
+          "model": "sonnet",
+          "tags": [
+            "terraform",
+            "engineer"
+          ],
+          "detect": {
+            "files": [
+              "main.tf",
+              "variables.tf",
+              "terraform.tfvars"
+            ],
+            "patterns": [
+              "**/*.tf"
+            ]
+          }
+        },
+        {
+          "name": "terragrunt-expert",
+          "file": "03-infrastructure/terragrunt-expert.md",
+          "description": "Expert Terragrunt specialist mastering infrastructure orchestration, DRY configurations, and multi-environment deployments. Masters stacks, units, dependency management, and scalable IaC patterns with focus on code reuse, maintainability, and enterprise-grade infrastructure automation.",
+          "model": "sonnet",
+          "tags": [
+            "terragrunt",
+            "expert"
+          ],
+          "detect": {
+            "files": [
+              "terragrunt.hcl"
+            ],
+            "patterns": [
+              "**/*.hcl"
+            ]
+          }
+        },
+        {
+          "name": "windows-infra-admin",
+          "file": "03-infrastructure/windows-infra-admin.md",
+          "description": "Use when managing Windows Server infrastructure, Active Directory, DNS, DHCP, and Group Policy configurations, especially for enterprise-scale deployments requiring safe automation and compliance validation.",
+          "model": "sonnet",
+          "tags": [
+            "windows",
+            "infra",
+            "admin"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "quality-security",
+      "name": "Quality & Security",
+      "directory": "04-quality-security",
+      "description": "Testing, code review, security auditing, and compliance agents",
+      "agents": [
+        {
+          "name": "accessibility-tester",
+          "file": "04-quality-security/accessibility-tester.md",
+          "description": "Use this agent when you need comprehensive accessibility testing, WCAG compliance verification, or assessment of assistive technology support.",
+          "model": "haiku",
+          "tags": [
+            "accessibility",
+            "tester"
+          ]
+        },
+        {
+          "name": "ad-security-reviewer",
+          "file": "04-quality-security/ad-security-reviewer.md",
+          "description": "Use this agent when you need to audit Active Directory security posture, evaluate privilege escalation risks, review identity delegation patterns, or assess authentication protocol hardening.",
+          "model": "opus",
+          "tags": [
+            "ad",
+            "security",
+            "reviewer"
+          ]
+        },
+        {
+          "name": "architect-reviewer",
+          "file": "04-quality-security/architect-reviewer.md",
+          "description": "Use this agent when you need to evaluate system design decisions, architectural patterns, and technology choices at the macro level.",
+          "model": "opus",
+          "tags": [
+            "architect",
+            "reviewer"
+          ]
+        },
+        {
+          "name": "chaos-engineer",
+          "file": "04-quality-security/chaos-engineer.md",
+          "description": "Use this agent when you need to design and execute controlled failure experiments, validate system resilience before incidents occur, or conduct game day exercises to test your team's incident response capabilities.",
+          "model": "sonnet",
+          "tags": [
+            "chaos",
+            "engineer"
+          ]
+        },
+        {
+          "name": "code-reviewer",
+          "file": "04-quality-security/code-reviewer.md",
+          "description": "Use this agent when you need to conduct comprehensive code reviews focusing on code quality, security vulnerabilities, and best practices.",
+          "model": "opus",
+          "tags": [
+            "code",
+            "reviewer"
+          ],
+          "detect": {
+            "files": [
+              ".eslintrc.js",
+              ".prettierrc",
+              "pyproject.toml"
+            ]
+          }
+        },
+        {
+          "name": "compliance-auditor",
+          "file": "04-quality-security/compliance-auditor.md",
+          "description": "Use this agent when you need to achieve regulatory compliance, implement compliance controls, or prepare for audits across frameworks like GDPR, HIPAA, PCI DSS, SOC 2, and ISO standards.",
+          "model": "opus",
+          "tags": [
+            "compliance",
+            "auditor"
+          ]
+        },
+        {
+          "name": "debugger",
+          "file": "04-quality-security/debugger.md",
+          "description": "Use this agent when you need to diagnose and fix bugs, identify root causes of failures, or analyze error logs and stack traces to resolve issues.",
+          "model": "sonnet",
+          "tags": [
+            "debugger"
+          ]
+        },
+        {
+          "name": "error-detective",
+          "file": "04-quality-security/error-detective.md",
+          "description": "Use this agent when you need to diagnose why errors are occurring in your system, correlate errors across services, identify root causes, and prevent future failures.",
+          "model": "sonnet",
+          "tags": [
+            "error",
+            "detective"
+          ]
+        },
+        {
+          "name": "penetration-tester",
+          "file": "04-quality-security/penetration-tester.md",
+          "description": "Use this agent when you need to conduct authorized security penetration tests to identify real vulnerabilities through active exploitation and validation. Use penetration-tester for offensive security testing, vulnerability exploitation, and hands-on risk demonstration.",
+          "model": "opus",
+          "tags": [
+            "penetration",
+            "tester"
+          ]
+        },
+        {
+          "name": "performance-engineer",
+          "file": "04-quality-security/performance-engineer.md",
+          "description": "Use this agent when you need to identify and eliminate performance bottlenecks in applications, databases, or infrastructure systems, and when baseline performance metrics need improvement.",
+          "model": "sonnet",
+          "tags": [
+            "performance",
+            "engineer"
+          ]
+        },
+        {
+          "name": "powershell-security-hardening",
+          "file": "04-quality-security/powershell-security-hardening.md",
+          "description": "Use this agent when you need to harden PowerShell automation, secure remoting configuration, enforce least-privilege design, or align scripts with enterprise security baselines and compliance frameworks.",
+          "model": "opus",
+          "tags": [
+            "powershell",
+            "security",
+            "hardening"
+          ]
+        },
+        {
+          "name": "qa-expert",
+          "file": "04-quality-security/qa-expert.md",
+          "description": "Use this agent when you need comprehensive quality assurance strategy, test planning across the entire development cycle, or quality metrics analysis to improve overall software quality.",
+          "model": "sonnet",
+          "tags": [
+            "qa",
+            "expert"
+          ]
+        },
+        {
+          "name": "security-auditor",
+          "file": "04-quality-security/security-auditor.md",
+          "description": "Use this agent when conducting comprehensive security audits, compliance assessments, or risk evaluations across systems, infrastructure, and processes. Invoke when you need systematic vulnerability analysis, compliance gap identification, or evidence-based security findings.",
+          "model": "opus",
+          "tags": [
+            "security",
+            "auditor"
+          ],
+          "detect": {
+            "files": [
+              ".snyk",
+              "security.md",
+              "SECURITY.md"
+            ]
+          }
+        },
+        {
+          "name": "test-automator",
+          "file": "04-quality-security/test-automator.md",
+          "description": "Use this agent when you need to build, implement, or enhance automated test frameworks, create test scripts, or integrate testing into CI/CD pipelines.",
+          "model": "sonnet",
+          "tags": [
+            "test",
+            "automator"
+          ],
+          "detect": {
+            "files": [
+              "jest.config.js",
+              "cypress.config.js",
+              "playwright.config.ts",
+              "pytest.ini"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "data-ai",
+      "name": "Data & AI",
+      "directory": "05-data-ai",
+      "description": "Data science, machine learning, and AI engineering agents",
+      "agents": [
+        {
+          "name": "ai-engineer",
+          "file": "05-data-ai/ai-engineer.md",
+          "description": "Use this agent when architecting, implementing, or optimizing end-to-end AI systems—from model selection and training pipelines to production deployment and monitoring.",
+          "model": "opus",
+          "tags": [
+            "ai",
+            "engineer"
+          ],
+          "detect": {
+            "files": [
+              "requirements.txt"
+            ],
+            "patterns": [
+              "**/*.ipynb",
+              "models/**"
+            ]
+          }
+        },
+        {
+          "name": "data-analyst",
+          "file": "05-data-ai/data-analyst.md",
+          "description": "Use when you need to extract insights from business data, create dashboards and reports, or perform statistical analysis to support decision-making.",
+          "model": "haiku",
+          "tags": [
+            "data",
+            "analyst"
+          ]
+        },
+        {
+          "name": "data-engineer",
+          "file": "05-data-ai/data-engineer.md",
+          "description": "Use this agent when you need to design, build, or optimize data pipelines, ETL/ELT processes, and data infrastructure. Invoke when designing data platforms, implementing pipeline orchestration, handling data quality issues, or optimizing data processing costs.",
+          "model": "sonnet",
+          "tags": [
+            "data",
+            "engineer"
+          ],
+          "detect": {
+            "files": [
+              "dbt_project.yml",
+              "airflow/"
+            ],
+            "patterns": [
+              "**/*.sql"
+            ]
+          }
+        },
+        {
+          "name": "data-scientist",
+          "file": "05-data-ai/data-scientist.md",
+          "description": "Use this agent when you need to analyze data patterns, build predictive models, or extract statistical insights from datasets. Invoke this agent for exploratory analysis, hypothesis testing, machine learning model development, and translating findings into business recommendations.",
+          "model": "sonnet",
+          "tags": [
+            "data",
+            "scientist"
+          ],
+          "detect": {
+            "files": [
+              "requirements.txt",
+              "notebooks/"
+            ],
+            "patterns": [
+              "**/*.ipynb"
+            ]
+          }
+        },
+        {
+          "name": "database-optimizer",
+          "file": "05-data-ai/database-optimizer.md",
+          "description": "Use this agent when you need to analyze slow queries, optimize database performance across multiple systems, or implement indexing strategies to improve query execution.",
+          "model": "sonnet",
+          "tags": [
+            "database",
+            "optimizer"
+          ]
+        },
+        {
+          "name": "llm-architect",
+          "file": "05-data-ai/llm-architect.md",
+          "description": "Use when designing LLM systems for production, implementing fine-tuning or RAG architectures, optimizing inference serving infrastructure, or managing multi-model deployments.",
+          "model": "opus",
+          "tags": [
+            "llm",
+            "architect"
+          ]
+        },
+        {
+          "name": "machine-learning-engineer",
+          "file": "05-data-ai/machine-learning-engineer.md",
+          "description": "Use this agent when you need to deploy, optimize, or serve machine learning models at scale in production environments.",
+          "model": "sonnet",
+          "tags": [
+            "machine",
+            "learning",
+            "engineer"
+          ]
+        },
+        {
+          "name": "ml-engineer",
+          "file": "05-data-ai/ml-engineer.md",
+          "description": "Use this agent when building production ML systems requiring model training pipelines, model serving infrastructure, performance optimization, and automated retraining.",
+          "model": "sonnet",
+          "tags": [
+            "ml",
+            "engineer"
+          ]
+        },
+        {
+          "name": "mlops-engineer",
+          "file": "05-data-ai/mlops-engineer.md",
+          "description": "Use this agent when you need to design and implement ML infrastructure, set up CI/CD for machine learning models, establish model versioning systems, or optimize ML platforms for reliability and automation. Invoke this agent to build production-grade experiment tracking, implement automated training pipelines, configure GPU resource orchestration, and establish operational monitoring for ML systems.",
+          "model": "sonnet",
+          "tags": [
+            "mlops",
+            "engineer"
+          ]
+        },
+        {
+          "name": "nlp-engineer",
+          "file": "05-data-ai/nlp-engineer.md",
+          "description": "Use when building production NLP systems, implementing text processing pipelines, developing language models, or solving domain-specific NLP tasks like named entity recognition, sentiment analysis, or machine translation.",
+          "model": "sonnet",
+          "tags": [
+            "nlp",
+            "engineer"
+          ]
+        },
+        {
+          "name": "postgres-pro",
+          "file": "05-data-ai/postgres-pro.md",
+          "description": "Use when you need to optimize PostgreSQL performance, design high-availability replication, or troubleshoot database issues at scale. Invoke this agent for query optimization, configuration tuning, replication setup, backup strategies, and mastering advanced PostgreSQL features for enterprise deployments.",
+          "model": "sonnet",
+          "tags": [
+            "postgres",
+            "pro"
+          ],
+          "detect": {
+            "files": [
+              "docker-compose.yml"
+            ],
+            "patterns": [
+              "**/*.sql"
+            ]
+          }
+        },
+        {
+          "name": "prompt-engineer",
+          "file": "05-data-ai/prompt-engineer.md",
+          "description": "Use this agent when you need to design, optimize, test, or evaluate prompts for large language models in production systems.",
+          "model": "sonnet",
+          "tags": [
+            "prompt",
+            "engineer"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "developer-experience",
+      "name": "Developer Experience",
+      "directory": "06-developer-experience",
+      "description": "Build systems, documentation, tooling, and workflow agents",
+      "agents": [
+        {
+          "name": "build-engineer",
+          "file": "06-developer-experience/build-engineer.md",
+          "description": "Use this agent when you need to optimize build performance, reduce compilation times, or scale build systems across growing teams.",
+          "model": "haiku",
+          "tags": [
+            "build",
+            "engineer"
+          ],
+          "detect": {
+            "files": [
+              "webpack.config.js",
+              "rollup.config.js",
+              "vite.config.ts",
+              "esbuild.config.js"
+            ]
+          }
+        },
+        {
+          "name": "cli-developer",
+          "file": "06-developer-experience/cli-developer.md",
+          "description": "Use this agent when building command-line tools and terminal applications that require intuitive command design, cross-platform compatibility, and optimized developer experience.",
+          "model": "sonnet",
+          "tags": [
+            "cli",
+            "developer"
+          ],
+          "detect": {
+            "files": [
+              "bin/",
+              "cli.js"
+            ]
+          }
+        },
+        {
+          "name": "dependency-manager",
+          "file": "06-developer-experience/dependency-manager.md",
+          "description": "Use this agent when you need to audit dependencies for vulnerabilities, resolve version conflicts, optimize bundle sizes, or implement automated dependency updates.",
+          "model": "haiku",
+          "tags": [
+            "dependency",
+            "manager"
+          ]
+        },
+        {
+          "name": "documentation-engineer",
+          "file": "06-developer-experience/documentation-engineer.md",
+          "description": "Use this agent when you need to create, architect, or overhaul comprehensive documentation systems including API docs, tutorials, guides, and developer-friendly content that keeps pace with code changes.",
+          "model": "haiku",
+          "tags": [
+            "documentation",
+            "engineer"
+          ],
+          "detect": {
+            "files": [
+              "docs/",
+              "mkdocs.yml",
+              "docusaurus.config.js"
+            ]
+          }
+        },
+        {
+          "name": "dx-optimizer",
+          "file": "06-developer-experience/dx-optimizer.md",
+          "description": "Use this agent when optimizing the complete developer workflow including build times, feedback loops, testing efficiency, and developer satisfaction metrics across the entire development environment.",
+          "model": "sonnet",
+          "tags": [
+            "dx",
+            "optimizer"
+          ]
+        },
+        {
+          "name": "git-workflow-manager",
+          "file": "06-developer-experience/git-workflow-manager.md",
+          "description": "Use this agent when you need to design, establish, or optimize Git workflows, branching strategies, and merge management for a project or team.",
+          "model": "haiku",
+          "tags": [
+            "git",
+            "workflow",
+            "manager"
+          ],
+          "detect": {
+            "files": [
+              ".gitignore",
+              ".gitattributes"
+            ]
+          }
+        },
+        {
+          "name": "legacy-modernizer",
+          "file": "06-developer-experience/legacy-modernizer.md",
+          "description": "Use this agent when modernizing legacy systems that need incremental migration strategies, technical debt reduction, and risk mitigation while maintaining business continuity.",
+          "model": "sonnet",
+          "tags": [
+            "legacy",
+            "modernizer"
+          ]
+        },
+        {
+          "name": "mcp-developer",
+          "file": "06-developer-experience/mcp-developer.md",
+          "description": "Use this agent when you need to build, debug, or optimize Model Context Protocol (MCP) servers and clients that connect AI systems to external tools and data sources.",
+          "model": "sonnet",
+          "tags": [
+            "mcp",
+            "developer"
+          ],
+          "detect": {
+            "files": [
+              ".mcp.json",
+              "mcp.json"
+            ]
+          }
+        },
+        {
+          "name": "powershell-module-architect",
+          "file": "06-developer-experience/powershell-module-architect.md",
+          "description": "Use this agent when architecting and refactoring PowerShell modules, designing profile systems, or creating cross-version compatible automation libraries. Invoke it for module design reviews, profile optimization, packaging reusable code, and standardizing function structure across teams.",
+          "model": "sonnet",
+          "tags": [
+            "powershell",
+            "module",
+            "architect"
+          ],
+          "detect": {
+            "files": [
+              "*.psd1",
+              "*.psm1"
+            ]
+          }
+        },
+        {
+          "name": "powershell-ui-architect",
+          "file": "06-developer-experience/powershell-ui-architect.md",
+          "description": "Use when designing or building desktop graphical interfaces (WinForms, WPF, Metro-style dashboards) or terminal user interfaces (TUIs) for PowerShell automation tools that need clean separation between UI and business logic.",
+          "model": "sonnet",
+          "tags": [
+            "powershell",
+            "ui",
+            "architect"
+          ]
+        },
+        {
+          "name": "refactoring-specialist",
+          "file": "06-developer-experience/refactoring-specialist.md",
+          "description": "Use when you need to transform poorly structured, complex, or duplicated code into clean, maintainable systems while preserving all existing behavior.",
+          "model": "sonnet",
+          "tags": [
+            "refactoring",
+            "specialist"
+          ]
+        },
+        {
+          "name": "slack-expert",
+          "file": "06-developer-experience/slack-expert.md",
+          "description": "Use this agent when developing Slack applications, implementing Slack API integrations, or reviewing Slack bot code for security and best practices.",
+          "model": "sonnet",
+          "tags": [
+            "slack",
+            "expert"
+          ]
+        },
+        {
+          "name": "tooling-engineer",
+          "file": "06-developer-experience/tooling-engineer.md",
+          "description": "Use this agent when you need to build or enhance developer tools including CLIs, code generators, build tools, and IDE extensions.",
+          "model": "sonnet",
+          "tags": [
+            "tooling",
+            "engineer"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "specialized-domains",
+      "name": "Specialized Domains",
+      "directory": "07-specialized-domains",
+      "description": "Fintech, gaming, IoT, blockchain, and other domain specialists",
+      "agents": [
+        {
+          "name": "api-documenter",
+          "file": "07-specialized-domains/api-documenter.md",
+          "description": "Use this agent when creating or improving API documentation, writing OpenAPI specifications, building interactive documentation portals, or generating code examples for APIs.",
+          "model": "haiku",
+          "tags": [
+            "api",
+            "documenter"
+          ]
+        },
+        {
+          "name": "blockchain-developer",
+          "file": "07-specialized-domains/blockchain-developer.md",
+          "description": "Use this agent when building smart contracts, DApps, and blockchain protocols that require expertise in Solidity, gas optimization, security auditing, and Web3 integration.",
+          "model": "sonnet",
+          "tags": [
+            "blockchain",
+            "developer"
+          ],
+          "detect": {
+            "files": [
+              "hardhat.config.js",
+              "truffle-config.js"
+            ],
+            "patterns": [
+              "**/*.sol"
+            ]
+          }
+        },
+        {
+          "name": "embedded-systems",
+          "file": "07-specialized-domains/embedded-systems.md",
+          "description": "Use when developing firmware for resource-constrained microcontrollers, implementing RTOS-based applications, or optimizing real-time systems where hardware constraints, latency guarantees, and reliability are critical.",
+          "model": "sonnet",
+          "tags": [
+            "embedded",
+            "systems"
+          ]
+        },
+        {
+          "name": "fintech-engineer",
+          "file": "07-specialized-domains/fintech-engineer.md",
+          "description": "Use when building payment systems, financial integrations, or compliance-heavy financial applications that require secure transaction processing, regulatory adherence, and high transaction accuracy.",
+          "model": "opus",
+          "tags": [
+            "fintech",
+            "engineer"
+          ]
+        },
+        {
+          "name": "game-developer",
+          "file": "07-specialized-domains/game-developer.md",
+          "description": "Use this agent when implementing game systems, optimizing graphics rendering, building multiplayer networking, or developing gameplay mechanics for games targeting specific platforms.",
+          "model": "sonnet",
+          "tags": [
+            "game",
+            "developer"
+          ],
+          "detect": {
+            "files": [
+              "unity/",
+              "godot/",
+              "unreal/"
+            ]
+          }
+        },
+        {
+          "name": "iot-engineer",
+          "file": "07-specialized-domains/iot-engineer.md",
+          "description": "Use when designing and deploying IoT solutions requiring expertise in device management, edge computing, cloud integration, and handling challenges like massive device scale, complex connectivity scenarios, or real-time data pipelines.",
+          "model": "sonnet",
+          "tags": [
+            "iot",
+            "engineer"
+          ]
+        },
+        {
+          "name": "m365-admin",
+          "file": "07-specialized-domains/m365-admin.md",
+          "description": "Use when automating Microsoft 365 administrative tasks including Exchange Online mailbox provisioning, Teams collaboration management, SharePoint site configuration, license lifecycle management, and Graph API-driven identity automation.",
+          "model": "sonnet",
+          "tags": [
+            "m365",
+            "admin"
+          ],
+          "detect": {
+            "files": [
+              ".mcp.json"
+            ]
+          }
+        },
+        {
+          "name": "mobile-app-developer",
+          "file": "07-specialized-domains/mobile-app-developer.md",
+          "description": "Use this agent when developing iOS and Android mobile applications with focus on native or cross-platform implementation, performance optimization, and platform-specific user experience.",
+          "model": "sonnet",
+          "tags": [
+            "mobile",
+            "app",
+            "developer"
+          ]
+        },
+        {
+          "name": "payment-integration",
+          "file": "07-specialized-domains/payment-integration.md",
+          "description": "Use this agent when implementing payment systems, integrating payment gateways, or handling financial transactions that require PCI compliance, fraud prevention, and secure transaction processing.",
+          "model": "opus",
+          "tags": [
+            "payment",
+            "integration"
+          ]
+        },
+        {
+          "name": "quant-analyst",
+          "file": "07-specialized-domains/quant-analyst.md",
+          "description": "Use this agent when you need to develop quantitative trading strategies, build financial models with rigorous mathematical foundations, or conduct advanced risk analytics for derivatives and portfolios. Invoke this agent for statistical arbitrage strategy development, backtesting with historical validation, derivatives pricing models, and portfolio risk assessment.",
+          "model": "opus",
+          "tags": [
+            "quant",
+            "analyst"
+          ]
+        },
+        {
+          "name": "risk-manager",
+          "file": "07-specialized-domains/risk-manager.md",
+          "description": "Use this agent when you need to identify, quantify, and mitigate enterprise-level risks across financial, operational, regulatory, and strategic domains. Invoke this agent when you need to assess risk exposure, design control frameworks, validate risk models, or ensure regulatory compliance.",
+          "model": "opus",
+          "tags": [
+            "risk",
+            "manager"
+          ]
+        },
+        {
+          "name": "seo-specialist",
+          "file": "07-specialized-domains/seo-specialist.md",
+          "description": "Use this agent when you need comprehensive SEO optimization encompassing technical audits, keyword strategy, content optimization, and search rankings improvement.",
+          "model": "haiku",
+          "tags": [
+            "seo",
+            "specialist"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "business-product",
+      "name": "Business & Product",
+      "directory": "08-business-product",
+      "description": "Product management, project management, and business analysis agents",
+      "agents": [
+        {
+          "name": "business-analyst",
+          "file": "08-business-product/business-analyst.md",
+          "description": "Use when analyzing business processes, gathering requirements from stakeholders, or identifying process improvement opportunities to drive operational efficiency and measurable business value.",
+          "model": "sonnet",
+          "tags": [
+            "business",
+            "analyst"
+          ]
+        },
+        {
+          "name": "content-marketer",
+          "file": "08-business-product/content-marketer.md",
+          "description": "Use this agent when you need to develop comprehensive content strategies, create SEO-optimized marketing content, or execute multi-channel content campaigns to drive engagement and conversions. Invoke this agent for content planning, content creation, audience analysis, and measuring content ROI.",
+          "model": "haiku",
+          "tags": [
+            "content",
+            "marketer"
+          ]
+        },
+        {
+          "name": "customer-success-manager",
+          "file": "08-business-product/customer-success-manager.md",
+          "description": "Use this agent when you need to assess customer health, develop retention strategies, identify upsell opportunities, or maximize customer lifetime value. Invoke this agent for account health analysis, churn prevention, product adoption optimization, and customer success planning.",
+          "model": "sonnet",
+          "tags": [
+            "customer",
+            "success",
+            "manager"
+          ]
+        },
+        {
+          "name": "legal-advisor",
+          "file": "08-business-product/legal-advisor.md",
+          "description": "Use this agent when you need to draft contracts, review compliance requirements, develop IP protection strategies, or assess legal risks for technology businesses.",
+          "model": "sonnet",
+          "tags": [
+            "legal",
+            "advisor"
+          ]
+        },
+        {
+          "name": "product-manager",
+          "file": "08-business-product/product-manager.md",
+          "description": "Use this agent when you need to make product strategy decisions, prioritize features, or define roadmap plans based on user needs and business goals.",
+          "model": "haiku",
+          "tags": [
+            "product",
+            "manager"
+          ]
+        },
+        {
+          "name": "project-manager",
+          "file": "08-business-product/project-manager.md",
+          "description": "Use this agent when you need to establish project plans, track execution progress, manage risks, control budget/schedule, and coordinate stakeholders across complex initiatives.",
+          "model": "haiku",
+          "tags": [
+            "project",
+            "manager"
+          ]
+        },
+        {
+          "name": "sales-engineer",
+          "file": "08-business-product/sales-engineer.md",
+          "description": "Use this agent when you need to conduct technical pre-sales activities including solution architecture, proof-of-concept development, and technical demonstrations for complex sales deals.",
+          "model": "sonnet",
+          "tags": [
+            "sales",
+            "engineer"
+          ]
+        },
+        {
+          "name": "scrum-master",
+          "file": "08-business-product/scrum-master.md",
+          "description": "Use when teams need facilitation, process optimization, velocity improvement, or agile ceremony management—especially for sprint planning, retrospectives, impediment removal, and scaling agile practices across multiple teams.",
+          "model": "haiku",
+          "tags": [
+            "scrum",
+            "master"
+          ]
+        },
+        {
+          "name": "technical-writer",
+          "file": "08-business-product/technical-writer.md",
+          "description": "Use this agent when you need to create, improve, or maintain technical documentation including API references, user guides, SDK documentation, and getting-started guides.",
+          "model": "haiku",
+          "tags": [
+            "technical",
+            "writer"
+          ]
+        },
+        {
+          "name": "ux-researcher",
+          "file": "08-business-product/ux-researcher.md",
+          "description": "Use this agent when you need to conduct user research, analyze user behavior, or generate actionable insights to validate design decisions and uncover user needs. Invoke when you need usability testing, user interviews, survey design, analytics interpretation, persona development, or competitive research to inform product strategy.",
+          "model": "sonnet",
+          "tags": [
+            "ux",
+            "researcher"
+          ]
+        },
+        {
+          "name": "wordpress-master",
+          "file": "08-business-product/wordpress-master.md",
+          "description": "Use this agent when you need to architect, optimize, or troubleshoot WordPress implementations ranging from custom theme/plugin development to enterprise-scale multisite platforms. Invoke this agent for performance optimization, security hardening, headless WordPress APIs, WooCommerce solutions, and scaling WordPress to handle millions of visitors.",
+          "model": "sonnet",
+          "tags": [
+            "wordpress",
+            "master"
+          ],
+          "detect": {
+            "files": [
+              "wp-config.php",
+              "wp-content/"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "meta-orchestration",
+      "name": "Meta-Orchestration",
+      "directory": "09-meta-orchestration",
+      "description": "Agent coordination, context management, and workflow orchestration",
+      "agents": [
+        {
+          "name": "agent-organizer",
+          "file": "09-meta-orchestration/agent-organizer.md",
+          "description": "Use when assembling and optimizing multi-agent teams to execute complex projects that require careful task decomposition, agent capability matching, and workflow coordination.",
+          "model": "sonnet",
+          "tags": [
+            "agent",
+            "organizer"
+          ]
+        },
+        {
+          "name": "context-manager",
+          "file": "09-meta-orchestration/context-manager.md",
+          "description": "Use for managing shared state, information retrieval, and data synchronization when multiple agents need coordinated access to context and metadata.",
+          "model": "sonnet",
+          "tags": [
+            "context",
+            "manager"
+          ]
+        },
+        {
+          "name": "error-coordinator",
+          "file": "09-meta-orchestration/error-coordinator.md",
+          "description": "Use this agent when distributed system errors occur and need coordinated handling across multiple components, or when you need to implement comprehensive error recovery strategies with automated failure detection and cascade prevention.",
+          "model": "sonnet",
+          "tags": [
+            "error",
+            "coordinator"
+          ]
+        },
+        {
+          "name": "it-ops-orchestrator",
+          "file": "09-meta-orchestration/it-ops-orchestrator.md",
+          "description": "Use for orchestrating complex IT operations tasks that span multiple domains (PowerShell automation, .NET development, infrastructure management, Azure, M365) by intelligently routing work to specialized agents.",
+          "model": "sonnet",
+          "tags": [
+            "it",
+            "ops",
+            "orchestrator"
+          ]
+        },
+        {
+          "name": "knowledge-synthesizer",
+          "file": "09-meta-orchestration/knowledge-synthesizer.md",
+          "description": "Use when you need to extract actionable patterns from agent interactions, synthesize insights across multiple workflows, and enable organizational learning from collective experience.",
+          "model": "sonnet",
+          "tags": [
+            "knowledge",
+            "synthesizer"
+          ]
+        },
+        {
+          "name": "multi-agent-coordinator",
+          "file": "09-meta-orchestration/multi-agent-coordinator.md",
+          "description": "Use when coordinating multiple concurrent agents that need to communicate, share state, synchronize work, and handle distributed failures across a system.",
+          "model": "opus",
+          "tags": [
+            "multi",
+            "agent",
+            "coordinator"
+          ]
+        },
+        {
+          "name": "performance-monitor",
+          "file": "09-meta-orchestration/performance-monitor.md",
+          "description": "Use when establishing observability infrastructure to track system metrics, detect performance anomalies, and optimize resource usage across multi-agent environments.",
+          "model": "haiku",
+          "tags": [
+            "performance",
+            "monitor"
+          ]
+        },
+        {
+          "name": "task-distributor",
+          "file": "09-meta-orchestration/task-distributor.md",
+          "description": "Use when distributing tasks across multiple agents or workers, managing queues, and balancing workloads to maximize throughput while respecting priorities and deadlines.",
+          "model": "haiku",
+          "tags": [
+            "task",
+            "distributor"
+          ]
+        },
+        {
+          "name": "workflow-orchestrator",
+          "file": "09-meta-orchestration/workflow-orchestrator.md",
+          "description": "Use this agent when you need to design, implement, or optimize complex business process workflows with multiple states, error handling, and transaction management.",
+          "model": "opus",
+          "tags": [
+            "workflow",
+            "orchestrator"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "research-analysis",
+      "name": "Research & Analysis",
+      "directory": "10-research-analysis",
+      "description": "Market research, competitive analysis, and data research agents",
+      "agents": [
+        {
+          "name": "competitive-analyst",
+          "file": "10-research-analysis/competitive-analyst.md",
+          "description": "Use when you need to analyze direct and indirect competitors, benchmark against market leaders, or develop strategies to strengthen competitive positioning and market advantage.",
+          "model": "haiku",
+          "tags": [
+            "competitive",
+            "analyst"
+          ]
+        },
+        {
+          "name": "data-researcher",
+          "file": "10-research-analysis/data-researcher.md",
+          "description": "Use this agent when you need to discover, collect, and validate data from multiple sources to fuel analysis and decision-making. Invoke this agent for identifying data sources, gathering raw datasets, performing quality checks, and preparing data for downstream analysis or modeling.",
+          "model": "haiku",
+          "tags": [
+            "data",
+            "researcher"
+          ]
+        },
+        {
+          "name": "market-researcher",
+          "file": "10-research-analysis/market-researcher.md",
+          "description": "Use this agent when you need to analyze markets, understand consumer behavior, assess competitive landscapes, and size opportunities to inform business strategy and market entry decisions.",
+          "model": "haiku",
+          "tags": [
+            "market",
+            "researcher"
+          ]
+        },
+        {
+          "name": "research-analyst",
+          "file": "10-research-analysis/research-analyst.md",
+          "description": "Use this agent when you need comprehensive research across multiple sources with synthesis of findings into actionable insights, trend identification, and detailed reporting.",
+          "model": "sonnet",
+          "tags": [
+            "research",
+            "analyst"
+          ]
+        },
+        {
+          "name": "search-specialist",
+          "file": "10-research-analysis/search-specialist.md",
+          "description": "Use when you need to find specific information across multiple sources using advanced search strategies, query optimization, and targeted information retrieval. Invoke this agent when the priority is locating precise, relevant results efficiently rather than analyzing or synthesizing content.",
+          "model": "haiku",
+          "tags": [
+            "search",
+            "specialist"
+          ]
+        },
+        {
+          "name": "trend-analyst",
+          "file": "10-research-analysis/trend-analyst.md",
+          "description": "Use when analyzing emerging patterns, predicting industry shifts, or developing future scenarios to inform strategic planning and competitive positioning.",
+          "model": "haiku",
+          "tags": [
+            "trend",
+            "analyst"
+          ]
+        }
+      ]
+    }
+  ]
+}

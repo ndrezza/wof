@@ -1,6 +1,6 @@
 ---
 name: wof
-description: Workload Orchestration Framework commands - start, update, status, configure, model, route, remove
+description: Workload Orchestration Framework commands - start, update, status, configure, model, route, agents, remove
 allowed-tools:
   - Bash
   - Read
@@ -44,6 +44,12 @@ Parse the arguments to determine which WOF command to run.
 | `finish` | Complete current work: update WI, bump version, commit, push |
 | `finish --work-item <id>` | Finish with specific work item ID |
 | `configure finish` | Configure finish workflow behavior |
+| `agents` | List installed agents from library |
+| `agents add <name>` | Install an agent from the library |
+| `agents remove <name>` | Remove an installed agent |
+| `agents detect` | Auto-detect and suggest agents for project |
+| `agents catalog` | Browse full agent catalog |
+| `agents catalog <category>` | Browse agents in a specific category |
 | `remove` | Remove WOF scripts (preserves config & memory) |
 | `help` | Show this help information |
 
@@ -1496,6 +1502,70 @@ When you need user input and cannot proceed:
 When user provides requested information:
 1. **Remove "Blocked" tag**
 2. **Resume work** on the item
+
+---
+
+### If arguments contain "agents"
+
+Manage the WOF agent library - specialized Claude Code subagents for different domains.
+
+The agent library contains ~129 agents across 10 categories (Core Development, Language Specialists, Infrastructure, Quality & Security, Data & AI, Developer Experience, Specialized Domains, Business & Product, Meta-Orchestration, Research & Analysis).
+
+#### agents (no subcommand) / agents list
+
+List installed agents:
+```bash
+powershell -ExecutionPolicy Bypass -File "./.ai/scripts/manage-agents.ps1" -Action "list"
+```
+
+Show the output to the user. If no agents are installed, suggest running detect or browsing the catalog.
+
+#### agents add <name>
+
+Install an agent from the library:
+```bash
+powershell -ExecutionPolicy Bypass -File "./.ai/scripts/manage-agents.ps1" -Action "add" -AgentName "<name>"
+```
+
+After installation, inform the user the agent is now available as a Claude Code subagent in `.claude/agents/`.
+
+#### agents remove <name>
+
+Remove an installed agent:
+```bash
+powershell -ExecutionPolicy Bypass -File "./.ai/scripts/manage-agents.ps1" -Action "remove" -AgentName "<name>"
+```
+
+Confirm the removal to the user.
+
+#### agents detect
+
+Auto-detect recommended agents based on project tech stack:
+```bash
+powershell -ExecutionPolicy Bypass -File "./.ai/scripts/manage-agents.ps1" -Action "detect"
+```
+
+Show the detected agents to the user. Ask if they want to install all, some, or none using AskUserQuestion.
+
+If the user wants to install agents from the detected list, run the add command for each selected agent.
+
+#### agents catalog / agents catalog <category>
+
+Browse the full agent catalog:
+```bash
+powershell -ExecutionPolicy Bypass -File "./.ai/scripts/manage-agents.ps1" -Action "catalog"
+```
+
+With category filter:
+```bash
+powershell -ExecutionPolicy Bypass -File "./.ai/scripts/manage-agents.ps1" -Action "catalog" -Category "<category>"
+```
+
+Valid category names: core-development, language-specialists, infrastructure, quality-security, data-ai, developer-experience, specialized-domains, business-product, meta-orchestration, research-analysis.
+
+Show the catalog output. If the user wants to install an agent, use the add command.
+
+---
 
 ## Important Notes
 
