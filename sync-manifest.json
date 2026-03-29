@@ -33,7 +33,9 @@
       ".ai/config/credentials.local.json",
       ".ai/memory/local-dev-setup.md",
       ".ai/config/agents-selection.json",
-      ".ai/.deprecated/*"
+      ".ai/.deprecated/*",
+      ".ai/state/prompt-history.json",
+      ".ai/state/learned-rules.json"
     ]
   },
 

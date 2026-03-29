@@ -5,6 +5,20 @@ All notable changes to the Workload Orchestration Framework (WOF) will be docume
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.11.0] - 2026-03-29
+
+### Added
+
+- **Prompt pattern detection & rule enforcement** (#3024)
+  - `capture-prompt.ps1` — silently logs user prompt summaries to `.ai/state/prompt-history.json`
+  - `manage-learned-rules.ps1` — CRUD for learned rules in `.ai/state/learned-rules.json` + CLAUDE.md injection
+  - `/wof patterns` command group: `patterns`, `patterns analyze`, `patterns remove <id>`, `patterns clear`
+  - AI-driven pattern analysis: orchestrator reads prompt history and detects recurring behavioral themes
+  - User approval workflow via AskUserQuestion (multi-select) before enforcing any rules
+  - CLAUDE.md injection with `<!-- LEARNED-PATTERNS-START/END -->` markers (same proven pattern as WOI-SECTION)
+  - WOI-SECTION prompt capture instruction for automatic history building
+  - State files preserved across sync (`prompt-history.json`, `learned-rules.json`)
+
 ## [3.10.0] - 2026-03-29
 
 ### Added
