@@ -211,6 +211,12 @@ function Load-Configuration {
                     }
                 }
             }
+            if ($rolesJson.orchestration_mode) {
+                $config.orchestration_mode = $rolesJson.orchestration_mode
+            }
+            if ($rolesJson.orchestration_custom_priority) {
+                $config.orchestration_custom_priority = $rolesJson.orchestration_custom_priority
+            }
         } catch {
             Write-Warn "Could not parse roles.json: $_"
         }
@@ -311,12 +317,18 @@ function Save-Credentials {
 }
 
 function Save-Roles {
-    param([hashtable]$Roles)
+    param(
+        [hashtable]$Roles,
+        [string]$OrchestrationMode,
+        [string]$OrchestrationCustomPriority
+    )
 
     $rolesObj = [ordered]@{
         '$schema' = "https://json-schema.org/draft/2020-12/schema"
         version = "2.0.0"
         description = "Role-to-connection mapping. Defines which AI connection each role uses."
+        orchestration_mode = $OrchestrationMode
+        orchestration_custom_priority = $OrchestrationCustomPriority
         roles = [ordered]@{}
     }
 
@@ -523,6 +535,14 @@ function Show-RoleMappings {
 
     Write-Host ""
     Write-Host "Current Role Mappings:" -ForegroundColor Cyan
+
+    if ($Config.orchestration_mode) {
+        Write-Host "  Orchestration Mode: $($Config.orchestration_mode)" -ForegroundColor Gray
+        if ($Config.orchestration_custom_priority) {
+            Write-Host "  Custom Priority:    $($Config.orchestration_custom_priority)" -ForegroundColor DarkGray
+        }
+    }
+
     Write-Host ""
 
     $roleOrder = @("primary", "worker-heavy", "worker-lite", "validator", "critic")
@@ -833,6 +853,327 @@ function Test-SingleConnection {
         Write-Warn "AUTH ERROR - $($testResult.Error)"
     } else {
         Write-Fail "OFFLINE - $($testResult.Error)"
+    }
+}
+
+# ============================================================================
+# Model Capability Matching
+# ============================================================================
+
+function Find-CapabilityMatch {
+    param(
+        [string]$ModelName,
+        [hashtable]$CapabilityModels
+    )
+
+    if (-not $ModelName) { return $null }
+
+    # Exact match
+    if ($CapabilityModels.ContainsKey($ModelName)) { return $ModelName }
+
+    # Strip date suffix (e.g., claude-opus-4-5-20251101 -> claude-opus-4-5)
+    $stripped = $ModelName -replace '-\d{8,}$', ''
+    if ($stripped -ne $ModelName -and $CapabilityModels.ContainsKey($stripped)) { return $stripped }
+
+    # Longest prefix match (minimum 8 chars)
+    $bestMatch = $null
+    $bestLen = 0
+    foreach ($capName in $CapabilityModels.Keys) {
+        $minLen = [math]::Min($stripped.Length, $capName.Length)
+        $prefixLen = 0
+        for ($i = 0; $i -lt $minLen; $i++) {
+            if ($stripped[$i] -eq $capName[$i]) { $prefixLen++ } else { break }
+        }
+        if ($prefixLen -ge 8 -and $prefixLen -gt $bestLen) {
+            $bestLen = $prefixLen
+            $bestMatch = $capName
+        }
+    }
+
+    return $bestMatch
+}
+
+function Get-AvailableModelMap {
+    param(
+        [hashtable]$Config,
+        [hashtable]$CapabilityModels
+    )
+
+    $modelMap = @{}  # capabilityModelName -> connectionId
+
+    # Check ai1-ai10 connections
+    1..10 | ForEach-Object {
+        $id = "ai$_"
+        $endpointKey = "AI${_}_ENDPOINT"
+        if ($Config.credentials[$endpointKey] -and $Config.connections.ContainsKey($id)) {
+            $conn = $Config.connections[$id]
+            if ($conn.default_model) {
+                $capMatch = Find-CapabilityMatch -ModelName $conn.default_model -CapabilityModels $CapabilityModels
+                if ($capMatch -and -not $modelMap.ContainsKey($capMatch)) {
+                    $modelMap[$capMatch] = $id
+                }
+            }
+        }
+    }
+
+    # Add native connection (Claude Code's built-in model)
+    # Native maps to the best available Claude model
+    $nativeModels = @('claude-opus-4-6', 'claude-sonnet-4-6')
+    foreach ($nm in $nativeModels) {
+        if ($CapabilityModels.ContainsKey($nm) -and -not $modelMap.ContainsKey($nm)) {
+            $modelMap[$nm] = 'native'
+        }
+    }
+
+    return $modelMap
+}
+
+function Show-RecommendationResult {
+    param(
+        [hashtable]$Assignments,
+        [hashtable]$ModelToConnection,
+        [hashtable]$Config,
+        [string]$Mode
+    )
+
+    Write-Host ""
+    Write-Host "Recommended Role Mapping (mode: $($Mode.ToUpper()))" -ForegroundColor Cyan
+    Write-Host ""
+
+    $roleOrder = @("primary", "worker-heavy", "worker-lite", "validator", "critic")
+
+    Write-Host "+---------------+----------+---------------------------+-------+" -ForegroundColor Gray
+    Write-Host "| Role          | Conn     | Model                     | Score |" -ForegroundColor Gray
+    Write-Host "+---------------+----------+---------------------------+-------+" -ForegroundColor Gray
+
+    foreach ($roleName in $roleOrder) {
+        if (-not $Assignments.ContainsKey($roleName)) { continue }
+        $a = $Assignments[$roleName]
+        $modelName = $a.model
+        $score = $a.score
+        $connId = if ($ModelToConnection.ContainsKey($modelName)) { $ModelToConnection[$modelName] } else { "?" }
+
+        # Get alias
+        $connDisplay = $connId.ToUpper().PadRight(8)
+        $roleDisplay = $roleName.PadRight(13)
+        $modelDisplay = $modelName.PadRight(25)
+        $scoreDisplay = $score.ToString('0.00').PadLeft(5)
+
+        $scoreColor = if ($score -ge 8.0) { 'Green' } elseif ($score -ge 6.0) { 'Yellow' } else { 'White' }
+
+        Write-Host "| $roleDisplay | $connDisplay | $modelDisplay | " -NoNewline
+        Write-Host $scoreDisplay -ForegroundColor $scoreColor -NoNewline
+        Write-Host " |"
+    }
+
+    Write-Host "+---------------+----------+---------------------------+-------+" -ForegroundColor Gray
+    Write-Host ""
+}
+
+function Show-OrchestrationModeMenu {
+    param([hashtable]$Config)
+
+    while ($true) {
+        Write-Host ""
+        Write-Host "--- Select Orchestration Mode ---" -ForegroundColor Cyan
+        Write-Host ""
+
+        if ($Config.orchestration_mode) {
+            Write-Host "  Current mode: $($Config.orchestration_mode)" -ForegroundColor Gray
+            Write-Host ""
+        }
+
+        Write-Host "  [1] Autonomy" -ForegroundColor White
+        Write-Host "      Prioritize reasoning and instruction following for maximum agent independence" -ForegroundColor DarkGray
+        Write-Host "  [2] Cost" -ForegroundColor White
+        Write-Host "      Prioritize cost efficiency and speed, prefer local models where possible" -ForegroundColor DarkGray
+        Write-Host "  [3] Quality" -ForegroundColor White
+        Write-Host "      Prioritize coding and reasoning quality above all else" -ForegroundColor DarkGray
+        Write-Host "  [4] Other" -ForegroundColor White
+        Write-Host "      Balanced mode with custom priority description" -ForegroundColor DarkGray
+        Write-Host ""
+        Write-Host "  [B] Back" -ForegroundColor Yellow
+        Write-Host ""
+        Write-Host "Choice: " -NoNewline
+        $choice = Read-Host
+
+        if ($choice -eq "B" -or $choice -eq "b") {
+            return $Config
+        }
+
+        $mode = switch ($choice) {
+            "1" { "autonomy" }
+            "2" { "cost" }
+            "3" { "quality" }
+            "4" { "balanced" }
+            default { $null }
+        }
+
+        if (-not $mode) { continue }
+
+        # Handle "Other" - prompt for custom priority
+        $customPriority = $null
+        if ($choice -eq "4") {
+            Write-Host ""
+            Write-Host "Describe your priority (e.g., 'fast iteration with good code quality'): " -NoNewline
+            $customPriority = Read-Host
+            if (-not $customPriority) { $customPriority = "balanced" }
+        }
+
+        # Load model capabilities
+        $capFile = Join-Path $PSScriptRoot '..\data\model-capabilities.json'
+        if (-not (Test-Path $capFile)) {
+            Write-Warn "Model capabilities file not found. Cannot generate recommendations."
+            Write-Host "Press Enter to continue..." -NoNewline
+            Read-Host
+            continue
+        }
+
+        $capData = Get-Content $capFile -Raw | ConvertFrom-Json
+        $capModels = @{}
+        $capData.models.PSObject.Properties | ForEach-Object {
+            $capModels[$_.Name] = $_.Value
+        }
+
+        # Build model-to-connection map
+        $modelMap = Get-AvailableModelMap -Config $Config -CapabilityModels $capModels
+
+        if ($modelMap.Count -eq 0) {
+            Write-Warn "No connections could be matched to known models."
+            Write-Warn "Configure AI connections first, or use manual role mapping."
+            Write-Host ""
+            Write-Host "Press Enter to continue..." -NoNewline
+            Read-Host
+            continue
+        }
+
+        $availableModelNames = @($modelMap.Keys)
+
+        # Call recommendation engine
+        $recScript = Join-Path $PSScriptRoot "get-model-recommendation.ps1"
+        if (-not (Test-Path $recScript)) {
+            Write-Warn "Recommendation engine not found."
+            Write-Host "Press Enter to continue..." -NoNewline
+            Read-Host
+            continue
+        }
+
+        Write-Check "Generating recommendations for '$mode' mode..."
+        Write-Host ""
+
+        try {
+            $jsonResult = & $recScript -RecommendAll -Mode $mode -AvailableModels $availableModelNames -JsonOutput
+            $recommendation = $jsonResult | ConvertFrom-Json
+        } catch {
+            Write-Warn "Recommendation engine failed: $_"
+            Write-Host "Press Enter to continue..." -NoNewline
+            Read-Host
+            continue
+        }
+
+        # Convert assignments from PSObject to hashtable
+        $assignments = @{}
+        $recommendation.assignments.PSObject.Properties | ForEach-Object {
+            $assignments[$_.Name] = @{
+                model        = $_.Value.model
+                score        = $_.Value.score
+                role_fitness = $_.Value.role_fitness
+                provider     = $_.Value.provider
+                type         = $_.Value.type
+            }
+        }
+
+        # Display recommendation table
+        Show-RecommendationResult -Assignments $assignments -ModelToConnection $modelMap -Config $Config -Mode $mode
+
+        if ($customPriority) {
+            Write-Host "  Custom priority: $customPriority" -ForegroundColor Gray
+            Write-Host ""
+        }
+
+        Write-Host "  [A] Accept recommendations" -ForegroundColor Green
+        Write-Host "  [M] Modify manually (open role mapping)"
+        Write-Host "  [B] Back"
+        Write-Host ""
+        Write-Host "Choice: " -NoNewline
+        $actionChoice = Read-Host
+
+        switch ($actionChoice.ToUpper()) {
+            "A" {
+                # Apply recommendations to roles (skip primary - always native)
+                $nonPrimaryRoles = @("worker-heavy", "worker-lite", "validator", "critic")
+                foreach ($roleName in $nonPrimaryRoles) {
+                    if ($assignments.ContainsKey($roleName)) {
+                        $recModel = $assignments[$roleName].model
+                        $connId = if ($modelMap.ContainsKey($recModel)) { $modelMap[$recModel] } else { "native" }
+
+                        # Ensure role exists
+                        if (-not $Config.roles.ContainsKey($roleName)) {
+                            $Config.roles[$roleName] = @{
+                                description = "WOF $roleName agent"
+                            }
+                        }
+
+                        # Update connection and model, preserve other fields
+                        $Config.roles[$roleName].connection = $connId
+                        $Config.roles[$roleName].model = $recModel
+                    }
+                }
+
+                # Persist orchestration mode
+                $Config.orchestration_mode = $mode
+                $Config.orchestration_custom_priority = $customPriority
+
+                $script:hasUnsavedChanges = $true
+                Write-Pass "Orchestration mode set to '$mode'. Role mappings updated."
+                Write-Host ""
+                Write-Host "Press Enter to continue..." -NoNewline
+                Read-Host
+                return $Config
+            }
+            "M" {
+                # Set mode metadata even when going to manual
+                $Config.orchestration_mode = $mode
+                $Config.orchestration_custom_priority = $customPriority
+                $script:hasUnsavedChanges = $true
+                $Config = Show-RoleMenu -Config $Config
+                return $Config
+            }
+            default {
+                # Back - loop again
+            }
+        }
+    }
+}
+
+function Show-OrchestrationSubMenu {
+    param([hashtable]$Config)
+
+    while ($true) {
+        Write-Host ""
+        Write-Host "--- Orchestration & Roles ---" -ForegroundColor Cyan
+        Write-Host ""
+
+        # Show current state
+        if ($Config.orchestration_mode) {
+            Write-Host "  Current orchestration mode: $($Config.orchestration_mode)" -ForegroundColor Gray
+        }
+        Show-RoleMappings -Config $Config
+
+        Write-Host "  [1] Select Orchestration Mode (recommended)"
+        Write-Host "  [2] Manual Role Mapping"
+        Write-Host ""
+        Write-Host "  [B] Back to main menu" -ForegroundColor Yellow
+        Write-Host ""
+        Write-Host "Choice: " -NoNewline
+        $choice = Read-Host
+
+        switch ($choice.ToUpper()) {
+            "1" { $Config = Show-OrchestrationModeMenu -Config $Config }
+            "2" { $Config = Show-RoleMenu -Config $Config }
+            "B" { return $Config }
+            default { }
+        }
     }
 }
 
@@ -1772,7 +2113,7 @@ function Save-Configuration {
 
         Save-Connections -Connections $Config.connections
         Save-Credentials -Credentials $Config.credentials
-        Save-Roles -Roles $Config.roles
+        Save-Roles -Roles $Config.roles -OrchestrationMode $Config.orchestration_mode -OrchestrationCustomPriority $Config.orchestration_custom_priority
 
         # Save MCP configuration if provided
         if ($Mcp -and $Mcp.servers.Count -gt 0) {
@@ -1829,7 +2170,7 @@ function Show-MainMenu {
         Write-Host ""
         Write-Host "Main Menu:" -ForegroundColor Cyan
         Write-Host "  [1] Manage AI Connections"
-        Write-Host "  [2] Configure Role Mappings"
+        Write-Host "  [2] Orchestration & Roles"
         Write-Host "  [3] Configure Azure DevOps MCP"
         Write-Host "  [4] Configure Notifications"
         Write-Host ""
@@ -1847,7 +2188,7 @@ function Show-MainMenu {
 
         switch ($choice.ToUpper()) {
             "1" { $Config = Show-ConnectionsMenu -Config $Config }
-            "2" { $Config = Show-RoleMenu -Config $Config }
+            "2" { $Config = Show-OrchestrationSubMenu -Config $Config }
             "3" { $Mcp = Show-AdoMenu -Mcp $Mcp }
             "4" { $Mcp = Show-NotificationMenu -Mcp $Mcp }
             "5" {
