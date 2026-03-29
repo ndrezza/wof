@@ -1,299 +1,898 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "Model capabilities database for WOF role recommendations",
+  "last_updated": "2026-03-29",
   "_instructions": [
     "This file caches known model capabilities to avoid repeated web searches.",
     "When a model is not found here, WOF will search the web for capabilities.",
     "Contributions welcome - add models you've tested!"
   ],
+  "scoring_dimensions": {
+    "coding": "Ability to generate, refactor, and understand code across languages",
+    "reasoning": "Logical reasoning, chain-of-thought, complex problem solving",
+    "speed": "Inference speed relative to other models (higher = faster)",
+    "cost_efficiency": "Value per token — local models score high, expensive cloud models score low",
+    "instruction_following": "Accuracy in following structured prompts, multi-step instructions, and role constraints",
+    "context_handling": "Effective use of large context windows without degradation"
+  },
   "models": {
+    "claude-opus-4-6": {
+      "family": "Claude",
+      "parameters": "N/A",
+      "context_window": 1000000,
+      "max_output": 32000,
+      "provider": "anthropic",
+      "type": "cloud",
+      "model_id": "claude-opus-4-6",
+      "pricing": { "input_per_mtok": 5, "output_per_mtok": 25 },
+      "strengths": ["code generation", "reasoning", "instruction following", "large context", "agentic coding"],
+      "weaknesses": ["expensive", "slower than smaller models"],
+      "ram_required_gb": null,
+      "recommended_roles": ["primary", "worker-heavy"],
+      "quality_tier": "very-high",
+      "speed_tier": "medium",
+      "notes": "Anthropic's most capable model. Best-in-class for complex coding and agentic tasks.",
+      "scores": {
+        "coding": 10,
+        "reasoning": 10,
+        "speed": 5,
+        "cost_efficiency": 3,
+        "instruction_following": 10,
+        "context_handling": 10
+      },
+      "role_fitness": {
+        "primary": 10,
+        "worker-heavy": 10,
+        "worker-lite": 3,
+        "validator": 9,
+        "critic": 8
+      }
+    },
+    "claude-sonnet-4-6": {
+      "family": "Claude",
+      "parameters": "N/A",
+      "context_window": 200000,
+      "max_output": 16000,
+      "provider": "anthropic",
+      "type": "cloud",
+      "model_id": "claude-sonnet-4-6",
+      "pricing": { "input_per_mtok": 3, "output_per_mtok": 15 },
+      "strengths": ["code generation", "reasoning", "balanced speed/quality", "instruction following"],
+      "weaknesses": ["less capable than Opus for hardest tasks"],
+      "ram_required_gb": null,
+      "recommended_roles": ["worker-heavy", "validator", "critic"],
+      "quality_tier": "very-high",
+      "speed_tier": "fast",
+      "notes": "Excellent balance of capability and speed. Strong coding and verification.",
+      "scores": {
+        "coding": 9,
+        "reasoning": 9,
+        "speed": 7,
+        "cost_efficiency": 5,
+        "instruction_following": 9,
+        "context_handling": 9
+      },
+      "role_fitness": {
+        "primary": 8,
+        "worker-heavy": 9,
+        "worker-lite": 5,
+        "validator": 9,
+        "critic": 9
+      }
+    },
+    "claude-haiku-4-5": {
+      "family": "Claude",
+      "parameters": "N/A",
+      "context_window": 200000,
+      "max_output": 8192,
+      "provider": "anthropic",
+      "type": "cloud",
+      "model_id": "claude-haiku-4-5",
+      "pricing": { "input_per_mtok": 1, "output_per_mtok": 5 },
+      "strengths": ["fast", "cost-effective", "good coding", "large context"],
+      "weaknesses": ["less capable for complex reasoning"],
+      "ram_required_gb": null,
+      "recommended_roles": ["worker-lite", "critic"],
+      "quality_tier": "high",
+      "speed_tier": "very-fast",
+      "notes": "Fast and affordable. Good for lightweight tasks and quick verification.",
+      "scores": {
+        "coding": 7,
+        "reasoning": 7,
+        "speed": 9,
+        "cost_efficiency": 7,
+        "instruction_following": 8,
+        "context_handling": 8
+      },
+      "role_fitness": {
+        "primary": 5,
+        "worker-heavy": 6,
+        "worker-lite": 8,
+        "validator": 6,
+        "critic": 7
+      }
+    },
+    "gpt-4o": {
+      "family": "GPT",
+      "parameters": "N/A",
+      "context_window": 128000,
+      "max_output": 16384,
+      "provider": "openai",
+      "type": "cloud",
+      "model_id": "gpt-4o",
+      "pricing": { "input_per_mtok": 2.5, "output_per_mtok": 10 },
+      "strengths": ["code generation", "reasoning", "multi-modal", "instruction following"],
+      "weaknesses": ["less capable than Claude Opus for agentic tasks"],
+      "ram_required_gb": null,
+      "recommended_roles": ["worker-heavy", "validator"],
+      "quality_tier": "very-high",
+      "speed_tier": "fast",
+      "notes": "OpenAI's flagship model. Strong all-around coding and reasoning.",
+      "scores": {
+        "coding": 8,
+        "reasoning": 8,
+        "speed": 7,
+        "cost_efficiency": 5,
+        "instruction_following": 8,
+        "context_handling": 8
+      },
+      "role_fitness": {
+        "primary": 7,
+        "worker-heavy": 8,
+        "worker-lite": 5,
+        "validator": 7,
+        "critic": 7
+      }
+    },
+    "gpt-4o-mini": {
+      "family": "GPT",
+      "parameters": "N/A",
+      "context_window": 128000,
+      "max_output": 16384,
+      "provider": "openai",
+      "type": "cloud",
+      "model_id": "gpt-4o-mini",
+      "pricing": { "input_per_mtok": 0.15, "output_per_mtok": 0.6 },
+      "strengths": ["fast", "very cost-effective", "good instruction following"],
+      "weaknesses": ["less capable for complex tasks"],
+      "ram_required_gb": null,
+      "recommended_roles": ["worker-lite", "critic"],
+      "quality_tier": "medium",
+      "speed_tier": "very-fast",
+      "notes": "Extremely cost-effective for simple tasks. Good for high-volume lightweight work.",
+      "scores": {
+        "coding": 6,
+        "reasoning": 6,
+        "speed": 8,
+        "cost_efficiency": 9,
+        "instruction_following": 7,
+        "context_handling": 7
+      },
+      "role_fitness": {
+        "primary": 4,
+        "worker-heavy": 5,
+        "worker-lite": 7,
+        "validator": 5,
+        "critic": 6
+      }
+    },
     "qwen3-coder:30b": {
       "family": "Qwen",
       "parameters": "30.5B",
       "context_window": 65536,
+      "max_output": 8192,
+      "provider": "ollama",
+      "type": "local",
+      "model_id": "qwen3-coder:30b",
+      "pricing": null,
       "strengths": ["code generation", "code completion", "refactoring", "large context"],
       "weaknesses": ["slower inference", "high RAM"],
       "ram_required_gb": 20,
       "recommended_roles": ["worker-heavy"],
       "quality_tier": "high",
       "speed_tier": "slow",
-      "notes": "Excellent for complex code tasks. MoE architecture."
+      "notes": "Excellent for complex code tasks. MoE architecture.",
+      "scores": {
+        "coding": 8,
+        "reasoning": 7,
+        "speed": 3,
+        "cost_efficiency": 6,
+        "instruction_following": 7,
+        "context_handling": 7
+      },
+      "role_fitness": {
+        "primary": 5,
+        "worker-heavy": 8,
+        "worker-lite": 3,
+        "validator": 5,
+        "critic": 5
+      }
     },
     "qwen2.5-coder:32b": {
       "family": "Qwen",
       "parameters": "32B",
       "context_window": 131072,
+      "max_output": 8192,
+      "provider": "ollama",
+      "type": "local",
+      "model_id": "qwen2.5-coder:32b",
+      "pricing": null,
       "strengths": ["code generation", "128k context", "instruction following"],
       "weaknesses": ["slower inference", "high RAM"],
       "ram_required_gb": 22,
-      "recommended_roles": ["worker-heavy", "orchestrator"],
+      "recommended_roles": ["worker-heavy", "primary"],
       "quality_tier": "high",
       "speed_tier": "slow",
-      "notes": "Large context window, good for orchestration."
+      "notes": "Large context window, good for orchestration.",
+      "scores": {
+        "coding": 8,
+        "reasoning": 7,
+        "speed": 3,
+        "cost_efficiency": 6,
+        "instruction_following": 7,
+        "context_handling": 9
+      },
+      "role_fitness": {
+        "primary": 6,
+        "worker-heavy": 8,
+        "worker-lite": 3,
+        "validator": 6,
+        "critic": 5
+      }
     },
     "qwen2.5-coder:14b": {
       "family": "Qwen",
       "parameters": "14B",
       "context_window": 131072,
+      "max_output": 8192,
+      "provider": "ollama",
+      "type": "local",
+      "model_id": "qwen2.5-coder:14b",
+      "pricing": null,
       "strengths": ["code generation", "balanced speed/quality"],
       "weaknesses": ["less capable than 32B"],
       "ram_required_gb": 10,
       "recommended_roles": ["worker-heavy", "validator"],
       "quality_tier": "high",
       "speed_tier": "medium",
-      "notes": "Good balance of speed and capability."
+      "notes": "Good balance of speed and capability.",
+      "scores": {
+        "coding": 7,
+        "reasoning": 6,
+        "speed": 5,
+        "cost_efficiency": 7,
+        "instruction_following": 6,
+        "context_handling": 9
+      },
+      "role_fitness": {
+        "primary": 5,
+        "worker-heavy": 7,
+        "worker-lite": 5,
+        "validator": 6,
+        "critic": 5
+      }
     },
     "qwen2.5-coder:7b": {
       "family": "Qwen",
       "parameters": "7B",
       "context_window": 131072,
+      "max_output": 8192,
+      "provider": "ollama",
+      "type": "local",
+      "model_id": "qwen2.5-coder:7b",
+      "pricing": null,
       "strengths": ["fast", "code completion", "low RAM"],
       "weaknesses": ["less capable for complex tasks"],
       "ram_required_gb": 5,
       "recommended_roles": ["worker-lite"],
       "quality_tier": "medium",
       "speed_tier": "fast",
-      "notes": "Fast and efficient for simple tasks."
+      "notes": "Fast and efficient for simple tasks.",
+      "scores": {
+        "coding": 5,
+        "reasoning": 4,
+        "speed": 7,
+        "cost_efficiency": 8,
+        "instruction_following": 5,
+        "context_handling": 9
+      },
+      "role_fitness": {
+        "primary": 3,
+        "worker-heavy": 4,
+        "worker-lite": 7,
+        "validator": 3,
+        "critic": 3
+      }
     },
     "deepseek-r1:8b": {
       "family": "DeepSeek",
       "parameters": "8B",
       "context_window": 65536,
+      "max_output": 8192,
+      "provider": "ollama",
+      "type": "local",
+      "model_id": "deepseek-r1:8b",
+      "pricing": null,
       "strengths": ["reasoning", "chain-of-thought", "verification"],
       "weaknesses": ["verbose output", "slower due to thinking"],
       "ram_required_gb": 5,
       "recommended_roles": ["validator", "critic"],
       "quality_tier": "high",
       "speed_tier": "medium",
-      "notes": "Strong reasoning capabilities, good for verification tasks."
+      "notes": "Strong reasoning capabilities, good for verification tasks.",
+      "scores": {
+        "coding": 5,
+        "reasoning": 7,
+        "speed": 5,
+        "cost_efficiency": 8,
+        "instruction_following": 6,
+        "context_handling": 6
+      },
+      "role_fitness": {
+        "primary": 4,
+        "worker-heavy": 4,
+        "worker-lite": 4,
+        "validator": 7,
+        "critic": 7
+      }
     },
     "deepseek-r1:14b": {
       "family": "DeepSeek",
       "parameters": "14B",
       "context_window": 65536,
+      "max_output": 8192,
+      "provider": "ollama",
+      "type": "local",
+      "model_id": "deepseek-r1:14b",
+      "pricing": null,
       "strengths": ["reasoning", "chain-of-thought", "complex analysis"],
       "weaknesses": ["verbose output", "higher RAM"],
       "ram_required_gb": 10,
-      "recommended_roles": ["validator", "critic", "orchestrator"],
+      "recommended_roles": ["validator", "critic", "primary"],
       "quality_tier": "high",
       "speed_tier": "medium",
-      "notes": "Excellent reasoning for complex validation."
+      "notes": "Excellent reasoning for complex validation.",
+      "scores": {
+        "coding": 6,
+        "reasoning": 8,
+        "speed": 4,
+        "cost_efficiency": 7,
+        "instruction_following": 7,
+        "context_handling": 6
+      },
+      "role_fitness": {
+        "primary": 6,
+        "worker-heavy": 5,
+        "worker-lite": 3,
+        "validator": 8,
+        "critic": 7
+      }
     },
     "deepseek-r1:32b": {
       "family": "DeepSeek",
       "parameters": "32B",
       "context_window": 65536,
+      "max_output": 8192,
+      "provider": "ollama",
+      "type": "local",
+      "model_id": "deepseek-r1:32b",
+      "pricing": null,
       "strengths": ["reasoning", "complex analysis", "high quality"],
       "weaknesses": ["slow", "high RAM", "verbose"],
       "ram_required_gb": 22,
-      "recommended_roles": ["orchestrator", "validator"],
+      "recommended_roles": ["primary", "validator"],
       "quality_tier": "very-high",
       "speed_tier": "slow",
-      "notes": "Best reasoning capability, good for orchestration."
+      "notes": "Best reasoning capability, good for orchestration.",
+      "scores": {
+        "coding": 6,
+        "reasoning": 9,
+        "speed": 3,
+        "cost_efficiency": 5,
+        "instruction_following": 7,
+        "context_handling": 6
+      },
+      "role_fitness": {
+        "primary": 7,
+        "worker-heavy": 5,
+        "worker-lite": 2,
+        "validator": 8,
+        "critic": 7
+      }
     },
     "deepseek-coder-v2:16b": {
       "family": "DeepSeek",
       "parameters": "16B",
       "context_window": 65536,
+      "max_output": 8192,
+      "provider": "ollama",
+      "type": "local",
+      "model_id": "deepseek-coder-v2:16b",
+      "pricing": null,
       "strengths": ["code generation", "balanced"],
       "weaknesses": ["older model"],
       "ram_required_gb": 10,
       "recommended_roles": ["worker-heavy"],
       "quality_tier": "high",
       "speed_tier": "medium",
-      "notes": "Solid coding model, predecessor to R1."
+      "notes": "Solid coding model, predecessor to R1.",
+      "scores": {
+        "coding": 7,
+        "reasoning": 6,
+        "speed": 5,
+        "cost_efficiency": 7,
+        "instruction_following": 6,
+        "context_handling": 6
+      },
+      "role_fitness": {
+        "primary": 4,
+        "worker-heavy": 7,
+        "worker-lite": 4,
+        "validator": 5,
+        "critic": 4
+      }
     },
     "codellama:34b": {
       "family": "CodeLlama",
       "parameters": "34B",
       "context_window": 16384,
+      "max_output": 4096,
+      "provider": "ollama",
+      "type": "local",
+      "model_id": "codellama:34b",
+      "pricing": null,
       "strengths": ["code completion", "infilling", "Meta quality"],
       "weaknesses": ["smaller context", "high RAM"],
       "ram_required_gb": 20,
       "recommended_roles": ["worker-heavy"],
       "quality_tier": "high",
       "speed_tier": "slow",
-      "notes": "Meta's coding model, excellent completion."
+      "notes": "Meta's coding model, excellent completion.",
+      "scores": {
+        "coding": 7,
+        "reasoning": 5,
+        "speed": 3,
+        "cost_efficiency": 4,
+        "instruction_following": 5,
+        "context_handling": 3
+      },
+      "role_fitness": {
+        "primary": 3,
+        "worker-heavy": 7,
+        "worker-lite": 3,
+        "validator": 4,
+        "critic": 3
+      }
     },
     "codellama:13b": {
       "family": "CodeLlama",
       "parameters": "13B",
       "context_window": 16384,
+      "max_output": 4096,
+      "provider": "ollama",
+      "type": "local",
+      "model_id": "codellama:13b",
+      "pricing": null,
       "strengths": ["code completion", "balanced"],
       "weaknesses": ["smaller context"],
       "ram_required_gb": 8,
       "recommended_roles": ["worker-lite", "validator"],
       "quality_tier": "medium",
       "speed_tier": "medium",
-      "notes": "Good balance for medium complexity tasks."
+      "notes": "Good balance for medium complexity tasks.",
+      "scores": {
+        "coding": 6,
+        "reasoning": 4,
+        "speed": 5,
+        "cost_efficiency": 6,
+        "instruction_following": 5,
+        "context_handling": 3
+      },
+      "role_fitness": {
+        "primary": 3,
+        "worker-heavy": 5,
+        "worker-lite": 5,
+        "validator": 4,
+        "critic": 3
+      }
     },
     "codellama:7b": {
       "family": "CodeLlama",
       "parameters": "7B",
       "context_window": 16384,
+      "max_output": 4096,
+      "provider": "ollama",
+      "type": "local",
+      "model_id": "codellama:7b",
+      "pricing": null,
       "strengths": ["fast", "code completion", "low RAM"],
       "weaknesses": ["smaller context", "simpler tasks only"],
       "ram_required_gb": 4,
       "recommended_roles": ["worker-lite"],
       "quality_tier": "medium",
       "speed_tier": "fast",
-      "notes": "Fast and efficient for simple code tasks."
+      "notes": "Fast and efficient for simple code tasks.",
+      "scores": {
+        "coding": 5,
+        "reasoning": 3,
+        "speed": 7,
+        "cost_efficiency": 8,
+        "instruction_following": 4,
+        "context_handling": 3
+      },
+      "role_fitness": {
+        "primary": 2,
+        "worker-heavy": 3,
+        "worker-lite": 6,
+        "validator": 3,
+        "critic": 2
+      }
     },
     "llama3.2:3b": {
       "family": "Llama",
       "parameters": "3B",
       "context_window": 131072,
+      "max_output": 4096,
+      "provider": "ollama",
+      "type": "local",
+      "model_id": "llama3.2:3b",
+      "pricing": null,
       "strengths": ["very fast", "low RAM", "large context"],
       "weaknesses": ["limited capability"],
       "ram_required_gb": 2,
       "recommended_roles": ["worker-lite"],
       "quality_tier": "low",
       "speed_tier": "very-fast",
-      "notes": "Ultra-light, good for simple queries."
+      "notes": "Ultra-light, good for simple queries.",
+      "scores": {
+        "coding": 3,
+        "reasoning": 3,
+        "speed": 9,
+        "cost_efficiency": 10,
+        "instruction_following": 4,
+        "context_handling": 9
+      },
+      "role_fitness": {
+        "primary": 2,
+        "worker-heavy": 2,
+        "worker-lite": 6,
+        "validator": 2,
+        "critic": 2
+      }
     },
     "llama3.1:8b": {
       "family": "Llama",
       "parameters": "8B",
       "context_window": 131072,
+      "max_output": 4096,
+      "provider": "ollama",
+      "type": "local",
+      "model_id": "llama3.1:8b",
+      "pricing": null,
       "strengths": ["general purpose", "fast", "large context"],
       "weaknesses": ["not specialized for code"],
       "ram_required_gb": 5,
-      "recommended_roles": ["orchestrator", "worker-lite"],
+      "recommended_roles": ["primary", "worker-lite"],
       "quality_tier": "medium",
       "speed_tier": "fast",
-      "notes": "Good general model for orchestration."
+      "notes": "Good general model for orchestration.",
+      "scores": {
+        "coding": 4,
+        "reasoning": 5,
+        "speed": 7,
+        "cost_efficiency": 8,
+        "instruction_following": 6,
+        "context_handling": 9
+      },
+      "role_fitness": {
+        "primary": 5,
+        "worker-heavy": 4,
+        "worker-lite": 6,
+        "validator": 4,
+        "critic": 4
+      }
     },
     "llama3.1:70b": {
       "family": "Llama",
       "parameters": "70B",
       "context_window": 131072,
+      "max_output": 4096,
+      "provider": "ollama",
+      "type": "local",
+      "model_id": "llama3.1:70b",
+      "pricing": null,
       "strengths": ["high quality", "general purpose", "reasoning"],
       "weaknesses": ["very high RAM", "slow"],
       "ram_required_gb": 45,
-      "recommended_roles": ["orchestrator", "worker-heavy"],
+      "recommended_roles": ["primary", "worker-heavy"],
       "quality_tier": "very-high",
       "speed_tier": "very-slow",
-      "notes": "High-end general model, needs significant hardware."
+      "notes": "High-end general model, needs significant hardware.",
+      "scores": {
+        "coding": 7,
+        "reasoning": 8,
+        "speed": 2,
+        "cost_efficiency": 3,
+        "instruction_following": 7,
+        "context_handling": 9
+      },
+      "role_fitness": {
+        "primary": 7,
+        "worker-heavy": 7,
+        "worker-lite": 2,
+        "validator": 6,
+        "critic": 6
+      }
     },
     "mistral:7b": {
       "family": "Mistral",
       "parameters": "7B",
       "context_window": 32768,
+      "max_output": 4096,
+      "provider": "ollama",
+      "type": "local",
+      "model_id": "mistral:7b",
+      "pricing": null,
       "strengths": ["fast", "efficient", "good reasoning"],
       "weaknesses": ["not specialized for code"],
       "ram_required_gb": 4,
-      "recommended_roles": ["orchestrator", "validator"],
+      "recommended_roles": ["primary", "validator"],
       "quality_tier": "medium",
       "speed_tier": "fast",
-      "notes": "Efficient general model, good for orchestration."
+      "notes": "Efficient general model, good for orchestration.",
+      "scores": {
+        "coding": 4,
+        "reasoning": 5,
+        "speed": 7,
+        "cost_efficiency": 8,
+        "instruction_following": 6,
+        "context_handling": 5
+      },
+      "role_fitness": {
+        "primary": 5,
+        "worker-heavy": 3,
+        "worker-lite": 5,
+        "validator": 5,
+        "critic": 4
+      }
     },
     "mixtral:8x7b": {
       "family": "Mistral",
       "parameters": "47B (8x7B MoE)",
       "context_window": 32768,
+      "max_output": 4096,
+      "provider": "ollama",
+      "type": "local",
+      "model_id": "mixtral:8x7b",
+      "pricing": null,
       "strengths": ["MoE efficiency", "good quality", "balanced"],
       "weaknesses": ["complex architecture"],
       "ram_required_gb": 26,
-      "recommended_roles": ["orchestrator", "worker-heavy"],
+      "recommended_roles": ["primary", "worker-heavy"],
       "quality_tier": "high",
       "speed_tier": "medium",
-      "notes": "MoE architecture, good quality/speed balance."
+      "notes": "MoE architecture, good quality/speed balance.",
+      "scores": {
+        "coding": 6,
+        "reasoning": 6,
+        "speed": 5,
+        "cost_efficiency": 5,
+        "instruction_following": 6,
+        "context_handling": 5
+      },
+      "role_fitness": {
+        "primary": 5,
+        "worker-heavy": 6,
+        "worker-lite": 4,
+        "validator": 5,
+        "critic": 5
+      }
     },
     "phi3:14b": {
       "family": "Phi",
       "parameters": "14B",
       "context_window": 131072,
+      "max_output": 4096,
+      "provider": "ollama",
+      "type": "local",
+      "model_id": "phi3:14b",
+      "pricing": null,
       "strengths": ["reasoning", "Microsoft quality", "large context"],
       "weaknesses": ["less coding focus"],
       "ram_required_gb": 8,
       "recommended_roles": ["validator", "critic"],
       "quality_tier": "high",
       "speed_tier": "medium",
-      "notes": "Microsoft's reasoning model, good for validation."
+      "notes": "Microsoft's reasoning model, good for validation.",
+      "scores": {
+        "coding": 5,
+        "reasoning": 7,
+        "speed": 5,
+        "cost_efficiency": 7,
+        "instruction_following": 7,
+        "context_handling": 9
+      },
+      "role_fitness": {
+        "primary": 5,
+        "worker-heavy": 4,
+        "worker-lite": 4,
+        "validator": 7,
+        "critic": 7
+      }
     },
     "gemma2:9b": {
       "family": "Gemma",
       "parameters": "9B",
       "context_window": 8192,
+      "max_output": 4096,
+      "provider": "ollama",
+      "type": "local",
+      "model_id": "gemma2:9b",
+      "pricing": null,
       "strengths": ["Google quality", "efficient"],
       "weaknesses": ["smaller context"],
       "ram_required_gb": 6,
       "recommended_roles": ["worker-lite", "validator"],
       "quality_tier": "medium",
       "speed_tier": "fast",
-      "notes": "Google's efficient model."
+      "notes": "Google's efficient model.",
+      "scores": {
+        "coding": 5,
+        "reasoning": 5,
+        "speed": 6,
+        "cost_efficiency": 7,
+        "instruction_following": 5,
+        "context_handling": 2
+      },
+      "role_fitness": {
+        "primary": 3,
+        "worker-heavy": 4,
+        "worker-lite": 6,
+        "validator": 5,
+        "critic": 4
+      }
     },
     "gemma2:27b": {
       "family": "Gemma",
       "parameters": "27B",
       "context_window": 8192,
+      "max_output": 4096,
+      "provider": "ollama",
+      "type": "local",
+      "model_id": "gemma2:27b",
+      "pricing": null,
       "strengths": ["Google quality", "good reasoning"],
       "weaknesses": ["smaller context", "high RAM"],
       "ram_required_gb": 18,
-      "recommended_roles": ["orchestrator", "validator"],
+      "recommended_roles": ["primary", "validator"],
       "quality_tier": "high",
       "speed_tier": "medium",
-      "notes": "Larger Gemma, better reasoning."
+      "notes": "Larger Gemma, better reasoning.",
+      "scores": {
+        "coding": 6,
+        "reasoning": 7,
+        "speed": 4,
+        "cost_efficiency": 5,
+        "instruction_following": 6,
+        "context_handling": 2
+      },
+      "role_fitness": {
+        "primary": 5,
+        "worker-heavy": 5,
+        "worker-lite": 3,
+        "validator": 6,
+        "critic": 5
+      }
     },
     "starcoder2:15b": {
       "family": "StarCoder",
       "parameters": "15B",
       "context_window": 16384,
+      "max_output": 4096,
+      "provider": "ollama",
+      "type": "local",
+      "model_id": "starcoder2:15b",
+      "pricing": null,
       "strengths": ["code generation", "multi-language"],
       "weaknesses": ["smaller context"],
       "ram_required_gb": 10,
       "recommended_roles": ["worker-heavy", "worker-lite"],
       "quality_tier": "high",
       "speed_tier": "medium",
-      "notes": "BigCode's coding model, strong multi-language."
+      "notes": "BigCode's coding model, strong multi-language.",
+      "scores": {
+        "coding": 7,
+        "reasoning": 4,
+        "speed": 5,
+        "cost_efficiency": 7,
+        "instruction_following": 5,
+        "context_handling": 3
+      },
+      "role_fitness": {
+        "primary": 3,
+        "worker-heavy": 7,
+        "worker-lite": 5,
+        "validator": 3,
+        "critic": 3
+      }
     },
     "starcoder2:7b": {
       "family": "StarCoder",
       "parameters": "7B",
       "context_window": 16384,
+      "max_output": 4096,
+      "provider": "ollama",
+      "type": "local",
+      "model_id": "starcoder2:7b",
+      "pricing": null,
       "strengths": ["code completion", "fast"],
       "weaknesses": ["smaller context"],
       "ram_required_gb": 5,
       "recommended_roles": ["worker-lite"],
       "quality_tier": "medium",
       "speed_tier": "fast",
-      "notes": "Fast coding model for simple tasks."
+      "notes": "Fast coding model for simple tasks.",
+      "scores": {
+        "coding": 5,
+        "reasoning": 3,
+        "speed": 7,
+        "cost_efficiency": 8,
+        "instruction_following": 4,
+        "context_handling": 3
+      },
+      "role_fitness": {
+        "primary": 2,
+        "worker-heavy": 4,
+        "worker-lite": 7,
+        "validator": 2,
+        "critic": 2
+      }
     }
   },
   "role_requirements": {
-    "orchestrator": {
+    "primary": {
       "description": "Coordinates tasks, routes to workers, interacts with user",
       "priority_strengths": ["reasoning", "instruction following", "large context"],
+      "priority_dimensions": ["reasoning", "instruction_following", "context_handling"],
       "minimum_quality_tier": "medium",
+      "minimum_scores": { "reasoning": 5, "instruction_following": 5 },
       "speed_preference": "fast",
       "notes": "Needs good reasoning to route tasks correctly. Speed matters for UX."
     },
     "worker-heavy": {
       "description": "Complex code generation, refactoring, large changes",
       "priority_strengths": ["code generation", "large context", "refactoring"],
+      "priority_dimensions": ["coding", "reasoning", "context_handling"],
       "minimum_quality_tier": "high",
+      "minimum_scores": { "coding": 6, "reasoning": 5 },
       "speed_preference": "any",
       "notes": "Quality is paramount. Can be slower."
     },
     "worker-lite": {
       "description": "Simple tasks: search, format, lint, quick queries",
       "priority_strengths": ["fast", "code completion"],
+      "priority_dimensions": ["speed", "cost_efficiency", "coding"],
       "minimum_quality_tier": "low",
+      "minimum_scores": { "speed": 5 },
       "speed_preference": "fast",
       "notes": "Speed is paramount. Simple tasks only."
     },
     "validator": {
       "description": "Independent verification of plans and claims",
       "priority_strengths": ["reasoning", "verification", "chain-of-thought"],
+      "priority_dimensions": ["reasoning", "instruction_following", "coding"],
       "minimum_quality_tier": "medium",
+      "minimum_scores": { "reasoning": 5, "instruction_following": 5 },
       "speed_preference": "medium",
       "notes": "Needs skeptical reasoning to catch errors."
     },
     "critic": {
       "description": "Quality gate - runs tests, checks coverage, reviews code",
       "priority_strengths": ["reasoning", "quality assessment"],
+      "priority_dimensions": ["reasoning", "instruction_following", "coding"],
       "minimum_quality_tier": "medium",
+      "minimum_scores": { "reasoning": 5 },
       "speed_preference": "medium",
       "notes": "Must accurately assess quality before commit."
     }
