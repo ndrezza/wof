@@ -258,7 +258,10 @@ mcp__azure-devops__list_work_items with:
 | `/wof update` | Update to latest WOF version |
 | `/wof configure` | Configure AI connections (or import from another project) |
 | `/wof route <task>` | Classify task routing |
+| `/wof next` | Pick up the next highest-priority work item |
 | `/wof finish` | Complete work: update WI, commit, push |
+| `/wof cleanup` | Scan and remove AI-generated slop (console.log, TODOs, etc.) |
+| `/wof drift` | Detect drift between plan and implementation |
 | `/wof patterns` | Review learned rules, analyze prompts for patterns |
 
 ### Task Routing

@@ -5,6 +5,16 @@ All notable changes to the Workload Orchestration Framework (WOF) will be docume
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.12.0] - 2026-03-30
+
+### Added
+
+- **Slash command pattern adoption** (#2995) — evaluated external slash command patterns and adopted 3 new commands
+  - `/wof next` — auto-pick next highest-priority ADO work item by priority, present top 5 candidates, then execute standard work item start protocol (set Active, create branch, enter plan mode)
+  - `/wof cleanup` — scan and remove AI-generated slop (console.log, debug prints, AI TODOs, lint suppressions) via new `cleanup-slop.ps1` script with dry-run preview, category multi-select, and git-tracked-files-only scanning
+  - `/wof drift` — detect plan vs implementation drift by comparing plan documents against actual git changes, categorizing as Missing/Extra/Divergent with confidence levels, and offering resolution options
+  - New script: `core/scripts/cleanup-slop.ps1` with `-DryRun`, `-Categories`, `-JsonOutput` support
+
 ## [3.11.0] - 2026-03-29
 
 ### Added

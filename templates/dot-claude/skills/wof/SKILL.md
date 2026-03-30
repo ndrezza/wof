@@ -50,6 +50,10 @@ Parse the arguments to determine which WOF command to run.
 | `agents detect` | Auto-detect and suggest agents for project |
 | `agents catalog` | Browse full agent catalog |
 | `agents catalog <category>` | Browse agents in a specific category |
+| `next` | Pick up the next highest-priority work item |
+| `cleanup` | Scan and remove AI-generated slop (console.log, TODOs, etc.) |
+| `cleanup --dry-run` | Preview cleanup findings without modifying files |
+| `drift` | Detect drift between plan and implementation |
 | `patterns` | Show current learned rules and prompt history stats |
 | `patterns analyze` | Detect patterns in recent prompts and propose rules |
 | `patterns remove <id>` | Remove a learned rule |
@@ -1568,6 +1572,180 @@ powershell -ExecutionPolicy Bypass -File "./.ai/scripts/manage-agents.ps1" -Acti
 Valid category names: core-development, language-specialists, infrastructure, quality-security, data-ai, developer-experience, specialized-domains, business-product, meta-orchestration, research-analysis.
 
 Show the catalog output. If the user wants to install an agent, use the add command.
+
+---
+
+### If arguments match "next"
+
+Auto-pick the next highest-priority work item from Azure DevOps and start working on it.
+
+#### Step 1: Load ADO Configuration
+
+Read `.ai/config/ado.json` to get the project name, filters, and behavior settings.
+
+If ADO is not configured, inform the user:
+> "Azure DevOps is not configured. Run `/wof configure-ado` first."
+Stop here.
+
+#### Step 2: Query Top Work Items
+
+Build a WIQL query applying ALL configured filters (project, valueArea, states, workItemTypes, tags, skipBlockedItems — same rules as "ADO Work Item Query Behavior" section above):
+
+```sql
+SELECT [System.Id], [System.Title], [System.State], [Microsoft.VSTS.Common.Priority], [System.AssignedTo]
+FROM WorkItems
+WHERE [System.TeamProject] = '<project.name>'
+  AND [Microsoft.VSTS.Common.ValueArea] = '<filters.valueArea>'
+  AND [System.State] IN ('<filters.states>')
+  AND [System.WorkItemType] IN ('<filters.workItemTypes>')
+ORDER BY [Microsoft.VSTS.Common.Priority] ASC, [System.ChangedDate] DESC
+```
+
+Use `mcp__azure-devops__list_work_items` with `top: 5` to get the top 5 candidates.
+
+#### Step 3: Present Candidates
+
+If no work items found:
+> "No matching work items found with current filters. Check `/wof configure-ado` filters."
+Stop here.
+
+If exactly 1 work item found, present it and ask:
+> "Next work item: #<id> — <title> (Priority <p>). Start this item?"
+> Options: "Yes, start it" / "No, skip"
+
+If multiple found, use AskUserQuestion:
+- Question: "Which work item to start?"
+- Header: "Work Item"
+- Options: Top 4 items formatted as "#<id> — <title> (P<priority>)"
+
+#### Step 4: Execute Work Item Start Protocol
+
+Once the user selects a work item, execute the **"When Starting a Work Item"** protocol (Steps 1–4):
+1. Read full work item details
+2. Set Active, create feature branch, add "Analysis" tag
+3. Enter plan mode (MANDATORY)
+4. Implement after approval
+
+---
+
+### If arguments contain "cleanup"
+
+Scan and clean AI-generated slop from the codebase.
+
+#### Step 1: Run Dry-Run Scan
+
+If arguments contain "--dry-run", run ONLY the dry-run and stop after showing results.
+
+Otherwise, always start with a dry-run to preview findings:
+```bash
+powershell -ExecutionPolicy Bypass -File "./.ai/scripts/cleanup-slop.ps1" -DryRun -JsonOutput
+```
+
+Parse the JSON output. If no findings:
+> "Codebase is clean — no slop detected."
+Stop here.
+
+#### Step 2: Present Findings
+
+Summarize findings by category to the user. Example:
+> **Slop scan found 12 items:**
+> - debug-logs: 7 (console.log, Write-Host)
+> - todos: 3 (AI-generated TODOs)
+> - suppressions: 2 (eslint-disable, noqa)
+
+Use AskUserQuestion with multiSelect:
+- Question: "Which categories should be cleaned up?"
+- Header: "Categories"
+- Options: One per category that has findings, labeled with count (e.g., "debug-logs (7 items)")
+
+If arguments contained "--dry-run", stop here (do not clean).
+
+#### Step 3: Clean Selected Categories
+
+For each approved category, run:
+```bash
+powershell -ExecutionPolicy Bypass -File "./.ai/scripts/cleanup-slop.ps1" -Categories "<selected_categories>" -JsonOutput
+```
+
+Where `<selected_categories>` is a comma-separated list of the selected categories.
+
+#### Step 4: Report Results
+
+Show cleanup summary:
+> "Cleaned N lines from M files. Run `git diff` to review changes."
+
+---
+
+### If arguments match "drift"
+
+Detect drift between the current plan and actual implementation.
+
+#### Step 1: Locate the Plan
+
+Search for the plan in this order:
+1. Check `.ai/state/current-plan.md` — if exists, use this
+2. Check the current work item (from recent git commits with `(#XXXX)` pattern or `.ai/memory/current-sprint.md`) — read its description and acceptance criteria
+3. Check git log for plan-mode commits: `git log --oneline --grep="plan" HEAD~20..HEAD`
+4. If no plan found, ask the user: "No plan found. Paste or describe the plan, or provide a work item ID."
+
+If still no plan, stop here.
+
+#### Step 2: Gather Implementation State
+
+Run these to understand what was actually implemented:
+
+1. Get the diff against the base branch:
+```bash
+git diff main...HEAD --stat
+```
+
+2. Get commit history on this branch:
+```bash
+git log main..HEAD --oneline
+```
+
+3. Read key modified files (focus on the most significant changes from the diff stat).
+
+#### Step 3: Analyze Drift
+
+Compare the plan against the implementation. Categorize findings into:
+
+- **Missing items** — planned but not yet implemented
+- **Extra items** — implemented but not in the original plan
+- **Divergent items** — implemented differently than planned (different approach, different scope)
+
+Assign confidence levels:
+- **HIGH** — clear evidence (e.g., plan says "add endpoint X" but no such endpoint exists)
+- **MEDIUM** — likely drift (e.g., implementation uses different pattern than planned)
+- **LOW** — possible drift (e.g., minor naming differences)
+
+#### Step 4: Present Findings
+
+Display a structured drift report:
+
+> **Plan vs Implementation Drift Report**
+>
+> | # | Category | Confidence | Description |
+> |---|----------|------------|-------------|
+> | 1 | Missing  | HIGH       | Endpoint /api/users not implemented |
+> | 2 | Extra    | MEDIUM     | Added caching layer not in plan |
+> | 3 | Divergent| LOW        | Used REST instead of planned GraphQL |
+
+If no drift detected:
+> "No significant drift detected. Implementation aligns with the plan."
+
+#### Step 5: Offer Resolution
+
+If drift was found, use AskUserQuestion:
+- Question: "How should drift be handled?"
+- Header: "Action"
+- Options:
+  1. "Update plan to match implementation" — Rewrite the plan document to reflect reality
+  2. "Create tasks for missing items" — Add new work items for unfinished planned work
+  3. "Acknowledge and continue" — Note the drift but take no action
+  4. "Review each item" — Go through drift items one by one
+
+Execute the chosen resolution.
 
 ---
 
