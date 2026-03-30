@@ -50,6 +50,10 @@ Parse the arguments to determine which WOF command to run.
 | `agents detect` | Auto-detect and suggest agents for project |
 | `agents catalog` | Browse full agent catalog |
 | `agents catalog <category>` | Browse agents in a specific category |
+| `patterns` | Show current learned rules and prompt history stats |
+| `patterns analyze` | Detect patterns in recent prompts and propose rules |
+| `patterns remove <id>` | Remove a learned rule |
+| `patterns clear` | Clear all learned rules |
 | `remove` | Remove WOF scripts (preserves config & memory) |
 | `help` | Show this help information |
 
@@ -1564,6 +1568,104 @@ powershell -ExecutionPolicy Bypass -File "./.ai/scripts/manage-agents.ps1" -Acti
 Valid category names: core-development, language-specialists, infrastructure, quality-security, data-ai, developer-experience, specialized-domains, business-product, meta-orchestration, research-analysis.
 
 Show the catalog output. If the user wants to install an agent, use the add command.
+
+---
+
+### If arguments contain "patterns"
+
+Prompt pattern detection and learned rule management.
+
+#### patterns (no subcommand)
+
+Show current learned rules and prompt history stats:
+
+```bash
+powershell -ExecutionPolicy Bypass -File "./.ai/scripts/manage-learned-rules.ps1" -Action "list"
+```
+
+Also show prompt history stats:
+```bash
+powershell -ExecutionPolicy Bypass -Command "if (Test-Path '.ai/state/prompt-history.json') { $h = Get-Content '.ai/state/prompt-history.json' -Raw | ConvertFrom-Json; Write-Output \"Prompt history: $($h.entries.Count) entries\" } else { Write-Output 'No prompt history yet.' }"
+```
+
+Display the rules list and history count to the user. If no rules exist, suggest running `/wof patterns analyze`.
+
+#### patterns analyze
+
+Detect recurring patterns in user prompts and propose rules. This is an orchestrator-driven analysis — YOU (the AI) analyze the prompts directly.
+
+**Steps:**
+
+1. Read the prompt history file:
+```bash
+powershell -ExecutionPolicy Bypass -Command "if (Test-Path '.ai/state/prompt-history.json') { Get-Content '.ai/state/prompt-history.json' -Raw } else { Write-Output 'NO_HISTORY' }"
+```
+
+2. If no history or fewer than 10 entries, inform the user:
+   > "Not enough prompt history yet (need at least 10 entries). Keep using WOF and patterns will be detected over time."
+   Stop here.
+
+3. Analyze the last 100 entries for recurring themes across these categories:
+   - **testing** — requests about running tests, test coverage, test-first approaches
+   - **autonomy** — requests to proceed without asking, push and continue, batch operations
+   - **documentation** — requests about updating docs, comments, memory bank
+   - **security** — requests about security checks, vulnerability scanning, secrets
+   - **model-bias** — preferences for specific models, agents, or delegation patterns
+   - **custom** — any other recurring behavioral pattern
+
+4. For each detected pattern (must appear in 3+ prompts):
+   - State the **category**
+   - Assign a **confidence** score (0.0–1.0) based on frequency and consistency
+   - List **evidence** (3+ matching prompt excerpts)
+   - Suggest an **enforcement text** (concise instruction for CLAUDE.md)
+
+5. Present detected patterns to the user using AskUserQuestion with multiSelect:
+   - Each option = one detected pattern with category, confidence, and enforcement text
+   - User selects which patterns to approve as rules
+
+6. For each approved pattern, add it as a rule:
+```bash
+powershell -ExecutionPolicy Bypass -File "./.ai/scripts/manage-learned-rules.ps1" -Action "add" -Category "<category>" -EnforcementText "<enforcement_text>" -Confidence <confidence>
+```
+
+7. After all rules are added, apply them to CLAUDE.md:
+```bash
+powershell -ExecutionPolicy Bypass -File "./.ai/scripts/manage-learned-rules.ps1" -Action "apply"
+```
+
+8. Report a summary: how many patterns detected, how many approved, rules now active.
+
+#### patterns remove <id>
+
+Remove a specific learned rule and update CLAUDE.md:
+
+```bash
+powershell -ExecutionPolicy Bypass -File "./.ai/scripts/manage-learned-rules.ps1" -Action "remove" -RuleId "<id>"
+```
+
+Then re-apply to update CLAUDE.md:
+```bash
+powershell -ExecutionPolicy Bypass -File "./.ai/scripts/manage-learned-rules.ps1" -Action "apply"
+```
+
+Report the result to the user.
+
+#### patterns clear
+
+Clear all learned rules. First confirm with the user using AskUserQuestion:
+
+> "This will remove all learned rules and the patterns section from CLAUDE.md. Are you sure?"
+> Options: "Yes, clear all" / "Cancel"
+
+If confirmed:
+```bash
+powershell -ExecutionPolicy Bypass -File "./.ai/scripts/manage-learned-rules.ps1" -Action "clear"
+```
+
+Then apply to remove the section from CLAUDE.md:
+```bash
+powershell -ExecutionPolicy Bypass -File "./.ai/scripts/manage-learned-rules.ps1" -Action "apply"
+```
 
 ---
 
