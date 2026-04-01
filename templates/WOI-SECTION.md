@@ -247,6 +247,7 @@ mcp__azure-devops__list_work_items with:
 | Conventions | `.ai/memory/conventions.md` |
 | Current Sprint | `.ai/memory/current-sprint.md` |
 | Routing Rules | `.ai/config/routing-rules.md` |
+| Orchestration Patterns | `.ai/config/orchestration.json` |
 | Agent Definitions | `.ai/agents/` |
 | MCP Setup Guide | `.ai/docs/mcp-agent-setup.md` |
 

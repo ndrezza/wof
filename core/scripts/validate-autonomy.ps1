@@ -29,6 +29,20 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+# Load orchestration config for quality gate thresholds (optional)
+$validatorThreshold = 0.7  # default
+$orchConfigPath = Join-Path $PSScriptRoot "..\config\orchestration.json"
+if (Test-Path $orchConfigPath) {
+    try {
+        $orchConfig = Get-Content $orchConfigPath -Raw | ConvertFrom-Json
+        if ($orchConfig.quality_gates.validator_threshold -ne $null) {
+            $validatorThreshold = $orchConfig.quality_gates.validator_threshold
+        }
+    } catch {
+        # Graceful fallback - use default threshold
+    }
+}
+
 # Resolve validator connection using v2 config
 $resolveScript = Join-Path $PSScriptRoot "resolve-role.ps1"
 if (-not (Test-Path $resolveScript)) {
@@ -174,10 +188,17 @@ try {
     $jsonMatch = [regex]::Match($resultText, '\{[^}]+\}')
     if ($jsonMatch.Success) {
         $parsed = $jsonMatch.Value | ConvertFrom-Json
+        # Apply configurable threshold: model may say proceed but confidence too low
+        $meetsThreshold = $parsed.confidence -ge $validatorThreshold
         return @{
-            Proceed = $parsed.proceed
+            Proceed = $parsed.proceed -and $meetsThreshold
             Confidence = $parsed.confidence
-            Reason = $parsed.reason
+            Threshold = $validatorThreshold
+            Reason = if (-not $meetsThreshold -and $parsed.proceed) {
+                "Model approved but confidence $($parsed.confidence) below threshold $validatorThreshold - $($parsed.reason)"
+            } else {
+                $parsed.reason
+            }
             ValidatorModel = $model
             ValidatorType = $apiType
         }
