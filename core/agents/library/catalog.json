@@ -1072,6 +1072,55 @@
               "pytest.ini"
             ]
           }
+        },
+        {
+          "name": "security-reviewer",
+          "file": "04-quality-security/security-reviewer.md",
+          "description": "Use this agent for dedicated security review of code changes — identifying vulnerabilities, verifying security controls, and ensuring compliance with security best practices before merge.",
+          "model": "opus",
+          "tags": [
+            "security",
+            "reviewer"
+          ],
+          "detect": {
+            "files": [
+              "SECURITY.md",
+              ".github/CODEOWNERS"
+            ]
+          }
+        },
+        {
+          "name": "test-generator",
+          "file": "04-quality-security/test-generator.md",
+          "description": "Use this agent to generate comprehensive test suites — unit tests, integration tests, and edge case coverage for new or modified code.",
+          "model": "sonnet",
+          "tags": [
+            "test",
+            "generator"
+          ],
+          "detect": {
+            "files": [
+              "jest.config.js",
+              "jest.config.ts",
+              "pytest.ini",
+              "vitest.config.ts"
+            ],
+            "patterns": [
+              "**/*.test.*",
+              "**/*.spec.*"
+            ]
+          }
+        },
+        {
+          "name": "devils-advocate",
+          "file": "04-quality-security/devils-advocate.md",
+          "description": "Use this agent to challenge assumptions, find flaws in plans, and stress-test proposals before committing to an approach. Deliberately argues the opposing position.",
+          "model": "opus",
+          "tags": [
+            "devils",
+            "advocate",
+            "critic"
+          ]
         }
       ]
     },
@@ -1791,6 +1840,16 @@
             "workflow",
             "orchestrator"
           ]
+        },
+        {
+          "name": "plan-architect",
+          "file": "09-meta-orchestration/plan-architect.md",
+          "description": "Use this agent for decomposing complex tasks into parallelizable sub-tasks, designing execution plans, and structuring work for multi-agent orchestration.",
+          "model": "opus",
+          "tags": [
+            "plan",
+            "architect"
+          ]
         }
       ]
     },
@@ -1857,6 +1916,31 @@
           "model": "haiku",
           "tags": [
             "trend",
+            "analyst"
+          ]
+        },
+        {
+          "name": "codebase-researcher",
+          "file": "10-research-analysis/codebase-researcher.md",
+          "description": "Use this agent for deep pre-implementation codebase exploration — understanding architecture, mapping dependencies, identifying patterns, and building context before making changes.",
+          "model": "sonnet",
+          "tags": [
+            "codebase",
+            "researcher"
+          ],
+          "detect": {
+            "files": [
+              ".git"
+            ]
+          }
+        },
+        {
+          "name": "framework-analyst",
+          "file": "10-research-analysis/framework-analyst.md",
+          "description": "Use this agent to research, compare, and evaluate external frameworks, libraries, and tools — producing structured comparison reports to inform adoption decisions.",
+          "model": "sonnet",
+          "tags": [
+            "framework",
             "analyst"
           ]
         }

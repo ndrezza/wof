@@ -2176,6 +2176,7 @@ function Show-MainMenu {
         Write-Host ""
         Write-Host "  [5] Test All AI Connections"
         Write-Host "  [6] View Current Configuration"
+        Write-Host "  [7] Orchestration Patterns"
         Write-Host ""
         if ($script:hasUnsavedChanges) {
             Write-Host "  [S] Save changes" -ForegroundColor Green
@@ -2195,6 +2196,17 @@ function Show-MainMenu {
                 Write-Host ""
                 Write-Host "Testing all AI connections..." -ForegroundColor Cyan
                 Show-ConnectionsTable -Config $Config | Out-Null
+                Write-Host ""
+                Write-Host "Press Enter to continue..." -NoNewline
+                Read-Host
+            }
+            "7" {
+                $orchScript = Join-Path $PSScriptRoot "configure-orchestration.ps1"
+                if (Test-Path $orchScript) {
+                    & $orchScript
+                } else {
+                    Write-Warn "Orchestration configuration script not found."
+                }
                 Write-Host ""
                 Write-Host "Press Enter to continue..." -NoNewline
                 Read-Host

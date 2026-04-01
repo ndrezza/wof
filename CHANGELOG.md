@@ -5,6 +5,38 @@ All notable changes to the Workload Orchestration Framework (WOF) will be docume
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.13.0] - 2026-04-01
+
+### Added
+
+- **Configurable orchestration patterns** (#2996)
+  - `orchestration.json.template` — fine-grained control over parallel execution, task queue, agent spawning, quality gates, routing, and role specializations
+  - `queue-task-schema.json` — JSON schema for task queue entries
+  - `configure-orchestration.ps1` — interactive wizard for orchestration pattern configuration
+  - `/wof configure-orchestration` command — in-session orchestration configuration via AskUserQuestion
+  - `/wof orchestration` command — display current orchestration pattern status
+  - Orchestration pattern status section in health check (`check-orchestration-health.ps1`)
+  - `[7] Orchestration Patterns` menu item in configure wizard
+  - Orchestration Patterns section in WOI-SECTION.md documentation
+
+- **Six new research-backed agent definitions** (#2993)
+  - `codebase-researcher` (worker.researcher) — pre-implementation codebase exploration
+  - `security-reviewer` (validator.security-reviewer) — dedicated security review of code changes
+  - `test-generator` (worker.test-generator) — comprehensive test suite generation
+  - `devils-advocate` (critic.devils-advocate) — challenge assumptions and stress-test proposals
+  - `plan-architect` (orchestrator aid) — task decomposition for parallel execution
+  - `framework-analyst` (general research) — external framework comparison and evaluation
+
+- **Comprehensive research document** (`core/docs/research-orchestration-patterns.md`)
+  - Analysis of 10+ multi-agent orchestration frameworks
+  - Pattern comparison matrix, adoption rationale, anti-patterns
+  - Benchmarks and phased rollout recommendation
+
+### Changed
+
+- `sync-manifest.json` — added `orchestration.json` to `template_only` patterns
+- `catalog.json` — added 6 new agent entries across quality-security, meta-orchestration, and research-analysis categories
+
 ## [3.11.0] - 2026-03-29
 
 ### Added
