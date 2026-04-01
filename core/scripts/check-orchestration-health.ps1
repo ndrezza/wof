@@ -425,6 +425,37 @@ if ($healthStatus["worker-lite"].Status -eq "ONLINE") {
     Write-Host "  Routing: All tasks -> Worker-Heavy (Worker-Lite unavailable)" -ForegroundColor Yellow
 }
 
+# Orchestration Patterns Status
+$orchConfigPath = Join-Path $configDir "orchestration.json"
+Write-Host ""
+Write-Host "  Orchestration Patterns:" -ForegroundColor Cyan
+
+if (Test-Path $orchConfigPath) {
+    try {
+        $orchConfig = Get-Content $orchConfigPath -Raw | ConvertFrom-Json
+
+        $parallelStatus = if ($orchConfig.patterns.parallel_execution.enabled) { "ON" } else { "OFF" }
+        $queueStatus = if ($orchConfig.patterns.task_queue.enabled) { "ON" } else { "OFF" }
+        $worktreeStatus = if ($orchConfig.patterns.worktree_isolation.enabled) { "ON" } else { "OFF" }
+        $domainStatus = if ($orchConfig.routing_enhancements.domain_routing_enabled) { "ON" } else { "OFF" }
+        $specStatus = if ($orchConfig.role_specializations.enabled) { "ON" } else { "OFF" }
+        $observStatus = if ($orchConfig.observability.enabled) { "ON" } else { "OFF" }
+
+        function Get-PatternColor { param([string]$Status) if ($Status -eq "ON") { return "Green" } else { return "DarkGray" } }
+
+        Write-Host "    Parallel Execution:    " -NoNewline; Write-Host "$parallelStatus" -ForegroundColor $(Get-PatternColor $parallelStatus)
+        Write-Host "    Task Queue:            " -NoNewline; Write-Host "$queueStatus" -ForegroundColor $(Get-PatternColor $queueStatus)
+        Write-Host "    Worktree Isolation:    " -NoNewline; Write-Host "$worktreeStatus" -ForegroundColor $(Get-PatternColor $worktreeStatus)
+        Write-Host "    Domain Routing:        " -NoNewline; Write-Host "$domainStatus" -ForegroundColor $(Get-PatternColor $domainStatus)
+        Write-Host "    Role Specializations:  " -NoNewline; Write-Host "$specStatus" -ForegroundColor $(Get-PatternColor $specStatus)
+        Write-Host "    Observability:         " -NoNewline; Write-Host "$observStatus" -ForegroundColor $(Get-PatternColor $observStatus)
+    } catch {
+        Write-Host "    Could not parse orchestration.json" -ForegroundColor Yellow
+    }
+} else {
+    Write-Host "    Not configured (run /wof configure-orchestration)" -ForegroundColor DarkGray
+}
+
 Write-Host ""
 
 # Return JSON if requested (otherwise output is already rendered via Write-Host)

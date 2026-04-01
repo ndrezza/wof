@@ -1,0 +1,72 @@
+{
+  "version": "1.0.0",
+  "description": "Orchestration pattern configuration. Controls parallel execution, task queue, agent spawning, quality gates, and role specializations.",
+
+  "patterns": {
+    "parallel_execution": {
+      "enabled": false,
+      "max_parallel_agents": 3,
+      "isolation_method": "worktree",
+      "min_task_complexity_for_parallel": "T2",
+      "plan_approval_required": true,
+      "merge_strategy": "orchestrator_review"
+    },
+    "task_queue": {
+      "enabled": false,
+      "state_directory": ".ai/state/queue",
+      "max_queue_depth": 20,
+      "retry_on_failure": true,
+      "max_retries": 2,
+      "dependency_tracking": true
+    },
+    "worktree_isolation": {
+      "enabled": false,
+      "base_directory": ".claude/worktrees",
+      "cleanup_on_completion": true,
+      "max_concurrent_worktrees": 3
+    }
+  },
+
+  "agent_spawning": {
+    "max_total_agents": 5,
+    "max_workers": 3,
+    "max_validators": 1,
+    "max_critics": 1,
+    "cooldown_between_spawns_seconds": 5,
+    "agent_session_timeout_minutes": 30,
+    "rotation_after_consecutive_runs": 5
+  },
+
+  "quality_gates": {
+    "validator_threshold": 0.7,
+    "critic_threshold": 0.8,
+    "require_validation_for_parallel": true,
+    "require_critic_before_merge": true,
+    "auto_approve_t1_tasks": false
+  },
+
+  "routing_enhancements": {
+    "speculative_execution": true,
+    "domain_routing_enabled": false,
+    "prefer_specialist_agents": false,
+    "parallel_threshold_minutes": 30
+  },
+
+  "role_specializations": {
+    "enabled": false,
+    "specializations": {
+      "worker": ["researcher", "implementer", "test-generator"],
+      "validator": ["security-reviewer"],
+      "critic": ["devils-advocate"]
+    }
+  },
+
+  "observability": {
+    "enabled": true,
+    "log_agent_activity": true,
+    "log_task_transitions": true,
+    "state_file": ".ai/state/orchestration-state.json",
+    "activity_log": ".ai/state/orchestration-activity.log",
+    "max_log_entries": 500
+  }
+}

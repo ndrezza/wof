@@ -259,6 +259,8 @@ mcp__azure-devops__list_work_items with:
 | `/wof configure` | Configure AI connections (or import from another project) |
 | `/wof route <task>` | Classify task routing |
 | `/wof finish` | Complete work: update WI, commit, push |
+| `/wof configure-orchestration` | Configure orchestration patterns and agent limits |
+| `/wof orchestration` | Show current orchestration configuration |
 | `/wof patterns` | Review learned rules, analyze prompts for patterns |
 
 ### Task Routing
@@ -272,6 +274,21 @@ mcp__azure-devops__list_work_items with:
 - Code generation (> 20 lines)
 - Test writing and execution
 - Refactoring, architecture, security
+
+### Orchestration Patterns
+
+Configurable via `.ai/config/orchestration.json`. Run `/wof configure-orchestration` to modify.
+
+| Pattern | Purpose | Default |
+|---------|---------|---------|
+| Parallel Execution | Multiple workers on independent sub-tasks | OFF |
+| Task Queue | File-based queue with dependency tracking | OFF |
+| Worktree Isolation | Git worktrees for parallel agent isolation | OFF |
+| Domain Routing | Route to specialist agents by domain | OFF |
+| Role Specializations | Sub-types within Worker/Validator/Critic | OFF |
+
+**When to enable parallel:** Task has 3+ independent sub-components, estimated >30 min sequential.
+**When to stay sequential (default):** Single-file changes, tight dependencies, quick fixes, T1 tasks.
 
 ### Thresholds
 
