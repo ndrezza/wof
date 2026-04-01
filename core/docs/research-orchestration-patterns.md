@@ -248,7 +248,7 @@ Other frameworks are typically locked to a single provider or require manual rec
 - File-based queues are inspectable (read the JSON), debuggable (edit the JSON), and recoverable (files survive process crashes).
 - External queues (Redis, RabbitMQ) add operational complexity, deployment dependencies, and failure modes that are disproportionate to the coordination needs of 3-5 agents.
 
-**WOF implementation:** Task queue stored in `.ai/parallel/queue/`. Each task is a JSON file with status (pending, running, completed, failed), assignment, and result fields. The orchestrator polls the directory — adequate at the polling frequencies required for development tasks (seconds, not milliseconds).
+**WOF implementation:** Task queue stored in `.ai/state/queue/`. Each task is a JSON file with status (pending, running, completed, failed), assignment, and result fields. The orchestrator polls the directory — adequate at the polling frequencies required for development tasks (seconds, not milliseconds).
 
 ### 5.7 Role Specializations Within Hierarchy
 
@@ -536,7 +536,7 @@ Based on Addy Osmani's analysis and WOF's measured overhead.
 **Scope:** Define the parallel execution configuration schema, implement the 6 new agent definitions, and establish the file-based task queue format.
 
 **Deliverables:**
-- Parallel execution configuration in `ai-connections.json` (agent count limits, rotation thresholds, parallel threshold)
+- Parallel execution configuration in `orchestration.json` (agent count limits, rotation thresholds, parallel threshold)
 - Agent definition files for all 6 new agents (system prompts, triggers, scope boundaries)
 - Task queue JSON schema (task definition, status tracking, result format)
 - Updated role mapping to support sub-specializations (e.g., `validator.security-reviewer`)

@@ -65,6 +65,8 @@ This framework provides:
 - **Multi-Agent Architecture** - Primary orchestrator with specialized workers
 - **Dual-Worker Routing** - T1 lightweight tasks → Worker-Lite, T2+ complex → Worker-Heavy
 - **Quality Gates** - Validator and Critic agents for decision validation
+- **Orchestration Patterns** - Configurable parallel execution, task queuing, worktree isolation, and role specializations
+- **Agent Library** - 135 specialized agent definitions across 10 categories with auto-detection
 - **Automated Workflows** - 9-phase feature development with phase gates
 - **Hook Integration** - Claude Code hooks for command approval and file validation
 

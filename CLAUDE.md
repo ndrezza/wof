@@ -26,7 +26,13 @@ When WOF is installed in a project, it creates a **WOI** (Workload Orchestration
 ```
 wof/
 ├── core/                    # Framework core (agents, scripts, config)
+│   ├── agents/library/      # 135 specialized agent definitions (10 categories)
+│   ├── scripts/             # PowerShell automation scripts
+│   ├── docs/                # Research and reference documentation
+│   └── config/              # Default configuration files
 ├── templates/               # Templates copied to WOI installations
+│   ├── config/              # Config templates (connections, roles, orchestration, etc.)
+│   └── dot-claude/          # Claude Code skill and settings templates
 ├── extensions/              # Optional extensions (Azure DevOps, etc.)
 ├── examples/                # Example projects
 ├── setup.ps1                # Installation script

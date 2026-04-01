@@ -1,9 +1,12 @@
 {
   "version": "1.0.0",
-  "description": "Orchestration pattern configuration. Controls parallel execution, task queue, agent spawning, quality gates, and role specializations.",
+  "description": "Orchestration pattern configuration. Controls parallel execution, task queue, agent spawning, quality gates, and role specializations. Run /wof configure-orchestration to modify interactively.",
 
   "patterns": {
+    "_comment": "Each pattern is independently toggleable. All default to OFF for safe adoption.",
+
     "parallel_execution": {
+      "_comment": "Spawn multiple worker agents on independent sub-tasks. Requires worktree isolation.",
       "enabled": false,
       "max_parallel_agents": 3,
       "isolation_method": "worktree",
@@ -12,6 +15,7 @@
       "merge_strategy": "orchestrator_review"
     },
     "task_queue": {
+      "_comment": "File-based task queue in .ai/state/queue/. No external dependencies (no Redis).",
       "enabled": false,
       "state_directory": ".ai/state/queue",
       "max_queue_depth": 20,
@@ -20,6 +24,7 @@
       "dependency_tracking": true
     },
     "worktree_isolation": {
+      "_comment": "Git worktrees give each parallel agent an independent filesystem. Eliminates file conflicts.",
       "enabled": false,
       "base_directory": ".claude/worktrees",
       "cleanup_on_completion": true,
@@ -28,6 +33,7 @@
   },
 
   "agent_spawning": {
+    "_comment": "Hard limits to prevent runaway costs. Research shows 3-5 agents is optimal; above 5 coordination overhead dominates.",
     "max_total_agents": 5,
     "max_workers": 3,
     "max_validators": 1,
@@ -38,6 +44,7 @@
   },
 
   "quality_gates": {
+    "_comment": "Thresholds for validation and critic gates. auto_approve_t1_tasks skips validation for lightweight work.",
     "validator_threshold": 0.7,
     "critic_threshold": 0.8,
     "require_validation_for_parallel": true,
@@ -46,6 +53,7 @@
   },
 
   "routing_enhancements": {
+    "_comment": "parallel_threshold_minutes: only parallelize tasks estimated >30 min sequential (break-even point).",
     "speculative_execution": true,
     "domain_routing_enabled": false,
     "prefer_specialist_agents": false,
@@ -53,6 +61,7 @@
   },
 
   "role_specializations": {
+    "_comment": "Sub-types within the 4 core roles (Worker/Validator/Critic). Not new top-level roles.",
     "enabled": false,
     "specializations": {
       "worker": ["researcher", "implementer", "test-generator"],
@@ -62,6 +71,7 @@
   },
 
   "observability": {
+    "_comment": "File-based logging. State and activity files can be consumed by future dashboards.",
     "enabled": true,
     "log_agent_activity": true,
     "log_task_transitions": true,
