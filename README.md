@@ -327,6 +327,129 @@ Tasks are classified and routed based on complexity:
 
 **Always-Heavy Keywords:** deploy, production, critical, security, comprehensive, unit test, integration test
 
+## Agent Library
+
+WOF includes 135 specialized agent definitions across 10 categories. Agents are markdown-based role definitions that can be installed into a WOI to extend worker capabilities.
+
+### Categories
+
+| # | Category | Description | Count |
+|---|----------|-------------|-------|
+| 01 | Core Development | Full-stack, frontend, backend, API, database | ~15 |
+| 02 | Language Specialists | C#, TypeScript, Python, Rust, Go, Java, etc. | ~15 |
+| 03 | Infrastructure | Docker, Kubernetes, Terraform, CI/CD, cloud | ~15 |
+| 04 | Quality & Security | Testing, security audit, code review, SAST | ~15 |
+| 05 | Data & AI | ML pipelines, data engineering, analytics | ~10 |
+| 06 | Developer Experience | Documentation, CLI tools, SDK design | ~15 |
+| 07 | Specialized Domains | Gaming, embedded, blockchain, GIS | ~15 |
+| 08 | Business & Product | Product management, UX research, analytics | ~10 |
+| 09 | Meta-Orchestration | Workflow design, agent coordination | ~10 |
+| 10 | Research & Analysis | Technical research, competitive analysis | ~15 |
+
+### Usage
+
+```
+/wof agents              # List installed agents
+/wof agents detect       # Auto-detect agents suited to your project
+/wof agents catalog      # Browse full catalog
+/wof agents catalog 04   # Browse a specific category
+/wof agents add <name>   # Install an agent
+/wof agents remove <name># Remove an agent
+```
+
+Auto-detection analyzes your project's languages, frameworks, and file patterns to suggest relevant agents.
+
+## Orchestration Patterns
+
+Configurable via `orchestration.json`, these patterns control how WOF parallelizes work, queues tasks, and enforces quality gates. All patterns default to OFF for safe adoption.
+
+### Parallel Execution
+
+Spawns multiple worker agents on independent sub-tasks using git worktree isolation. Each agent gets an isolated copy of the repository — no file conflicts.
+
+- **Max parallel agents:** 3 (configurable, research shows 3-5 optimal before coordination overhead dominates)
+- **Minimum complexity:** T2+ tasks only (T1 tasks are too fast to benefit from parallelism)
+- **30-minute threshold:** Only parallelize tasks estimated >30 minutes sequential — this is the break-even point where parallelization overhead pays off
+
+### Task Queue
+
+File-based task queue in `.ai/state/queue/` with dependency tracking, retry-on-failure, and configurable depth. No external dependencies (no Redis, no database).
+
+### Quality Gates
+
+Configurable thresholds for validation and critic gates:
+
+| Gate | Default | Config Key |
+|------|---------|------------|
+| Validator confidence | 0.7 | `quality_gates.validator_threshold` |
+| Critic viability | 0.8 | `quality_gates.critic_threshold` |
+| Auto-approve T1 tasks | false | `quality_gates.auto_approve_t1_tasks` |
+
+### Role Specializations
+
+Sub-types within the 4 core roles (Worker, Validator, Critic) — not new top-level roles. When enabled with domain routing, the routing script includes a `specialization_hint` in routing results.
+
+### Configuration
+
+```
+/wof configure-orchestration  # Interactive configuration wizard
+/wof orchestration            # Show current pattern configuration
+```
+
+Or edit `.ai/config/orchestration.json` directly.
+
+## Semantic Search Index
+
+WOF can optionally connect to a [Qdrant](https://qdrant.tech/) vector database for semantic code search. When configured, agents can search your codebase by meaning rather than just keywords.
+
+```
+/wof configure-index    # Connect to Qdrant instance, configure collection
+```
+
+Configuration is stored in `.ai/config/index.json`.
+
+## Model Management
+
+WOF supports local models via Ollama for Worker-Lite tasks. The model commands manage the local model backend:
+
+```
+/wof model              # Show current backend and model info
+/wof model list         # List available Ollama models
+/wof model <name>       # Switch to a specific model
+/wof model pull <name>  # Download a new model
+/wof model status       # Comprehensive backend status
+```
+
+## WOI Commands
+
+Full command reference for `/wof` in a WOI installation:
+
+| Command | Description |
+|---------|-------------|
+| `start` | Initialize session — check infrastructure, load context, acknowledge role |
+| `start -verbose` | Detailed startup diagnostics |
+| `update` | Update WOF to latest version from repository |
+| `update --dry-run` | Preview update changes without applying |
+| `status` | Check orchestration health and component status |
+| `configure` | Interactive AI configuration (add connections, map roles) |
+| `configure --test-only` | Only test existing connections |
+| `configure-ado` | Configure Azure DevOps integration (MCP server, filters) |
+| `configure-index` | Configure code index (connect to Qdrant for semantic search) |
+| `configure-orchestration` | Configure orchestration patterns (parallel, queue, agents) |
+| `configure finish` | Configure finish workflow behavior |
+| `orchestration` | Show current orchestration pattern configuration |
+| `model` | Show current backend and model info |
+| `model list` / `model <name>` / `model pull <name>` / `model status` | Manage local models |
+| `route <task>` | Classify a task and show routing decision |
+| `agents` | List installed agents from library |
+| `agents detect` / `agents add` / `agents remove` / `agents catalog` | Manage agent library |
+| `patterns` | Show learned rules and prompt history stats |
+| `patterns analyze` / `patterns remove` / `patterns clear` | Manage prompt pattern rules |
+| `finish` | Complete current work: update WI, bump version, commit, push |
+| `finish --work-item <id>` | Finish with specific work item ID |
+| `remove` | Remove WOF scripts (preserves config and memory) |
+| `help` | Show help information |
+
 ## Updating
 
 To update to the latest framework version:
