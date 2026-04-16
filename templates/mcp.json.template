@@ -1,3 +1,9 @@
 {
-  "mcpServers": {}
+  "mcpServers": {
+    "wof-cowork": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["core/mcp/wof-cowork/build/index.js"]
+    }
+  }
 }
