@@ -79,6 +79,17 @@ What the script does:
 
 Re-running is safe and idempotent.
 
+#### Through the WOF configuration wizard
+
+If you're already running the full WOF setup, menu option **[5] Configure
+Cowork** in `core/scripts/configure-wizard.ps1` (also available post-install
+at `.ai/scripts/configure-wizard.ps1`) wraps the scripts above. It prompts
+for the project dir and server name, then delegates to `setup-cowork.ps1`
+(Windows) or `setup-cowork.sh` (macOS/Linux). Users who only need cowork
+and don't want the rest of WOF can still invoke
+`core/scripts/setup-cowork.{sh,ps1}` directly — the wizard entry is purely
+a convenience path.
+
 ### 4b. Manual
 
 If you'd rather edit by hand:
