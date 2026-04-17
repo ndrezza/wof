@@ -1,9 +1,13 @@
 {
   "mcpServers": {
-    "wof-cowork": {
+    "{{SOLUTION_NAME}}-cowork": {
       "type": "stdio",
       "command": "node",
-      "args": ["core/mcp/wof-cowork/build/index.js"]
+      "args": ["{{WOF_ABS_PATH}}/core/mcp/wof-cowork/build/index.js"],
+      "env": {
+        "COWORK_DATA_DIR": "{{WOF_ABS_PATH}}/core/mcp/wof-cowork",
+        "COWORK_PROJECT_DIR": "{{PROJECT_ABS_PATH}}"
+      }
     }
   }
 }

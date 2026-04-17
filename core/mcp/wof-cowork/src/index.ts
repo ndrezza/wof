@@ -139,6 +139,7 @@ function runHeadlessClaude(task: Task): Promise<string> {
       cwd: tmpdir(),
       shell: false,
       stdio: ["ignore", "pipe", "pipe"],
+      env: { ...process.env, COWORK_CHILD_MODE: "1" },
     });
 
     let lineBuf = "";
@@ -582,7 +583,12 @@ server.registerTool(
 
 // Start
 async function main() {
-  resumeOrphanedTasks();
+  // Skip orphan resume when running as a child MCP instance inside a headless
+  // subprocess — otherwise the child sees its own parent task as "orphaned"
+  // and respawns it, causing a spawn cascade.
+  if (process.env.COWORK_CHILD_MODE !== "1") {
+    resumeOrphanedTasks();
+  }
   const transport = new StdioServerTransport();
   await server.connect(transport);
   console.error("[cowork-mcp] Server running on stdio");

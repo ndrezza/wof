@@ -3,7 +3,6 @@
   "version": "1.0.0",
   "description": "WOF cowork task queue MCP server",
   "type": "module",
-  "main": "dist/index.js",
   "bin": {
     "wof-cowork": "./build/index.js"
   },
