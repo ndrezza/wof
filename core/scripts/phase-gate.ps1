@@ -58,6 +58,24 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+# Load orchestration config for quality gate thresholds (optional)
+$validatorThreshold = 0.7  # default
+$criticThreshold = 0.8     # default
+$orchConfigPath = Join-Path $PSScriptRoot "..\config\orchestration.json"
+if (Test-Path $orchConfigPath) {
+    try {
+        $orchConfig = Get-Content $orchConfigPath -Raw | ConvertFrom-Json
+        if ($orchConfig.quality_gates.validator_threshold -ne $null) {
+            $validatorThreshold = $orchConfig.quality_gates.validator_threshold
+        }
+        if ($orchConfig.quality_gates.critic_threshold -ne $null) {
+            $criticThreshold = $orchConfig.quality_gates.critic_threshold
+        }
+    } catch {
+        # Graceful fallback - use default thresholds
+    }
+}
+
 # State file location
 $stateDir = Join-Path $PSScriptRoot "..\state"
 $stateFile = Join-Path $stateDir "workflow-state.json"
@@ -94,7 +112,7 @@ $phaseDefinitions = @{
         )
         ExitCriteria = @(
             "Design approach documented"
-            "Validator approved (confidence > 0.7)"
+            "Validator approved (confidence >= $validatorThreshold)"
             "No blocking questions"
         )
         Validators = @('autonomy')  # Uses validate-autonomy.ps1
@@ -134,7 +152,7 @@ $phaseDefinitions = @{
         )
         ExitCriteria = @(
             "Security review done"
-            "Bias-control viability >= 80%"
+            "Bias-control viability >= $([math]::Round($criticThreshold * 100))%"
             "No critical issues"
         )
         Validators = @('security', 'bias-control')
@@ -249,7 +267,7 @@ function Invoke-PhaseValidator {
                 try {
                     $result = & $validatorScript -Decision "Phase transition validation" -Context $Context -RiskLevel "low"
                     return @{
-                        Passed = $result.Proceed -and ($result.Confidence -gt 0.7)
+                        Passed = $result.Proceed -and ($result.Confidence -ge $validatorThreshold)
                         Confidence = $result.Confidence
                         Reason = $result.Reason
                     }
@@ -280,8 +298,8 @@ function Invoke-PhaseValidator {
             # Would call bias-control.ps1
             return @{
                 Passed = $true
-                Confidence = 0.8
-                Reason = "Bias-control validation delegated to caller"
+                Confidence = $criticThreshold
+                Reason = "Bias-control validation delegated to caller (threshold: $criticThreshold)"
             }
         }
         'security' {

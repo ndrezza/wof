@@ -66,6 +66,37 @@ param(
 $ErrorActionPreference = "SilentlyContinue"
 
 # =============================================================================
+# ORCHESTRATION CONFIG (optional, graceful fallback)
+# =============================================================================
+
+$orchestrationConfig = $null
+$orchConfigPath = Join-Path $PSScriptRoot "..\config\orchestration.json"
+if (Test-Path $orchConfigPath) {
+    try {
+        $orchestrationConfig = Get-Content $orchConfigPath -Raw | ConvertFrom-Json
+    } catch {
+        $orchestrationConfig = $null
+    }
+}
+
+# Extract routing-relevant settings with defaults
+$speculativeExecution = if ($orchestrationConfig.routing_enhancements.speculative_execution -ne $null) {
+    $orchestrationConfig.routing_enhancements.speculative_execution
+} else { $true }
+
+$autoApproveT1 = if ($orchestrationConfig.quality_gates.auto_approve_t1_tasks -ne $null) {
+    $orchestrationConfig.quality_gates.auto_approve_t1_tasks
+} else { $false }
+
+$domainRoutingEnabled = if ($orchestrationConfig.routing_enhancements.domain_routing_enabled -ne $null) {
+    $orchestrationConfig.routing_enhancements.domain_routing_enabled
+} else { $false }
+
+$roleSpecializationsEnabled = if ($orchestrationConfig.role_specializations.enabled -ne $null) {
+    $orchestrationConfig.role_specializations.enabled
+} else { $false }
+
+# =============================================================================
 # ROUTING KEYWORDS (from routing-rules.md)
 # =============================================================================
 
@@ -340,11 +371,18 @@ function Get-WorkerRouting {
         $result.Confidence = 0.75
     }
     else {
-        # Tie or uncertain - use speculative execution (try Lite first)
-        $result.Worker = "WorkerLite"
-        $result.Tier = "T1"
-        $result.Reason += "Uncertain routing - using speculative execution (try Lite first)"
-        $result.Confidence = 0.5
+        # Tie or uncertain - check speculative execution config
+        if ($speculativeExecution) {
+            $result.Worker = "WorkerLite"
+            $result.Tier = "T1"
+            $result.Reason += "Uncertain routing - using speculative execution (try Lite first)"
+            $result.Confidence = 0.5
+        } else {
+            $result.Worker = "WorkerHeavy"
+            $result.Tier = "T2"
+            $result.Reason += "Uncertain routing - speculative execution disabled, defaulting to Heavy"
+            $result.Confidence = 0.5
+        }
     }
     
     return $result
@@ -406,6 +444,24 @@ else {
     }
     else {
         $routing.LiteAvailable = $false  # Not checked since routing to Heavy
+    }
+}
+
+# Enrich routing result with orchestration config values
+$routing.AutoApproveT1 = $autoApproveT1
+
+if ($roleSpecializationsEnabled -and $domainRoutingEnabled -and $orchestrationConfig.role_specializations.specializations) {
+    # Suggest a specialization based on task type
+    $specializationMap = @{
+        "Testing"        = "test-generator"
+        "Search"         = "researcher"
+        "CodeGeneration" = "implementer"
+        "Refactoring"    = "implementer"
+        "General"        = $null
+    }
+    $hint = $specializationMap[$routing.TaskType]
+    if ($hint) {
+        $routing.SpecializationHint = $hint
     }
 }
 

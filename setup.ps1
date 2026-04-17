@@ -709,7 +709,8 @@ if (-not $SkipTemplates) {
             "config\notifications.json.template",
             "config\index.json.template",
             "config\models.yaml.template",
-            "config\ai-rules.md.template"
+            "config\ai-rules.md.template",
+            "config\orchestration.json.template"
         )
         Write-Host "    Using v2 config format (JSON-based)" -ForegroundColor Cyan
     } else {
@@ -734,7 +735,8 @@ if (-not $SkipTemplates) {
         "config/ado.json",
         "config/notifications.json",
         "config/index.json",
-        "config/agents-selection.json"
+        "config/agents-selection.json",
+        "config/orchestration.json"
     )
 
     foreach ($template in $configTemplates) {

@@ -58,6 +58,8 @@ Parse the arguments to determine which WOF command to run.
 | `patterns analyze` | Detect patterns in recent prompts and propose rules |
 | `patterns remove <id>` | Remove a learned rule |
 | `patterns clear` | Clear all learned rules |
+| `configure-orchestration` | Configure orchestration patterns (parallel, queue, agents) |
+| `orchestration` | Show current orchestration pattern configuration |
 | `remove` | Remove WOF scripts (preserves config & memory) |
 | `help` | Show this help information |
 
@@ -1746,6 +1748,117 @@ If drift was found, use AskUserQuestion:
   4. "Review each item" — Go through drift items one by one
 
 Execute the chosen resolution.
+
+---
+
+### If arguments contain "configure-orchestration"
+
+Configure orchestration patterns interactively (parallel execution, task queue, agent limits, quality gates, routing, specializations).
+
+#### Step 1: Read Current Configuration
+
+Check existing orchestration settings:
+
+```bash
+powershell -ExecutionPolicy Bypass -Command "if (Test-Path '.ai/config/orchestration.json') { Get-Content '.ai/config/orchestration.json' -Raw } else { Write-Output 'NO_CONFIG' }"
+```
+
+If no config exists, inform the user that defaults will be used and offer to create the file.
+
+#### Step 2: Display Current Status
+
+Show a summary of the current orchestration state:
+- Parallel Execution: ON/OFF
+- Task Queue: ON/OFF
+- Worktree Isolation: ON/OFF
+- Role Specializations: ON/OFF
+- Observability: ON/OFF
+
+#### Step 3: Ask What to Configure
+
+Use AskUserQuestion to let the user choose what to configure.
+
+- Question: "Which orchestration aspect would you like to configure?"
+- Header: "Orchestration"
+- MultiSelect: false
+- Options:
+  1. "Parallel Execution" — Enable/disable, agent count, isolation, complexity threshold
+  2. "Task Queue" — Enable/disable, retries, dependency tracking
+  3. "Agent Spawning Limits" — Max agents, cooldown, timeout, rotation
+  4. "Quality Gates" — Validator/critic thresholds, auto-approve T1
+
+Include a "Back" option.
+
+#### Step 4: Per-Aspect Configuration
+
+Based on user selection, ask follow-up questions:
+
+**Parallel Execution:**
+- "Enable parallel execution?" — Yes/No/Back
+- If yes: "Max parallel agents?" — 2, 3 (Recommended), 5, Back
+- "Minimum task complexity for parallel?" — T1, T2 (Recommended), T3, Back
+
+**Task Queue:**
+- "Enable task queue?" — Yes/No/Back
+- If yes: "Enable retry on failure?" — Yes (Recommended)/No/Back
+- "Max retries?" — 1, 2 (Recommended), 3, Back
+
+**Agent Spawning:**
+- "Max total agents?" — 3, 5 (Recommended), 7, Back
+- "Agent session timeout (minutes)?" — 15, 30 (Recommended), 60, Back
+- "Rotation after consecutive runs?" — 3, 5 (Recommended), 10, Back
+
+**Quality Gates:**
+- "Auto-approve T1 tasks (skip validation for lightweight work)?" — Yes/No (Recommended)/Back
+- "Validator confidence threshold?" — 0.6, 0.7 (Recommended), 0.8, Back
+- "Critic viability threshold?" — 0.7, 0.8 (Recommended), 0.9, Back
+
+#### Step 5: Write Updated Configuration
+
+Build the orchestration.json from current config + user changes and write it:
+
+```bash
+powershell -ExecutionPolicy Bypass -Command "
+    \$config = @{...}  # Build from user selections
+    \$config | ConvertTo-Json -Depth 5 | Set-Content '.ai/config/orchestration.json' -Encoding UTF8
+"
+```
+
+#### Step 6: Confirm and Offer Next Steps
+
+Show the updated configuration summary. Ask if the user wants to configure another aspect or exit.
+
+---
+
+### If arguments contain "orchestration" (but NOT "configure-orchestration")
+
+Display the current orchestration pattern configuration (read-only).
+
+```bash
+powershell -ExecutionPolicy Bypass -Command "if (Test-Path '.ai/config/orchestration.json') { Get-Content '.ai/config/orchestration.json' -Raw } else { Write-Output 'NO_CONFIG' }"
+```
+
+If config exists, display it as a formatted table:
+
+```
+Orchestration Patterns:
+  Parallel Execution:    ON/OFF  (max 3 agents, worktree isolation)
+  Task Queue:            ON/OFF  (retry: ON, max retries: 2)
+  Worktree Isolation:    ON/OFF  (auto-cleanup: ON)
+  Domain Routing:        ON/OFF
+  Role Specializations:  ON/OFF
+  Observability:         ON/OFF  (activity + transitions logging)
+
+Agent Limits:
+  Max total: 5 | Workers: 3 | Validators: 1 | Critics: 1
+  Cooldown: 5s | Timeout: 30min | Rotation: every 5 runs
+
+Quality Gates:
+  Validator: >=0.7 | Critic: >=0.8
+  Validate parallel: YES | Critic before merge: YES | Auto-approve T1: NO
+```
+
+If no config exists, tell the user: "Orchestration patterns not configured. Run `/wof configure-orchestration` to set up."
 
 ---
 

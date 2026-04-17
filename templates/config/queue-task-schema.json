@@ -1,0 +1,112 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "WOF Task Queue Entry",
+  "description": "Schema for task queue entries used by the WOF orchestration task queue pattern",
+  "type": "object",
+  "required": ["id", "title", "status", "complexity", "created_at"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "Unique task identifier (UUID or sequential)",
+      "pattern": "^[a-zA-Z0-9_-]+$"
+    },
+    "title": {
+      "type": "string",
+      "description": "Short task title",
+      "maxLength": 200
+    },
+    "description": {
+      "type": "string",
+      "description": "Detailed task description"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["pending", "queued", "assigned", "in_progress", "validating", "completed", "failed", "blocked"],
+      "description": "Current task status"
+    },
+    "complexity": {
+      "type": "string",
+      "enum": ["T1", "T2", "T3"],
+      "description": "Task complexity tier (T1=lightweight, T2=moderate, T3=complex)"
+    },
+    "priority": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 5,
+      "default": 3,
+      "description": "Priority level (1=highest, 5=lowest)"
+    },
+    "assigned_agent": {
+      "type": ["string", "null"],
+      "description": "Agent role or specialization assigned to this task"
+    },
+    "specialization_hint": {
+      "type": ["string", "null"],
+      "description": "Preferred role specialization (e.g., 'worker.researcher', 'validator.security-reviewer')"
+    },
+    "dependencies": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "IDs of tasks that must complete before this one can start"
+    },
+    "work_item_id": {
+      "type": ["integer", "null"],
+      "description": "Linked Azure DevOps work item ID"
+    },
+    "worktree_branch": {
+      "type": ["string", "null"],
+      "description": "Git worktree branch name if using worktree isolation"
+    },
+    "retry_count": {
+      "type": "integer",
+      "minimum": 0,
+      "default": 0,
+      "description": "Number of times this task has been retried"
+    },
+    "result": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["success", "failure", "partial"]
+        },
+        "summary": {
+          "type": "string"
+        },
+        "files_changed": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "validation_score": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "critic_score": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        }
+      },
+      "description": "Task completion result"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 creation timestamp"
+    },
+    "started_at": {
+      "type": ["string", "null"],
+      "format": "date-time",
+      "description": "ISO 8601 start timestamp"
+    },
+    "completed_at": {
+      "type": ["string", "null"],
+      "format": "date-time",
+      "description": "ISO 8601 completion timestamp"
+    }
+  },
+  "additionalProperties": false
+}

@@ -247,6 +247,7 @@ mcp__azure-devops__list_work_items with:
 | Conventions | `.ai/memory/conventions.md` |
 | Current Sprint | `.ai/memory/current-sprint.md` |
 | Routing Rules | `.ai/config/routing-rules.md` |
+| Orchestration Patterns | `.ai/config/orchestration.json` |
 | Agent Definitions | `.ai/agents/` |
 | MCP Setup Guide | `.ai/docs/mcp-agent-setup.md` |
 
@@ -262,6 +263,8 @@ mcp__azure-devops__list_work_items with:
 | `/wof finish` | Complete work: update WI, commit, push |
 | `/wof cleanup` | Scan and remove AI-generated slop (console.log, TODOs, etc.) |
 | `/wof drift` | Detect drift between plan and implementation |
+| `/wof configure-orchestration` | Configure orchestration patterns and agent limits |
+| `/wof orchestration` | Show current orchestration configuration |
 | `/wof patterns` | Review learned rules, analyze prompts for patterns |
 
 ### Task Routing
@@ -275,6 +278,21 @@ mcp__azure-devops__list_work_items with:
 - Code generation (> 20 lines)
 - Test writing and execution
 - Refactoring, architecture, security
+
+### Orchestration Patterns
+
+Configurable via `.ai/config/orchestration.json`. Run `/wof configure-orchestration` to modify.
+
+| Pattern | Purpose | Default |
+|---------|---------|---------|
+| Parallel Execution | Multiple workers on independent sub-tasks | OFF |
+| Task Queue | File-based queue with dependency tracking | OFF |
+| Worktree Isolation | Git worktrees for parallel agent isolation | OFF |
+| Domain Routing | Route to specialist agents by domain | OFF |
+| Role Specializations | Sub-types within Worker/Validator/Critic | OFF |
+
+**When to enable parallel:** Task has 3+ independent sub-components, estimated >30 min sequential.
+**When to stay sequential (default):** Single-file changes, tight dependencies, quick fixes, T1 tasks.
 
 ### Thresholds
 
