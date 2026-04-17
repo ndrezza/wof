@@ -29,3 +29,11 @@ node_modules/
 /.ai/
 /.claude/
 /.mcp.json
+
+# cowork-mcp build artifacts and runtime data
+core/mcp/wof-cowork/build/
+core/mcp/wof-cowork/tasks.json
+
+# tailblaze .NET build output
+extensions/tailblaze/bin/
+extensions/tailblaze/obj/

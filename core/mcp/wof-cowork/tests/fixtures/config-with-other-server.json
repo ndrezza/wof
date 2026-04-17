@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "other-server": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["/some/other/server.js"],
+      "env": {
+        "FOO": "bar"
+      }
+    }
+  },
+  "someOtherKey": "preserve-me"
+}

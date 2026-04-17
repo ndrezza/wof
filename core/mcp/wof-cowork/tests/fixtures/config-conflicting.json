@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "wof-cowork": {
+      "type": "stdio",
+      "command": "node",
+      "args": [
+        "/old/different/path/index.js"
+      ],
+      "env": {
+        "COWORK_DATA_DIR": "/old/data",
+        "COWORK_PROJECT_DIR": "/old/proj"
+      }
+    }
+  }
+}

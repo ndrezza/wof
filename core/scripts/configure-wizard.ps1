@@ -1924,6 +1924,150 @@ function Remove-NotificationConfiguration {
 }
 
 # ============================================================================
+# Cowork MCP Bridge Configuration
+# ============================================================================
+
+function Show-CoworkMenu {
+    while ($true) {
+        Write-Host ""
+        Write-Host "--- Cowork MCP Bridge Configuration ---" -ForegroundColor Cyan
+        Write-Host ""
+        Write-Info "Bridges Claude Desktop to a headless 'claude -p' subprocess."
+        Write-Info "Writes into claude_desktop_config.json. See docs/cowork-bootstrap.md."
+        Write-Host ""
+
+        $isWin = $env:OS -eq "Windows_NT" -or $PSVersionTable.Platform -eq "Win32NT" -or (-not $PSVersionTable.Platform)
+        $setupScript = if ($isWin) {
+            Join-Path $PSScriptRoot "setup-cowork.ps1"
+        } else {
+            Join-Path $PSScriptRoot "setup-cowork.sh"
+        }
+        $mcpPkg = Join-Path $repoRoot "core/mcp/wof-cowork"
+
+        if (Test-Path $setupScript) {
+            Write-Host "  Setup script: $setupScript" -ForegroundColor Gray
+        } else {
+            Write-Host "  Setup script: (missing) $setupScript" -ForegroundColor Red
+        }
+        if (Test-Path $mcpPkg) {
+            Write-Host "  MCP package:  $mcpPkg" -ForegroundColor Gray
+        } else {
+            Write-Host "  MCP package:  (not found) expected at $mcpPkg" -ForegroundColor Yellow
+            Write-Info "Cowork must be configured from the WOF source tree."
+        }
+        Write-Host ""
+
+        Write-Host "Options:" -ForegroundColor Cyan
+        Write-Host "  [1] Install / update cowork in Claude Desktop"
+        Write-Host "  [2] Dry-run (print planned config change only)"
+        Write-Host ""
+        Write-Host "  [B] Back to main menu" -ForegroundColor Yellow
+        Write-Host ""
+        Write-Host "Choice: " -NoNewline
+        $choice = Read-Host
+
+        switch ($choice.ToUpper()) {
+            "B" { return }
+            "1" { Invoke-CoworkSetup -OnWindows:$isWin -SetupScript $setupScript -DryRun:$false }
+            "2" { Invoke-CoworkSetup -OnWindows:$isWin -SetupScript $setupScript -DryRun:$true }
+        }
+    }
+}
+
+function Invoke-CoworkSetup {
+    param(
+        [bool]$OnWindows,
+        [string]$SetupScript,
+        [switch]$DryRun
+    )
+
+    if (-not (Test-Path $SetupScript)) {
+        Write-Fail "Cowork setup script not found: $SetupScript"
+        Write-Host ""
+        Write-Host "Press Enter to continue..." -NoNewline
+        Read-Host
+        return
+    }
+
+    # Prompt for project dir; default to repoRoot when the WOF MCP package is present.
+    $mcpPkg = Join-Path $repoRoot "core/mcp/wof-cowork"
+    $defaultProject = if (Test-Path $mcpPkg) { $repoRoot } else { "" }
+
+    Write-Host ""
+    Write-Host "Absolute path to the repo the headless subprocess works against:" -ForegroundColor Gray
+    if ($defaultProject) {
+        Write-Host "Project dir [$defaultProject]: " -NoNewline
+    } else {
+        Write-Host "Project dir: " -NoNewline
+    }
+    $projectDir = Read-Host
+    if (-not $projectDir -and $defaultProject) {
+        $projectDir = $defaultProject
+    }
+    if (-not $projectDir) {
+        Write-Warn "Project dir is required. Aborting."
+        Write-Host ""
+        Write-Host "Press Enter to continue..." -NoNewline
+        Read-Host
+        return
+    }
+    if (-not (Test-Path $projectDir -PathType Container)) {
+        Write-Fail "Project dir does not exist: $projectDir"
+        Write-Host ""
+        Write-Host "Press Enter to continue..." -NoNewline
+        Read-Host
+        return
+    }
+
+    # Prompt for server name.
+    $defaultName = "wof-cowork"
+    Write-Host ""
+    Write-Host "Key under mcpServers in Claude Desktop config:" -ForegroundColor Gray
+    Write-Host "Server name [$defaultName]: " -NoNewline
+    $serverName = Read-Host
+    if (-not $serverName) { $serverName = $defaultName }
+
+    Write-Host ""
+    Write-Check "Invoking setup-cowork (this builds the MCP server and merges the config)..."
+    Write-Host ""
+
+    try {
+        if ($OnWindows) {
+            if ($DryRun) {
+                & $SetupScript -ProjectDir $projectDir -ServerName $serverName -DryRun
+            } else {
+                & $SetupScript -ProjectDir $projectDir -ServerName $serverName
+            }
+        } else {
+            $shArgs = @($SetupScript, "--project-dir", $projectDir, "--server-name", $serverName)
+            if ($DryRun) { $shArgs += "--dry-run" }
+            & bash @shArgs
+        }
+        $exit = $LASTEXITCODE
+    } catch {
+        Write-Fail "Setup script errored: $_"
+        Write-Host ""
+        Write-Host "Press Enter to continue..." -NoNewline
+        Read-Host
+        return
+    }
+
+    Write-Host ""
+    if ($exit -eq 0) {
+        Write-Pass "Cowork setup completed."
+        if (-not $DryRun) {
+            Write-Info "Fully quit Claude Desktop (tray/menu -> Quit) and relaunch to load the new config."
+            Write-Info "Then ask Claude Desktop: 'list your available MCP tools' to verify."
+        }
+    } else {
+        Write-Fail "Setup script exited with code $exit. See output above."
+    }
+    Write-Host ""
+    Write-Host "Press Enter to continue..." -NoNewline
+    Read-Host
+}
+
+# ============================================================================
 # Connection Slot Menu (for individual AI slot)
 # ============================================================================
 
@@ -2173,10 +2317,11 @@ function Show-MainMenu {
         Write-Host "  [2] Orchestration & Roles"
         Write-Host "  [3] Configure Azure DevOps MCP"
         Write-Host "  [4] Configure Notifications"
+        Write-Host "  [5] Configure Cowork (Claude Desktop bridge)"
         Write-Host ""
-        Write-Host "  [5] Test All AI Connections"
-        Write-Host "  [6] View Current Configuration"
-        Write-Host "  [7] Orchestration Patterns"
+        Write-Host "  [6] Test All AI Connections"
+        Write-Host "  [7] View Current Configuration"
+        Write-Host "  [8] Orchestration Patterns"
         Write-Host ""
         if ($script:hasUnsavedChanges) {
             Write-Host "  [S] Save changes" -ForegroundColor Green
@@ -2192,7 +2337,8 @@ function Show-MainMenu {
             "2" { $Config = Show-OrchestrationSubMenu -Config $Config }
             "3" { $Mcp = Show-AdoMenu -Mcp $Mcp }
             "4" { $Mcp = Show-NotificationMenu -Mcp $Mcp }
-            "5" {
+            "5" { Show-CoworkMenu }
+            "6" {
                 Write-Host ""
                 Write-Host "Testing all AI connections..." -ForegroundColor Cyan
                 Show-ConnectionsTable -Config $Config | Out-Null
@@ -2200,7 +2346,7 @@ function Show-MainMenu {
                 Write-Host "Press Enter to continue..." -NoNewline
                 Read-Host
             }
-            "7" {
+            "8" {
                 $orchScript = Join-Path $PSScriptRoot "configure-orchestration.ps1"
                 if (Test-Path $orchScript) {
                     & $orchScript
@@ -2211,7 +2357,7 @@ function Show-MainMenu {
                 Write-Host "Press Enter to continue..." -NoNewline
                 Read-Host
             }
-            "6" {
+            "7" {
                 Write-Host ""
                 Show-RoleMappings -Config $Config
 
