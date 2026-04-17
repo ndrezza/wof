@@ -134,6 +134,7 @@ function runHeadlessClaude(task: Task): Promise<string> {
     const chunks: Buffer[] = [];
     const errChunks: Buffer[] = [];
     const logStream = createWriteStream(logFile, { flags: "a" });
+    let errored = false;
 
     const child = spawn("claude", ["-p", prompt, "--dangerously-skip-permissions", "--output-format", "stream-json", "--verbose", "--mcp-config", MCP_CONFIG_PATH], {
       cwd: tmpdir(),
@@ -168,6 +169,9 @@ function runHeadlessClaude(task: Task): Promise<string> {
     });
 
     child.on("close", (code) => {
+      // `error` already ended the stream and rejected; skip to avoid
+      // ERR_STREAM_WRITE_AFTER_END crashing the MCP server.
+      if (errored) return;
       const footer = `\n\n=== Finished: ${new Date().toISOString()} | Exit code: ${code} ===\n`;
       logStream.write(footer);
       logStream.end();
@@ -182,6 +186,7 @@ function runHeadlessClaude(task: Task): Promise<string> {
     });
 
     child.on("error", (err) => {
+      errored = true;
       logStream.write(`\n[error] ${err.message}\n`);
       logStream.end();
       reject(err);
